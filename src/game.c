@@ -241,7 +241,20 @@ static void spawn_wave(GameState *gs) {
             /* Spawn if the position is walkable; otherwise retry */
             if (!tilemap_is_solid(&gs->tilemap, pos.x, pos.y)) {
                 EnemyType type = pick_enemy_type(gs->stats.waves_spawned);
-                enemy_pool_spawn(&gs->enemies, type, pos);
+
+                /* Roll for elite modifier after threshold waves */
+                EliteModifier elite = ELITE_NONE;
+                if (gs->stats.waves_spawned >= ELITE_WAVE_THRESHOLD &&
+                    GetRandomValue(1, 100) <= ELITE_CHANCE) {
+                    elite = (EliteModifier)(1 + GetRandomValue(0, 2));
+                    /* ELITE_ARMORED=1, ELITE_SWIFT=2, ELITE_BURNING=3 */
+                }
+
+                if (elite != ELITE_NONE) {
+                    enemy_pool_spawn_elite(&gs->enemies, type, pos, elite);
+                } else {
+                    enemy_pool_spawn(&gs->enemies, type, pos);
+                }
                 break;
             }
         }

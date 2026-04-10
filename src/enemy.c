@@ -78,6 +78,7 @@ void enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position) {
             e->shoot_cooldown = 0.0f;
             e->ai_timer = 0.0f;
             e->is_charging = false;
+            e->elite = ELITE_NONE;
 
             switch (type) {
             case ENEMY_SWARMER:
@@ -113,6 +114,43 @@ void enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position) {
         }
     }
     /* Pool full -- silently drop the spawn */
+}
+
+void enemy_pool_spawn_elite(EnemyPool *pool, EnemyType type, Vector2 position,
+                            EliteModifier elite) {
+    /* Spawn normally first */
+    int prev_count = enemy_pool_active_count(pool);
+    enemy_pool_spawn(pool, type, position);
+    int new_count = enemy_pool_active_count(pool);
+
+    /* If spawn succeeded, find the newly spawned enemy and apply modifier */
+    if (new_count > prev_count) {
+        /* Find the last-spawned active enemy (it's the one just created) */
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            Enemy *e = &pool->enemies[i];
+            if (e->active && e->elite == ELITE_NONE && e->position.x == position.x &&
+                e->position.y == position.y) {
+                e->elite = elite;
+
+                switch (elite) {
+                case ELITE_ARMORED:
+                    e->hp *= ARMORED_HP_MULT;
+                    e->speed *= ARMORED_SPEED_MULT;
+                    break;
+                case ELITE_SWIFT:
+                    e->speed *= SWIFT_SPEED_MULT;
+                    e->radius *= SWIFT_RADIUS_MULT;
+                    break;
+                case ELITE_BURNING:
+                    e->damage += BURNING_DAMAGE_BONUS;
+                    break;
+                default:
+                    break;
+                }
+                return;
+            }
+        }
+    }
 }
 
 /* Compute a direction toward target using flow field if available, else direct. */
@@ -445,6 +483,27 @@ void enemy_pool_draw(const EnemyPool *pool) {
             break;
         default:
             break;
+        }
+
+        /* Elite modifier ring */
+        if (e->elite != ELITE_NONE) {
+            Color ring_color;
+            switch (e->elite) {
+            case ELITE_ARMORED:
+                ring_color = (Color){160, 160, 200, 120}; /* steel blue */
+                break;
+            case ELITE_SWIFT:
+                ring_color = (Color){200, 255, 50, 120}; /* lime green */
+                break;
+            case ELITE_BURNING:
+                ring_color = (Color){255, 100, 20, 120}; /* fire orange */
+                break;
+            default:
+                ring_color = (Color){255, 255, 255, 80};
+                break;
+            }
+            DrawCircleLinesV(e->position, e->radius + 5.0f, ring_color);
+            DrawCircleLinesV(e->position, e->radius + 6.0f, ring_color);
         }
     }
 }

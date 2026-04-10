@@ -55,6 +55,15 @@ typedef struct Tilemap Tilemap;
 #define BOMBER_EXPLOSION_RADIUS 60.0f
 #define BOMBER_EXPLOSION_DAMAGE 25.0f
 
+/* Elite modifiers */
+#define ELITE_CHANCE 20           /* percent chance per enemy after threshold */
+#define ELITE_WAVE_THRESHOLD 5    /* waves before elites can appear */
+#define ARMORED_HP_MULT 2.5f      /* HP multiplier */
+#define ARMORED_SPEED_MULT 0.7f   /* speed multiplier (slower) */
+#define SWIFT_SPEED_MULT 1.6f     /* speed multiplier (faster) */
+#define SWIFT_RADIUS_MULT 0.75f   /* radius multiplier (smaller) */
+#define BURNING_DAMAGE_BONUS 5.0f /* extra contact damage */
+
 /* Spawning */
 #define SPAWN_INTERVAL 3.0f /* seconds between spawn waves */
 #define SPAWN_MIN_GROUP 2   /* minimum swarmers per wave */
@@ -69,6 +78,8 @@ typedef enum {
     ENEMY_BOMBER,
     ENEMY_TYPE_COUNT /* sentinel */
 } EnemyType;
+
+typedef enum { ELITE_NONE = 0, ELITE_ARMORED, ELITE_SWIFT, ELITE_BURNING } EliteModifier;
 
 /* Enemy bullet (fired by Grunts) */
 typedef struct {
@@ -95,6 +106,7 @@ typedef struct {
     float ai_timer;       /* general-purpose AI timer (dash interval, charge, etc.) */
     bool is_charging;     /* Bomber: currently charging toward player */
     EnemyType type;
+    EliteModifier elite; /* ELITE_NONE for regular enemies */
     bool active;
 } Enemy;
 
@@ -109,6 +121,9 @@ void enemy_pool_init(EnemyPool *pool);
 
 /* Spawn a single enemy of the given type at the given position. */
 void enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position);
+
+/* Spawn with an elite modifier applied. */
+void enemy_pool_spawn_elite(EnemyPool *pool, EnemyType type, Vector2 position, EliteModifier elite);
 
 /*
  * Update all active enemies: move toward target, clamp to arena.
