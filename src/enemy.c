@@ -504,6 +504,19 @@ void enemy_bullet_pool_draw(const EnemyBulletPool *pool) {
         if (!b->active) {
             continue;
         }
+
+        /* Trail */
+        float speed = Vector2Length(b->velocity);
+        if (speed > 1.0f) {
+            Vector2 dir = Vector2Scale(b->velocity, 1.0f / speed);
+            float trail_len = speed * 0.04f;
+            if (trail_len > 20.0f) {
+                trail_len = 20.0f;
+            }
+            Vector2 trail_end = Vector2Subtract(b->position, Vector2Scale(dir, trail_len));
+            DrawLineEx(b->position, trail_end, 5.0f, (Color){255, 80, 80, 60});
+        }
+
         DrawCircleV(b->position, 4.0f, (Color){255, 80, 80, 255});
     }
 }

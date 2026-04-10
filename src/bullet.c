@@ -96,6 +96,25 @@ void bullet_pool_draw(const BulletPool *pool) {
         if (!b->active) {
             continue;
         }
+
+        /* Trail: fading line behind the bullet along its velocity */
+        float speed = Vector2Length(b->velocity);
+        if (speed > 1.0f) {
+            Vector2 dir = Vector2Scale(b->velocity, 1.0f / speed);
+            /* Trail length proportional to speed, capped */
+            float trail_len = speed * 0.04f;
+            if (trail_len > 20.0f) {
+                trail_len = 20.0f;
+            }
+            Vector2 trail_end = Vector2Subtract(b->position, Vector2Scale(dir, trail_len));
+
+            /* Fading trail color */
+            Color trail_color = b->color;
+            trail_color.a = 80;
+            DrawLineEx(b->position, trail_end, BULLET_RADIUS * 1.5f, trail_color);
+        }
+
+        /* Bullet body */
         DrawCircleV(b->position, BULLET_RADIUS, b->color);
     }
 }
