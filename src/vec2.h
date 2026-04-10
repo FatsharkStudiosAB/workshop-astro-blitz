@@ -9,8 +9,6 @@
 
 #pragma once
 
-#include <math.h>
-
 /* A 2D vector with float components. */
 typedef struct {
     float x;
@@ -29,7 +27,7 @@ Vec2 vec2_scale(Vec2 v, float s);
 /* Return the length (magnitude) of a vector. */
 float vec2_length(Vec2 v);
 
-/* Return a unit vector in the same direction. Returns (0, 0) for zero-length input. */
+/* Return a unit vector in the same direction. Returns (0, 0) when the input length is smaller than 1e-8. */
 Vec2 vec2_normalize(Vec2 v);
 
 /* Return the distance between two points. */
