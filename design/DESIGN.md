@@ -67,13 +67,21 @@ rewarded.
 
 ### Scaling per floor
 
-| Stat | Per-floor increase | Example (floor 1 -> floor 5) |
-|------|--------------------|-------------------------------|
-| Enemy HP | +20% | Swarmer: 10 -> 18 HP |
-| Enemy speed | +8% | Swarmer: 150 -> 198 px/s |
-| Spawn rate | +15% (shorter wave intervals) | 3.0s -> 1.6s |
-| Spawn group size | +1 per 2 floors | 2--5 -> 4--7 |
-| Elite spawn chance | +10% per floor | 5% -> 45% |
+Unless otherwise noted, stats scale **linearly from floor-1 base
+values** (not compounded). General formula:
+`scaled = base * (1 + rate * (floor - 1))`.
+
+| Stat | Per-floor increase | Formula | Example (floor 1 -> floor 5) |
+|------|--------------------|---------|-------------------------------|
+| Enemy HP | +20% linear | `base_hp * (1 + 0.20 * (floor - 1))` | Swarmer: 10 -> 18 HP |
+| Enemy speed | +8% linear | `base_speed * (1 + 0.08 * (floor - 1))` | Swarmer: 150 -> 198 px/s |
+| Wave interval | x0.85 per floor | `base_interval * 0.85 ^ (floor - 1)` | 3.0s -> 1.6s |
+| Spawn group size | +1 per 2 floors | `base + floor_div(floor - 1, 2)` | 2--5 -> 4--7 |
+| Elite spawn chance | +10 pct points per floor (additive, capped at 100%) | `min(base + 10 * (floor - 1), 100)` | 5% -> 45% |
+
+Note: wave interval uses multiplicative decay (x0.85 per floor)
+rather than linear scaling because linear subtraction would reach zero
+at floor 7+.
 
 ### Enemy ability progression
 
@@ -428,12 +436,16 @@ collision, BFS flow field, and camera systems carry over directly.
 
 ## Damage Model
 
-### Formula
+### Per-Hit Damage Formula
+
+This formula calculates **per-hit damage** only. It does not cover
+fire rate, projectile count, DoT, or on-hit procs -- those are
+handled separately below.
 
 ```text
-base_damage   = weapon.damage * rarity_multiplier
-modifier_bonus = sum of applicable weapon modifier bonuses
-passive_bonus  = sum of applicable passive upgrade bonuses
+base_damage    = weapon.damage * rarity_multiplier
+modifier_bonus = sum of damage-affecting weapon modifier bonuses (e.g., Heavy: +40%)
+passive_bonus  = sum of damage-affecting passive bonuses (e.g., Targeting Module: +4)
 final_damage   = (base_damage + modifier_bonus + passive_bonus) * talent_multiplier
 ```
 
@@ -441,6 +453,17 @@ All bonuses within a category are **additive**. The talent multiplier
 is the only multiplicative factor -- this is intentional because
 talents are build-defining (one per run). Within weapons, modifiers,
 and passives, everything stacks additively.
+
+### Non-Damage Stat Stacking
+
+| Stat | How it combines |
+|------|-----------------|
+| **Fire rate** | Base weapon rate + additive bonuses from modifiers (Rapid: +25%) and passives (Quick Loader: +15%). `final_rate = base_rate * (1 + sum_of_bonuses)` |
+| **Projectile count** | Fixed per weapon (e.g., Shotgun = 5 pellets). Not affected by modifiers or passives. |
+| **DoT effects** | Scorching modifier and Incendiary Rounds passive combine by extending duration, not stacking damage ticks. |
+| **Slow effects** | Chilling modifier and Cryo Coating passive combine by extending duration. Slow percentage does not stack. |
+| **On-hit procs** | Each source rolls independently. Chain Lightning passive (20% chance) and a hypothetical modifier each roll separately per hit. |
+| **Bounces** | Base bounces (3) + modifier bonus (Bouncing: +2) = 5 total. Additive. |
 
 ### Enemy HP Scaling
 
