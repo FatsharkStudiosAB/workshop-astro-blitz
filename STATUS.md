@@ -5,16 +5,17 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Current State
 
-- **Phase:** First playable prototype -- player movement, shooting, and dash in an empty arena.
+- **Phase:** First playable prototype -- player movement, shooting, dash, and enemy swarmers.
 - **Engine/Framework:** Raylib 5.5 (C99), built via CMake FetchContent.
 - **Build:** `task build` (or `cmake -B build && cmake --build build --config Release`)
 - **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest.
-- **Playable:** Yes (player moves with WASD, aims with mouse, shoots with left-click, dashes with spacebar).
+- **Playable:** Yes (player moves with WASD, aims with mouse, shoots with left-click, dashes with spacebar, enemies spawn in waves).
 
 ## Recent Changes
 
 | Date | Change |
 |------|--------|
+| 2026-04-10 | Added enemy swarmer system: enemy pool, swarmer AI (seek player), wave spawning, bullet-enemy and enemy-player collisions, 30 tests |
 | 2026-04-10 | Added vec2 math module (src/vec2.h, src/vec2.c) with 28 tests; added to astro_blitz_lib |
 | 2026-04-10 | Added `task test` command; strengthened AGENTS.md with TDD lifecycle, test mandate, self-maintenance |
 | 2026-04-10 | Added unit tests for player, bullet, and game modules (49 tests across 4 suites, all passing) |
@@ -28,9 +29,9 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Known Issues / Next Steps
 
-- Implement basic enemy spawning (Swarmers first -- simplest behavior)
+- Implement basic enemy spawning (Swarmers first -- simplest behavior) ✅ done
+- Add bullet-enemy collision ✅ done
 - Add melee attack (right-click)
-- Add bullet-enemy collision
 - Decide on level structure (linear floors vs branching paths)
 - Source or create placeholder sprite assets
 
