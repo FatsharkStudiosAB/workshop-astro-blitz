@@ -7,6 +7,7 @@
 #include "audio.h"
 #include "bullet.h"
 #include "enemy.h"
+#include "particle.h"
 #include "player.h"
 #include "raylib.h"
 #include "settings.h"
@@ -43,6 +44,7 @@ typedef struct {
     Player player;
     BulletPool bullets;
     EnemyPool enemies;
+    ParticlePool particles;
     Tilemap tilemap;
     GameAudio audio;
     Camera2D camera;

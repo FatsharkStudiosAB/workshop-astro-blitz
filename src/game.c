@@ -102,9 +102,20 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                 bullet->active = false;
                 enemy->hp -= 1.0f;
                 audio_play_enemy_hit(&gs->audio);
+
+                /* Hit sparks */
+                particle_burst(&gs->particles, bullet->position, 6, 40.0f, 120.0f, 0.1f,
+                               0.3f, 2.5f, (Color){255, 200, 50, 255});
+
                 if (enemy->hp <= 0.0f) {
                     enemy->active = false;
                     gs->stats.kills++;
+
+                    /* Death explosion */
+                    particle_burst(&gs->particles, enemy->position, 15, 30.0f, 150.0f,
+                                   0.2f, 0.6f, 3.5f, (Color){255, 60, 30, 255});
+                    particle_burst(&gs->particles, enemy->position, 8, 20.0f, 80.0f, 0.3f,
+                                   0.8f, 2.0f, (Color){255, 160, 40, 200});
                 }
                 break; /* bullet consumed -- stop checking enemies */
             }
@@ -131,6 +142,11 @@ static void resolve_enemy_player_collisions(GameState *gs) {
             p->hp -= enemy->damage;
             enemy->active = false; /* swarmer dies on contact */
             audio_play_hit(&gs->audio);
+
+            /* Impact particles */
+            particle_burst(&gs->particles, enemy->position, 10, 30.0f, 120.0f, 0.15f,
+                           0.4f, 3.0f, (Color){255, 40, 20, 255});
+
             if (p->hp < 0.0f) {
                 p->hp = 0.0f;
             }
@@ -435,10 +451,22 @@ static void update_playing(GameState *gs) {
                                     Vector2Scale(gs->player.aim_direction, PLAYER_RADIUS + 2.0f));
         if (bullet_pool_fire(&gs->bullets, muzzle, gs->player.aim_direction)) {
             audio_play_shoot(&gs->audio);
+
+            /* Muzzle flash particles */
+            particle_burst(&gs->particles, muzzle, 4, 60.0f, 150.0f, 0.05f, 0.15f, 2.0f,
+                           (Color){255, 220, 100, 255});
         }
     }
 
+    /* ── Dash trail ───────────────────────────────────────────────────── */
+    if (gs->player.is_dashing) {
+        particle_emit(&gs->particles, gs->player.position,
+                      (Vector2){(float)GetRandomValue(-30, 30), (float)GetRandomValue(-30, 30)},
+                      0.3f, 5.0f, (Color){80, 160, 255, 150});
+    }
+
     bullet_pool_update(&gs->bullets, dt, gs->arena, &gs->tilemap);
+    particle_pool_update(&gs->particles, dt);
 
     /* ── Enemy spawning ───────────────────────────────────────────────── */
     gs->spawn_timer -= dt;
@@ -622,6 +650,7 @@ void game_init(GameState *gs) {
     player_init(&gs->player, center);
     bullet_pool_init(&gs->bullets);
     enemy_pool_init(&gs->enemies);
+    particle_pool_init(&gs->particles);
     gs->spawn_timer = SPAWN_INTERVAL;
     gs->phase = PHASE_PLAYING;
     gs->settings_return_phase = PHASE_MAIN_MENU;
@@ -695,6 +724,7 @@ void game_draw(const GameState *gs) {
         tilemap_draw(&gs->tilemap, gs->camera);
         bullet_pool_draw(&gs->bullets);
         enemy_pool_draw(&gs->enemies);
+        particle_pool_draw(&gs->particles);
         player_draw(&gs->player);
         EndMode2D();
 
@@ -714,6 +744,7 @@ void game_draw(const GameState *gs) {
             tilemap_draw(&gs->tilemap, gs->camera);
             bullet_pool_draw(&gs->bullets);
             enemy_pool_draw(&gs->enemies);
+            particle_pool_draw(&gs->particles);
             player_draw(&gs->player);
             EndMode2D();
             draw_hud(gs);

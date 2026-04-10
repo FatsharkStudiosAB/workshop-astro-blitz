@@ -30,6 +30,7 @@ add_library(astro_blitz_objs OBJECT
     src/enemy.c
     src/audio.c
     src/settings.c
+    src/particle.c
 )
 target_include_directories(astro_blitz_objs PUBLIC src)
 # Objects need Raylib headers (types, raymath inlines) at compile time, but
@@ -116,6 +117,11 @@ if(BUILD_TESTING)
     add_executable(test_settings tests/test_settings.c)
     target_link_libraries(test_settings PRIVATE unity astro_blitz_lib)
     add_test(NAME test_settings COMMAND test_settings)
+
+    # Particle module tests
+    add_executable(test_particle tests/test_particle.c)
+    target_link_libraries(test_particle PRIVATE unity astro_blitz_lib)
+    add_test(NAME test_particle COMMAND test_particle)
 
     # ── Integration tests (game objects + Raylib stubs, no real Raylib) ───
     add_library(raylib_stubs STATIC tests/raylib_stubs.c)
