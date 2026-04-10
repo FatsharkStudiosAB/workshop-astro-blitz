@@ -1,0 +1,17 @@
+---
+extends: default
+
+rules:
+  line-length:
+    max: 120
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+  truthy:
+    # Allow 'on' in YAML (common in CI configs, task definitions)
+    allowed-values: ['true', 'false', 'yes', 'no']
+  comments:
+    min-spaces-from-content: 1
+
+# Exclude Taskfile -- Go template syntax ({{.VAR}}) is not valid YAML
+ignore:
+  - Taskfile.yml

@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Linting and formatting: `task fmt` (changed files only) and `task fmt:all` (all files) with clang-format for C, yamllint for YAML, markdownlint-cli2 for Markdown
+- Linter configs: `.clang-format`, `.yamllint.yml`, `.markdownlint-cli2.yaml`
+- Installer tasks: `task install-yamllint`, `task install-markdownlint`
 - Task runner configuration (`Taskfile.yml`) with `task configure`, `task build`, `task run`, and `task clean`
 - Raylib 5.5 build tooling via CMake FetchContent -- `cmake -B build` fetches and builds Raylib automatically
 - Hello window: `src/main.c` opens an 800x600 window with "ASTRO BLITZ" title text
