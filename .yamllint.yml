@@ -7,7 +7,7 @@ rules:
     allow-non-breakable-words: true
     allow-non-breakable-inline-mappings: true
   truthy:
-    # Allow 'on' in YAML (common in CI configs, task definitions)
+    # Restrict truthy values to explicit booleans (avoid bare 'on'/'off' ambiguity)
     allowed-values: ['true', 'false', 'yes', 'no']
   comments:
     min-spaces-from-content: 1

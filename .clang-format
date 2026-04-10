@@ -16,7 +16,7 @@ ColumnLimit: 100
 # Always use braces (clang-format cannot enforce this, but keeps existing braces tidy)
 # Reinforced by -Wall -Wextra and code review
 
-# Pointer alignment: left (e.g. int* ptr)
+# Pointer alignment: right (e.g. int *ptr)
 PointerAlignment: Right
 
 # Sort includes

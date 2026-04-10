@@ -50,7 +50,7 @@ tasks:
   # ── Linting / Formatting ───────────────────────────────────────────────────
 
   fmt:
-    desc: Run linters for file types changed vs HEAD (use fmt:all to run everything)
+    desc: Run linters for changed file types vs HEAD (use fmt:all to run everything)
     vars:
       CHANGED_FILES:
         sh: (git diff --name-only HEAD; git ls-files --others --exclude-standard)
@@ -86,7 +86,7 @@ tasks:
     cmds:
       - cmd: powershell -Command "Get-ChildItem -Recurse -Include '*.c','*.h' -Path src | ForEach-Object { clang-format -i $_.FullName }"
         platforms: [windows]
-      - cmd: find src -name '*.c' -o -name '*.h' | xargs clang-format -i
+      - cmd: find src \( -name '*.c' -o -name '*.h' \) -exec clang-format -i {} +
         platforms: [linux, darwin]
 
   fmt:yaml:

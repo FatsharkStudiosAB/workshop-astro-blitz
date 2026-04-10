@@ -11,7 +11,7 @@ Top-down sci-fi roguelike shooter built during Fatshark's agentic coding worksho
 | Run the game | `task run` (or just `task`) |
 | Clean build artifacts | `task clean` |
 | Run tests | *(TBD)* |
-| Lint changed files | `task fmt` |
+| Lint changed file types | `task fmt` |
 | Lint all files | `task fmt:all` |
 | List all tasks | `task --list-all` |
 
