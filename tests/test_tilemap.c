@@ -319,6 +319,143 @@ void test_world_larger_than_screen(void) {
     TEST_ASSERT_TRUE(WORLD_HEIGHT > SCREEN_HEIGHT);
 }
 
+/* ── Flow field tests ──────────────────────────────────────────────────────── */
+
+/*
+ * Helper: build a small known tilemap for flow field testing.
+ * Uses only a 10x10 region in the top-left of the full grid.
+ * All tiles outside that region are TILE_EMPTY (default from init).
+ */
+static void setup_flow_test_map(Tilemap *tm) {
+    tilemap_init(tm);
+    /* Place a vertical wall from (5,1) to (5,8) -- blocks direct path */
+    for (int y = 1; y <= 8; y++) {
+        tm->tiles[y][5] = TILE_WALL;
+    }
+}
+
+void test_flow_field_target_tile_distance_zero(void) {
+    Tilemap tm;
+    tilemap_init(&tm);
+
+    /* Target at center of tile (10, 10) */
+    float tx = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    float ty = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    tilemap_compute_flow_field(&tm, tx, ty);
+
+    TEST_ASSERT_EQUAL_INT(0, tm.flow_dist[10][10]);
+}
+
+void test_flow_field_adjacent_tiles_distance_one(void) {
+    Tilemap tm;
+    tilemap_init(&tm);
+
+    float tx = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    float ty = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    tilemap_compute_flow_field(&tm, tx, ty);
+
+    /* 4 cardinal neighbors should be distance 1 */
+    TEST_ASSERT_EQUAL_INT(1, tm.flow_dist[10][11]); /* right */
+    TEST_ASSERT_EQUAL_INT(1, tm.flow_dist[10][9]);  /* left */
+    TEST_ASSERT_EQUAL_INT(1, tm.flow_dist[11][10]); /* below */
+    TEST_ASSERT_EQUAL_INT(1, tm.flow_dist[9][10]);  /* above */
+}
+
+void test_flow_field_wall_is_unreachable(void) {
+    Tilemap tm;
+    tilemap_init(&tm);
+    tm.tiles[5][5] = TILE_WALL;
+
+    float tx = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    float ty = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    tilemap_compute_flow_field(&tm, tx, ty);
+
+    TEST_ASSERT_EQUAL_INT(FLOW_UNREACHABLE, tm.flow_dist[5][5]);
+}
+
+void test_flow_field_direction_points_toward_target(void) {
+    Tilemap tm;
+    tilemap_init(&tm);
+
+    /* Target at tile (10, 10) */
+    float tx = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    float ty = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    tilemap_compute_flow_field(&tm, tx, ty);
+
+    /* Tile (10, 12) is 2 tiles right of target -- flow should point left (-1, 0) */
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, -1.0f, tm.flow[10][12].x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, tm.flow[10][12].y);
+
+    /* Tile (12, 10) is 2 tiles below target -- flow should point up (0, -1) */
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, tm.flow[12][10].x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, -1.0f, tm.flow[12][10].y);
+}
+
+void test_flow_field_paths_around_wall(void) {
+    Tilemap tm;
+    setup_flow_test_map(&tm);
+
+    /* Target at tile (3, 5) -- left of the vertical wall at x=5 */
+    float tx = 3.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    float ty = 5.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    tilemap_compute_flow_field(&tm, tx, ty);
+
+    /* Tile (7, 5) is right of the wall -- it can't go straight left
+     * through the wall. BFS distance should be > 4 (direct would be 4) */
+    TEST_ASSERT_TRUE(tm.flow_dist[5][7] > 4);
+
+    /* But it should still be reachable (the wall has gaps at top y=0 and bottom y=9) */
+    TEST_ASSERT_TRUE(tm.flow_dist[5][7] != FLOW_UNREACHABLE);
+}
+
+void test_flow_field_unreachable_enclosed_area(void) {
+    Tilemap tm;
+    tilemap_init(&tm);
+
+    /* Create a fully enclosed box around tile (10, 10) */
+    for (int x = 9; x <= 11; x++) {
+        tm.tiles[9][x] = TILE_WALL;
+        tm.tiles[11][x] = TILE_WALL;
+    }
+    tm.tiles[10][9] = TILE_WALL;
+    tm.tiles[10][11] = TILE_WALL;
+
+    /* Target at (5, 5) -- outside the box */
+    float tx = 5.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    float ty = 5.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    tilemap_compute_flow_field(&tm, tx, ty);
+
+    /* Tile (10, 10) is enclosed -- should be unreachable */
+    TEST_ASSERT_EQUAL_INT(FLOW_UNREACHABLE, tm.flow_dist[10][10]);
+}
+
+void test_flow_field_target_tile_has_zero_flow(void) {
+    Tilemap tm;
+    tilemap_init(&tm);
+
+    float tx = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    float ty = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    tilemap_compute_flow_field(&tm, tx, ty);
+
+    /* The target tile itself should have zero flow direction */
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, tm.flow[10][10].x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, tm.flow[10][10].y);
+}
+
+void test_flow_field_wall_has_zero_flow(void) {
+    Tilemap tm;
+    tilemap_init(&tm);
+    tm.tiles[5][5] = TILE_WALL;
+
+    float tx = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    float ty = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    tilemap_compute_flow_field(&tm, tx, ty);
+
+    /* Wall tiles should have zero flow direction */
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, tm.flow[5][5].x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, tm.flow[5][5].y);
+}
+
 /* ── Runner ────────────────────────────────────────────────────────────────── */
 
 int main(void) {
@@ -363,6 +500,16 @@ int main(void) {
     RUN_TEST(test_spawn_clear_radius_positive);
     RUN_TEST(test_obstacle_density_in_range);
     RUN_TEST(test_world_larger_than_screen);
+
+    /* Flow field */
+    RUN_TEST(test_flow_field_target_tile_distance_zero);
+    RUN_TEST(test_flow_field_adjacent_tiles_distance_one);
+    RUN_TEST(test_flow_field_wall_is_unreachable);
+    RUN_TEST(test_flow_field_direction_points_toward_target);
+    RUN_TEST(test_flow_field_paths_around_wall);
+    RUN_TEST(test_flow_field_unreachable_enclosed_area);
+    RUN_TEST(test_flow_field_target_tile_has_zero_flow);
+    RUN_TEST(test_flow_field_wall_has_zero_flow);
 
     return UNITY_END();
 }

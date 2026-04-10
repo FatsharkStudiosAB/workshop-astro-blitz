@@ -298,6 +298,7 @@ void game_update(GameState *gs) {
     }
 
     /* ── Enemy update ─────────────────────────────────────────────────── */
+    tilemap_compute_flow_field(&gs->tilemap, gs->player.position.x, gs->player.position.y);
     enemy_pool_update(&gs->enemies, dt, gs->player.position, gs->arena, &gs->tilemap);
 
     /* ── Collisions ───────────────────────────────────────────────────── */

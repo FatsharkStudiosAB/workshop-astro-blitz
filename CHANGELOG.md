@@ -7,6 +7,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- BFS flow field pathfinding for enemies: enemies now navigate around obstacles instead of getting stuck against walls
+- `tilemap_compute_flow_field()` function computes a grid-wide BFS from the player's position each frame
+- Tilemap struct now stores flow direction (`flow`) and BFS distance (`flow_dist`) arrays
+- 8 new unit tests for flow field computation (`test_tilemap.c`) and 3 new tests for enemy flow field movement (`test_enemy.c`)
 - Tilemap system (`src/tilemap.c/h`): procedural world generation with a 128x96 tile grid (~4096x3072 pixels). Generates border walls, randomly scattered obstacles, and obstacle clusters. Spawn area is guaranteed clear.
 - Camera2D follows the player, with edge clamping to keep the viewport within world bounds
 - Tile collision for player, enemies, and bullets: entities slide along walls, bullets are destroyed on wall impact
@@ -16,6 +20,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Enemy swarmers now use BFS flow field for pathfinding when far from the player (>3 tiles); fall back to direct seek at close range for smooth final approach
 - Game world is now much larger than the screen (4096x3072 vs 800x600); player moves freely across the full area
 - All entity rendering happens in world-space via `BeginMode2D`/`EndMode2D`; HUD remains in screen-space
 - Mouse aiming uses `GetScreenToWorld2D` to correctly aim in world coordinates through the camera
