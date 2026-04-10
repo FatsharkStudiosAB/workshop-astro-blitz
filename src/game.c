@@ -6,64 +6,77 @@
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
+/* Maximum attempts per enemy to find a walkable spawn position */
+#define SPAWN_RETRIES 5
+
 /* Spawn a wave of enemies just outside the camera viewport */
 static void spawn_wave(GameState *gs) {
     int count = GetRandomValue(SPAWN_MIN_GROUP, SPAWN_MAX_GROUP);
 
-    /* Calculate viewport edges in world space */
-    float half_w = (float)SCREEN_WIDTH / 2.0f;
-    float half_h = (float)SCREEN_HEIGHT / 2.0f;
+    /* Calculate viewport edges in world space from the active camera */
+    float screen_w = (float)GetScreenWidth();
+    float screen_h = (float)GetScreenHeight();
+    float zoom = (gs->camera.zoom != 0.0f) ? gs->camera.zoom : 1.0f;
     float cam_x = gs->camera.target.x;
     float cam_y = gs->camera.target.y;
 
     /* Spawn margin: a little outside the visible area */
     float margin = 40.0f;
-    float left = cam_x - half_w - margin;
-    float right = cam_x + half_w + margin;
-    float top = cam_y - half_h - margin;
-    float bottom = cam_y + half_h + margin;
+    float left = cam_x - (gs->camera.offset.x / zoom) - margin;
+    float right = cam_x + ((screen_w - gs->camera.offset.x) / zoom) + margin;
+    float top = cam_y - (gs->camera.offset.y / zoom) - margin;
+    float bottom = cam_y + ((screen_h - gs->camera.offset.y) / zoom) + margin;
 
-    /* Clamp to world bounds */
+    /* Clamp to the walkable interior, not the solid border-wall tiles */
     Rectangle wb = gs->arena;
-    if (left < wb.x) {
-        left = wb.x + 10.0f;
+    float spawn_padding = 10.0f;
+    float min_spawn_x = wb.x + TILE_SIZE + spawn_padding;
+    float max_spawn_x = wb.x + wb.width - TILE_SIZE - spawn_padding;
+    float min_spawn_y = wb.y + TILE_SIZE + spawn_padding;
+    float max_spawn_y = wb.y + wb.height - TILE_SIZE - spawn_padding;
+
+    if (left < min_spawn_x) {
+        left = min_spawn_x;
     }
-    if (right > wb.x + wb.width) {
-        right = wb.x + wb.width - 10.0f;
+    if (right > max_spawn_x) {
+        right = max_spawn_x;
     }
-    if (top < wb.y) {
-        top = wb.y + 10.0f;
+    if (top < min_spawn_y) {
+        top = min_spawn_y;
     }
-    if (bottom > wb.y + wb.height) {
-        bottom = wb.y + wb.height - 10.0f;
+    if (bottom > max_spawn_y) {
+        bottom = max_spawn_y;
     }
 
     for (int i = 0; i < count; i++) {
-        Vector2 pos;
-        int edge = GetRandomValue(0, 3);
+        for (int attempt = 0; attempt < SPAWN_RETRIES; attempt++) {
+            Vector2 pos;
+            int edge = GetRandomValue(0, 3);
 
-        switch (edge) {
-        case 0: /* top */
-            pos.x = (float)GetRandomValue((int)left, (int)right);
-            pos.y = top;
-            break;
-        case 1: /* bottom */
-            pos.x = (float)GetRandomValue((int)left, (int)right);
-            pos.y = bottom;
-            break;
-        case 2: /* left */
-            pos.x = left;
-            pos.y = (float)GetRandomValue((int)top, (int)bottom);
-            break;
-        default: /* right */
-            pos.x = right;
-            pos.y = (float)GetRandomValue((int)top, (int)bottom);
-            break;
-        }
+            switch (edge) {
+            case 0: /* top */
+                pos.x = (float)GetRandomValue((int)left, (int)right);
+                pos.y = top;
+                break;
+            case 1: /* bottom */
+                pos.x = (float)GetRandomValue((int)left, (int)right);
+                pos.y = bottom;
+                break;
+            case 2: /* left */
+                pos.x = left;
+                pos.y = (float)GetRandomValue((int)top, (int)bottom);
+                break;
+            default: /* right */
+                pos.x = right;
+                pos.y = (float)GetRandomValue((int)top, (int)bottom);
+                break;
+            }
 
-        /* Only spawn in walkable tiles */
-        if (!tilemap_is_solid(&gs->tilemap, pos.x, pos.y)) {
-            enemy_pool_spawn(&gs->enemies, ENEMY_SWARMER, pos);
+            /* Spawn if the position is walkable; otherwise retry */
+            if (!tilemap_is_solid(&gs->tilemap, pos.x, pos.y)) {
+                enemy_pool_spawn(&gs->enemies, ENEMY_SWARMER, pos);
+                break;
+            }
         }
     }
 }
@@ -126,9 +139,11 @@ static void resolve_enemy_player_collisions(GameState *gs) {
 static void update_camera(GameState *gs) {
     gs->camera.target = gs->player.position;
 
-    /* Clamp camera so it doesn't show outside the world */
-    float half_w = gs->camera.offset.x;
-    float half_h = gs->camera.offset.y;
+    /* Clamp camera so it doesn't show outside the world.
+     * offset is in screen pixels; convert to world units via zoom. */
+    float zoom = (gs->camera.zoom != 0.0f) ? gs->camera.zoom : 1.0f;
+    float half_w = gs->camera.offset.x / zoom;
+    float half_h = gs->camera.offset.y / zoom;
     Rectangle wb = gs->arena;
 
     if (gs->camera.target.x - half_w < wb.x) {

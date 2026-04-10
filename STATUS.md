@@ -15,6 +15,7 @@ When it grows too long, summarize older entries and remove resolved items.
 
 | Date | Change |
 |------|--------|
+| 2026-04-10 | PR #16 review fixes: spawn_wave() uses camera state for viewport calc, clamps to walkable interior (TILE_SIZE inset), retries on solid tiles; update_camera() accounts for zoom; tilemap PRNG replaced with local xorshift32 (no global srand/rand coupling); tests derive arena/screen constants from headers. |
 | 2026-04-10 | Added Camera2D, tilemap module, procedural generation, and scrollable world (128x96 tile grid, ~4096x3072 px). Player, enemies, and bullets now operate in world coordinates. Camera follows player with edge clamping. Obstacles block movement and bullets. Enemies spawn offscreen relative to camera. 27 new tilemap tests, updated game/bullet/enemy tests. |
 | 2026-04-10 | Upgraded player and swarmer visuals: layered neon sci-fi art with glow, outlines, facing indicators |
 | 2026-04-10 | Added game-over state: death screen with stats (kills, time, waves), restart with R key |

@@ -4,26 +4,52 @@
 
 #include "tilemap.h"
 #include <math.h>
-#include <stdlib.h>
 #include <string.h>
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
-/* Simple seeded random: uses C stdlib srand/rand. Not cryptographic --
- * fine for procedural level generation. */
+/* Tilemap-local PRNG state.
+ * This avoids mutating the global C RNG state used by srand()/rand(),
+ * which may also be used by Raylib on some platforms. */
+static unsigned int tilemap_rng_state = 2463534242u;
+
+/* Simple seeded random for procedural level generation.
+ * Not cryptographic; deterministic for a given seed. */
 static void seed_rng(unsigned int seed) {
     if (seed == 0) {
-        /* Use a time-based or Raylib random seed */
+        /* Use a Raylib-generated seed, but do not reseed the global C RNG. */
         seed = (unsigned int)GetRandomValue(1, 2147483647);
     }
-    srand(seed);
+
+    /* xorshift32 must not be seeded with 0. */
+    if (seed == 0) {
+        seed = 2463534242u;
+    }
+
+    tilemap_rng_state = seed;
+}
+
+static unsigned int next_random_u32(void) {
+    unsigned int x = tilemap_rng_state;
+
+    /* xorshift32 */
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+
+    tilemap_rng_state = x;
+    return x;
 }
 
 static int rand_range(int min, int max) {
+    unsigned int span;
+
     if (min >= max) {
         return min;
     }
-    return min + (rand() % (max - min + 1));
+
+    span = (unsigned int)(max - min + 1);
+    return min + (int)(next_random_u32() % span);
 }
 
 /* ── Public ────────────────────────────────────────────────────────────────── */

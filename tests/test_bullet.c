@@ -6,12 +6,13 @@
  */
 
 #include "bullet.h"
+#include "tilemap.h"
 #include "unity.h"
 #include <string.h>
 
 /* ── Test helpers ──────────────────────────────────────────────────────────── */
 
-static const Rectangle TEST_ARENA = {0.0f, 0.0f, 4096.0f, 3072.0f};
+static const Rectangle TEST_ARENA = {0.0f, 0.0f, (float)WORLD_WIDTH, (float)WORLD_HEIGHT};
 static const float FLOAT_TOLERANCE = 0.001f;
 
 /* ── setUp / tearDown ──────────────────────────────────────────────────────── */

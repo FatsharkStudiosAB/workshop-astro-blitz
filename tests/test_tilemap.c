@@ -6,6 +6,7 @@
  * world bounds.
  */
 
+#include "game.h"
 #include "tilemap.h"
 #include "unity.h"
 #include <math.h>
@@ -314,8 +315,8 @@ void test_obstacle_density_in_range(void) {
 
 void test_world_larger_than_screen(void) {
     /* The whole point: world must be bigger than the viewport */
-    TEST_ASSERT_TRUE(WORLD_WIDTH > 800);
-    TEST_ASSERT_TRUE(WORLD_HEIGHT > 600);
+    TEST_ASSERT_TRUE(WORLD_WIDTH > SCREEN_WIDTH);
+    TEST_ASSERT_TRUE(WORLD_HEIGHT > SCREEN_HEIGHT);
 }
 
 /* ── Runner ────────────────────────────────────────────────────────────────── */
