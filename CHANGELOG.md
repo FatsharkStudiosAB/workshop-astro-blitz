@@ -11,6 +11,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Arena with boundary clamping -- player and bullets stay within the play area
 - HUD: health bar and dash cooldown indicator
 - New source modules: `game.c/h`, `player.c/h`, `bullet.c/h`
+- Unit tests for player, bullet, and game modules (`tests/test_player.c`, `tests/test_bullet.c`, `tests/test_game.c`)
+- Static library target `astro_blitz_lib` for sharing game logic between exe and tests
 - Unity test framework v2.6.1 with CTest integration and sample test (`tests/test_sample.c`)
 - Task runner configuration (`Taskfile.yml`) with `task configure`, `task build`, `task run`, and `task clean`
 - Raylib 5.5 build tooling via CMake FetchContent -- `cmake -B build` fetches and builds Raylib automatically

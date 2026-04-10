@@ -20,15 +20,18 @@ set(BUILD_GAMES    OFF CACHE BOOL "Build raylib example games")
 
 FetchContent_MakeAvailable(raylib)
 
-# ── Game executable ──────────────────────────────────────────────────────────
-add_executable(astro_blitz
-    src/main.c
+# ── Game logic library (shared between exe and tests) ────────────────────────
+add_library(astro_blitz_lib STATIC
     src/game.c
     src/player.c
     src/bullet.c
 )
-target_include_directories(astro_blitz PRIVATE src)
-target_link_libraries(astro_blitz PRIVATE raylib)
+target_include_directories(astro_blitz_lib PUBLIC src)
+target_link_libraries(astro_blitz_lib PUBLIC raylib)
+
+# ── Game executable ──────────────────────────────────────────────────────────
+add_executable(astro_blitz src/main.c)
+target_link_libraries(astro_blitz PRIVATE astro_blitz_lib)
 
 # On Windows, link required system libraries
 if(WIN32)
@@ -51,4 +54,19 @@ if(BUILD_TESTING)
     add_executable(test_sample tests/test_sample.c)
     target_link_libraries(test_sample PRIVATE unity)
     add_test(NAME test_sample COMMAND test_sample)
+
+    # Player module tests
+    add_executable(test_player tests/test_player.c)
+    target_link_libraries(test_player PRIVATE unity astro_blitz_lib)
+    add_test(NAME test_player COMMAND test_player)
+
+    # Bullet module tests
+    add_executable(test_bullet tests/test_bullet.c)
+    target_link_libraries(test_bullet PRIVATE unity astro_blitz_lib)
+    add_test(NAME test_bullet COMMAND test_bullet)
+
+    # Game module tests
+    add_executable(test_game tests/test_game.c)
+    target_link_libraries(test_game PRIVATE unity astro_blitz_lib)
+    add_test(NAME test_game COMMAND test_game)
 endif()

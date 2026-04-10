@@ -149,6 +149,9 @@ Everything below this line is lookup material. Behavioral rules are all above.
 | `src/bullet.c/h` | Bullet pool, spawn/update/draw projectiles |
 | `tests/` | Unit tests (Unity framework) |
 | `tests/test_sample.c` | Sample test verifying framework works |
+| `tests/test_player.c` | Player module tests (init, dash state, constants) |
+| `tests/test_bullet.c` | Bullet pool tests (fire, rate limit, update, bounds, lifetime) |
+| `tests/test_game.c` | Game module tests (init, arena, player placement) |
 | `CMakeLists.txt` | Build configuration -- fetches Raylib 5.5 + Unity 2.6.1 via FetchContent |
 | `build/` | Build output (gitignored) |
 | `design/` | Game design documents and reference assets |
