@@ -318,7 +318,7 @@ Upgrades activate immediately on pickup (no menu).
 | Quick Loader | +15% fire rate | Additive |
 | Targeting Module | +4 ranged damage | Additive |
 | Sharpened Edge | +6 melee damage | Additive |
-| Reflex Enhancer | -0.15s dash cooldown | Additive (min 0.2s) |
+| Reflex Enhancer | -0.15s dash cooldown | Additive (min 0.2s before talent effects) |
 
 ### On-Hit Effects
 
@@ -343,8 +343,10 @@ Upgrades activate immediately on pickup (no menu).
 **Synergy design:** Percentage bonuses from modifiers and passives
 stack **additively with each other** (not multiplicatively). A
 Scorching weapon modifier + Incendiary Rounds passive = combined burn
-(longer duration, not double proc). See the
-[Damage Model](#damage-model) for the full formula.
+(longer duration, not double proc). Same for slow effects: Chilling
+modifier + Cryo Coating passive = extended slow duration, not stacked
+slow percentage. See the [Damage Model](#damage-model) for the full
+formula.
 
 ## Meta-Progression
 
@@ -378,16 +380,18 @@ weapon. The player selects one before each run.
 
 Talents are build-defining abilities that fundamentally alter playstyle.
 The player selects one before each run. 6--8 total talents; unlocked
-gradually. Each talent's percentage bonuses feed into the same stat
-formula as modifiers and passives (additive within the percentage
-pool). Flat bonuses add directly.
+gradually. Talents with percentage bonuses (e.g., Berserker's +50%
+melee damage, Gunslinger's +30% ranged damage) feed into the same
+additive pool as modifiers and passives. Flat bonuses (e.g.,
+Juggernaut's +50 max HP) add directly. Mechanical talents (Pyromaniac,
+Ghost) have unique effects described in their entries.
 
 | Talent | Type | Effect | Unlock condition | Cost |
 |--------|------|--------|-----------------|------|
 | **None** | -- | No talent (default) | Default | Free |
 | **Pyromaniac** | Mechanical | Dash leaves a fire trail (5 DPS, 2s). Immune to fire damage. | Complete a run | 100 |
 | **Berserker** | Stat tradeoff | +50% melee damage, +25% melee speed. -30% ranged damage. | Kill 50 enemies with melee in one run | 75 |
-| **Gunslinger** | Stat tradeoff | +30% ranged damage, +20% fire rate. -25% max HP. | Kill 500 enemies (cumulative) | 75 |
+| **Gunslinger** | Stat tradeoff | +30% ranged damage, +20% fire rate. -25 max HP. | Kill 500 enemies (cumulative) | 75 |
 | **Ghost** | Mechanical | Dash cooldown halved. Dash distance doubled. Become invisible for 0.5s after dash. | Reach floor 5 without taking damage on floor 1 | 150 |
 | **Scavenger** | Mechanical | Start each floor with a random passive upgrade. +25% drop rates. -15% damage. | Collect 30 upgrades (cumulative) | 100 |
 | **Juggernaut** | Stat tradeoff | +50 max HP, +Thorn Aura. -25% movement speed. | Take 1000 damage (cumulative) | 75 |
@@ -475,20 +479,20 @@ final_damage   = base_damage * pct_multiplier + flat_bonus
 
 | Stat | How it combines |
 |------|-----------------|
-| **Fire rate** | `final_rate = base_rate * (1 + sum_of_pct_bonuses)`. Rapid (+25%) and Quick Loader (+15%) stack: `base * 1.40`. |
+| **Fire rate** | `final_rate = max(base_rate * (1 + sum_of_pct_bonuses), base_rate * 0.10)`. Rapid (+25%) and Quick Loader (+15%) stack: `base * 1.40`. Heavy (-20%) is a negative bonus. Minimum: 10% of base rate. |
 | **Projectile count** | Fixed per weapon (e.g., Shotgun = 5 pellets). Not affected by modifiers or passives. |
 | **Bounces** | Base bounces (3) + flat modifier bonus (Bouncing: +2) = 5 total. |
 | **DoT effects** | Scorching modifier and Incendiary Rounds passive combine by extending duration, not stacking damage ticks. |
 | **Slow effects** | Chilling modifier and Cryo Coating passive combine by extending duration. Slow percentage does not stack. |
-| **On-hit procs** | Each source rolls independently per hit. |
+| **On-hit procs (non-status)** | Each non-status proc source (e.g., Chain Lightning, Explosive Tips) rolls independently per hit. Status effects that apply DoT or slow follow the DoT/Slow rules above (merge by extending duration, not double-apply). |
 
 **Player stats:**
 
 | Stat | How it combines |
 |------|-----------------|
-| **Movement speed** | `final_speed = base_speed * (1 + sum_of_pct_bonuses)`. Adrenaline Shot (+12%) stacks additively with talent bonuses. Juggernaut's -25% is a negative bonus in the same sum. |
-| **Max HP** | `final_hp = base_hp + sum_of_flat_bonuses`. Reinforced Plating (+15) and Juggernaut (+50) stack additively. |
-| **Dash cooldown** | `final_cd = max(base_cd - sum_of_flat_reductions, 0.2)`. Reflex Enhancer (-0.15s) stacks with floor. Ghost talent halves the result. |
+| **Movement speed** | `final_speed = max(base_speed * (1 + sum_of_pct_bonuses), base_speed * 0.25)`. Adrenaline Shot (+12%) stacks additively with talent bonuses. Juggernaut's -25% is a negative bonus in the same sum. Minimum: 25% of base speed. |
+| **Max HP** | `final_hp = max(base_hp + sum_of_flat_bonuses, 1)`. Reinforced Plating (+15), Juggernaut (+50), and Gunslinger (-25) all stack additively. Minimum 1 HP. |
+| **Dash cooldown** | `clamped_cd = max(base_cd - sum_of_flat_reductions, 0.2)` then `final_cd = Ghost ? clamped_cd * 0.5 : clamped_cd`. Reflex Enhancer (-0.15s) stacks additively with other flat dash-cooldown reductions. The 0.2s floor is applied before Ghost, so Ghost can reduce the final cooldown below 0.2s. |
 
 ### Enemy HP Scaling
 
