@@ -6,8 +6,8 @@ Top-down sci-fi roguelike shooter built during Fatshark's agentic coding worksho
 
 | Task | Command |
 |------|---------|
-| Build the game | `gcc -std=c99 -Wall -Wextra -o astro_blitz src/*.c -Iinclude -Llib -lraylib -lm` *(requires `src/`, `include/`, and Raylib installed in `lib/`)* |
-| Run the game | `./astro_blitz` (Linux/macOS) or `astro_blitz.exe` (Windows) *(after a successful build)* |
+| Build the game | `cmake -B build -G "Visual Studio 17 2022" -A x64` then `cmake --build build --config Release` |
+| Run the game | `build/Release/astro_blitz.exe` *(after a successful build)* |
 | Run tests | *(TBD -- no test framework yet)* |
 
 ## Key Files
@@ -137,10 +137,10 @@ Everything below this line is lookup material. Behavioral rules are all above.
 
 | Path | What |
 |------|------|
-| `src/` | C source files (`.c`) *(planned)* |
-| `include/` | Header files (`.h`) *(planned)* |
-| `assets/` | Game assets: sprites (PNG), audio (WAV/OGG) *(planned)* |
-| `lib/` | Third-party libraries (Raylib binaries) *(planned)* |
+| `src/` | Game source code |
+| `src/main.c` | Entry point -- window init, main loop |
+| `CMakeLists.txt` | Build configuration -- fetches Raylib 5.5 via FetchContent |
+| `build/` | Build output (gitignored) |
 | `design/` | Game design documents and reference assets |
 | `design/DESIGN.md` | Game design document |
 | `design/assets/` | Reference images, mockups, sprites |
@@ -148,12 +148,10 @@ Everything below this line is lookup material. Behavioral rules are all above.
 | `CHANGELOG.md` | User-facing change history |
 | `AGENTS.md` | Agent instructions (this file) |
 
-*(Layout will expand as the game takes shape.)*
-
 ## Environment
 
 - **Engine/Framework:** Raylib 5.5
 - **Language:** C (C99)
-- **Build:** CMake or direct compiler invocation (gcc/MSVC)
+- **Build:** CMake with FetchContent (auto-downloads Raylib). Configure: `cmake -B build -G "Visual Studio 17 2022" -A x64`. Build: `cmake --build build --config Release`. Executable: `build/Release/astro_blitz.exe`.
 - **Asset formats:** PNG (sprites), WAV/OGG (audio)
 - **Platform:** Windows (primary), cross-platform possible via Raylib
