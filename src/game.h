@@ -34,6 +34,25 @@ typedef enum {
 /* Maximum number of entries in a menu list */
 #define MAX_MENU_ITEMS 5
 
+/* ── Damage numbers ───────────────────────────────────────────────────────── */
+
+#define MAX_DAMAGE_NUMBERS 32
+#define DAMAGE_NUMBER_LIFETIME 0.8f
+#define DAMAGE_NUMBER_RISE_SPEED 60.0f
+
+typedef struct {
+    Vector2 position;
+    float lifetime;
+    float max_lifetime;
+    int value;
+    Color color;
+    bool active;
+} DamageNumber;
+
+typedef struct {
+    DamageNumber numbers[MAX_DAMAGE_NUMBERS];
+} DamageNumberPool;
+
 /* Run statistics shown on the game-over screen */
 typedef struct {
     int kills;           /* total enemies killed this run */
@@ -46,6 +65,7 @@ typedef struct {
     BulletPool bullets;
     EnemyPool enemies;
     ParticlePool particles;
+    DamageNumberPool damage_numbers;
     Tilemap tilemap;
     GameAudio audio;
     Camera2D camera;

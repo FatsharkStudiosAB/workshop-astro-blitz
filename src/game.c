@@ -3,11 +3,69 @@
  */
 
 #include "game.h"
+#include <string.h>
 
-/* ── Helpers ───────────────────────────────────────────────────────────────── */
+/* ── Constants ─────────────────────────────────────────────────────────────── */
 
 /* Maximum attempts per enemy to find a walkable spawn position */
 #define SPAWN_RETRIES 5
+
+/* Hit flash duration in seconds */
+#define HIT_FLASH_DURATION 0.1f
+
+/* ── Damage number helpers ─────────────────────────────────────────────────── */
+
+static void damage_number_pool_init(DamageNumberPool *pool) {
+    memset(pool->numbers, 0, sizeof(pool->numbers));
+}
+
+static void damage_number_spawn(DamageNumberPool *pool, Vector2 pos, int value, Color color) {
+    for (int i = 0; i < MAX_DAMAGE_NUMBERS; i++) {
+        DamageNumber *dn = &pool->numbers[i];
+        if (!dn->active) {
+            dn->position = pos;
+            dn->value = value;
+            dn->color = color;
+            dn->lifetime = DAMAGE_NUMBER_LIFETIME;
+            dn->max_lifetime = DAMAGE_NUMBER_LIFETIME;
+            dn->active = true;
+            return;
+        }
+    }
+}
+
+static void damage_number_pool_update(DamageNumberPool *pool, float dt) {
+    for (int i = 0; i < MAX_DAMAGE_NUMBERS; i++) {
+        DamageNumber *dn = &pool->numbers[i];
+        if (!dn->active) {
+            continue;
+        }
+        dn->position.y -= DAMAGE_NUMBER_RISE_SPEED * dt;
+        dn->lifetime -= dt;
+        if (dn->lifetime <= 0.0f) {
+            dn->active = false;
+        }
+    }
+}
+
+static void damage_number_pool_draw(const DamageNumberPool *pool) {
+    for (int i = 0; i < MAX_DAMAGE_NUMBERS; i++) {
+        const DamageNumber *dn = &pool->numbers[i];
+        if (!dn->active) {
+            continue;
+        }
+        float ratio = dn->lifetime / dn->max_lifetime;
+        unsigned char alpha = (unsigned char)(ratio * 255.0f);
+        Color c = dn->color;
+        c.a = alpha;
+        const char *text = TextFormat("%d", dn->value);
+        int font_size = 16;
+        int w = MeasureText(text, font_size);
+        DrawText(text, (int)(dn->position.x - w / 2.0f), (int)dn->position.y, font_size, c);
+    }
+}
+
+/* ── Helpers ────────────────────────────────────────────────────────────────── */
 
 /* Spawn a wave of enemies just outside the camera viewport */
 static void spawn_wave(GameState *gs) {
@@ -101,11 +159,16 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                                        enemy->radius)) {
                 bullet->active = false;
                 enemy->hp -= 1.0f;
+                enemy->hit_flash = HIT_FLASH_DURATION;
                 audio_play_enemy_hit(&gs->audio);
 
                 /* Hit sparks */
                 particle_burst(&gs->particles, bullet->position, 6, 40.0f, 120.0f, 0.1f,
                                0.3f, 2.5f, (Color){255, 200, 50, 255});
+
+                /* Damage number */
+                damage_number_spawn(&gs->damage_numbers, enemy->position, 1,
+                                    (Color){255, 255, 100, 255});
 
                 if (enemy->hp <= 0.0f) {
                     enemy->active = false;
@@ -144,6 +207,10 @@ static void resolve_enemy_player_collisions(GameState *gs) {
             enemy->active = false; /* swarmer dies on contact */
             audio_play_hit(&gs->audio);
             screenshake_add_trauma(&gs->shake, 0.35f);
+
+            /* Damage number on player */
+            damage_number_spawn(&gs->damage_numbers, p->position, (int)enemy->damage,
+                                (Color){255, 60, 60, 255});
 
             /* Impact particles */
             particle_burst(&gs->particles, enemy->position, 10, 30.0f, 120.0f, 0.15f,
@@ -469,6 +536,7 @@ static void update_playing(GameState *gs) {
 
     bullet_pool_update(&gs->bullets, dt, gs->arena, &gs->tilemap);
     particle_pool_update(&gs->particles, dt);
+    damage_number_pool_update(&gs->damage_numbers, dt);
 
     /* ── Enemy spawning ───────────────────────────────────────────────── */
     gs->spawn_timer -= dt;
@@ -654,6 +722,7 @@ void game_init(GameState *gs) {
     bullet_pool_init(&gs->bullets);
     enemy_pool_init(&gs->enemies);
     particle_pool_init(&gs->particles);
+    damage_number_pool_init(&gs->damage_numbers);
     screenshake_init(&gs->shake);
     gs->spawn_timer = SPAWN_INTERVAL;
     gs->phase = PHASE_PLAYING;
@@ -732,6 +801,7 @@ void game_draw(const GameState *gs) {
         bullet_pool_draw(&gs->bullets);
         enemy_pool_draw(&gs->enemies);
         particle_pool_draw(&gs->particles);
+        damage_number_pool_draw(&gs->damage_numbers);
         player_draw(&gs->player);
         EndMode2D();
 

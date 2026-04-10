@@ -74,6 +74,7 @@ void enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position) {
             e->velocity = (Vector2){0.0f, 0.0f};
             e->type = type;
             e->active = true;
+            e->hit_flash = 0.0f;
 
             switch (type) {
             case ENEMY_SWARMER:
@@ -95,6 +96,14 @@ void enemy_pool_update(EnemyPool *pool, float dt, Vector2 target, Rectangle aren
         Enemy *e = &pool->enemies[i];
         if (!e->active) {
             continue;
+        }
+
+        /* Tick hit flash timer */
+        if (e->hit_flash > 0.0f) {
+            e->hit_flash -= dt;
+            if (e->hit_flash < 0.0f) {
+                e->hit_flash = 0.0f;
+            }
         }
 
         /* Compute direction toward target */
@@ -158,10 +167,12 @@ void enemy_pool_draw(const EnemyPool *pool) {
             }
             Vector2 perp = {-facing.y, facing.x};
 
-            /* Colors */
-            Color body_fill = (Color){80, 10, 10, 255};
-            Color body_outline = (Color){255, 60, 30, 255};
-            Color glow = (Color){255, 40, 20, 40};
+            /* Colors -- flash white on hit */
+            bool flashing = e->hit_flash > 0.0f;
+            Color body_fill = flashing ? (Color){255, 255, 255, 255} : (Color){80, 10, 10, 255};
+            Color body_outline =
+                flashing ? (Color){255, 255, 255, 255} : (Color){255, 60, 30, 255};
+            Color glow = flashing ? (Color){255, 255, 255, 80} : (Color){255, 40, 20, 40};
             Color eye_color = (Color){255, 220, 50, 255};
 
             /* Outer glow */

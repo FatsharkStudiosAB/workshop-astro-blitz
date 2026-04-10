@@ -40,6 +40,7 @@ typedef struct {
     float radius;
     float speed;
     float damage;
+    float hit_flash;  /* seconds remaining of white flash (0 = no flash) */
     EnemyType type;
     bool active;
 } Enemy;
