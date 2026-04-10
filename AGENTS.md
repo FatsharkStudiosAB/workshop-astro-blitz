@@ -10,7 +10,8 @@ Top-down sci-fi roguelike shooter built during Fatshark's agentic coding worksho
 | Build the game | `task build` |
 | Run the game | `task run` (or just `task`) |
 | Clean build artifacts | `task clean` |
-| Run tests | *(TBD)* |
+| Build tests | `cmake --build build --target test_sample` |
+| Run tests | `ctest --test-dir build -C Debug --output-on-failure` |
 | Lint changed file types | `task fmt` |
 | Lint all files | `task fmt:all` |
 | List all tasks | `task --list-all` |
@@ -158,7 +159,9 @@ Everything below this line is lookup material. Behavioral rules are all above.
 | `Taskfile.yml` | Task runner configuration (go-task) |
 | `src/` | Game source code |
 | `src/main.c` | Entry point -- window init, main loop |
-| `CMakeLists.txt` | Build configuration -- fetches Raylib 5.5 via FetchContent |
+| `tests/` | Unit tests (Unity framework) |
+| `tests/test_sample.c` | Sample test verifying framework works |
+| `CMakeLists.txt` | Build configuration -- fetches Raylib 5.5 + Unity 2.6.1 via FetchContent |
 | `build/` | Build output (gitignored) |
 | `design/` | Game design documents and reference assets |
 | `design/DESIGN.md` | Game design document |
@@ -172,5 +175,6 @@ Everything below this line is lookup material. Behavioral rules are all above.
 - **Engine/Framework:** Raylib 5.5
 - **Language:** C (C99)
 - **Build:** CMake with FetchContent (auto-downloads Raylib). Configure: `cmake -B build -G "Visual Studio 17 2022" -A x64`. Build: `cmake --build build --config Release`. Executable: `build/Release/astro_blitz.exe`.
+- **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent
 - **Asset formats:** PNG (sprites), WAV/OGG (audio)
 - **Platform:** Windows (primary), cross-platform possible via Raylib

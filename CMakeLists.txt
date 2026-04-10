@@ -28,3 +28,21 @@ target_link_libraries(astro_blitz PRIVATE raylib)
 if(WIN32)
     target_link_libraries(astro_blitz PRIVATE winmm)
 endif()
+
+# ── Testing (Unity + CTest) ─────────────────────────────────────────────────
+include(CTest)
+
+if(BUILD_TESTING)
+    FetchContent_Declare(
+        unity
+        GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity.git
+        GIT_TAG        v2.6.1
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(unity)
+
+    # Sample test to verify the framework works
+    add_executable(test_sample tests/test_sample.c)
+    target_link_libraries(test_sample PRIVATE unity)
+    add_test(NAME test_sample COMMAND test_sample)
+endif()

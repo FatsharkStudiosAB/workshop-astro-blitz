@@ -5,9 +5,10 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Current State
 
-- **Phase:** Early development -- build tooling set up, hello window running.
+- **Phase:** Early development -- build tooling and test framework set up, hello window running.
 - **Engine/Framework:** Raylib 5.5 (C99), built via CMake FetchContent.
 - **Build:** `cmake -B build -G "Visual Studio 17 2022" -A x64` then `cmake --build build --config Release`
+- **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest.
 - **Playable:** No (window opens with title text only).
 
 ## Recent Changes
@@ -15,6 +16,7 @@ When it grows too long, summarize older entries and remove resolved items.
 | Date | Change |
 |------|--------|
 | 2026-04-10 | Added linting/formatting: `task fmt` with clang-format, yamllint, markdownlint-cli2 |
+| 2026-04-10 | Added Unity test framework v2.6.1 via FetchContent, sample test, CTest integration |
 | 2026-04-10 | Added Taskfile.yml with configure, build, run, and clean tasks (go-task) |
 | 2026-04-10 | Set up Raylib 5.5 build tooling: CMakeLists.txt with FetchContent, hello window compiles and runs |
 | 2026-04-10 | Completed game design document: core loop, weapons, enemies, upgrades, visual style, tech choice (Raylib) |
