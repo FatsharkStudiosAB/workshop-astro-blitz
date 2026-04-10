@@ -67,6 +67,41 @@ static void damage_number_pool_draw(const DamageNumberPool *pool) {
 
 /* ── Helpers ────────────────────────────────────────────────────────────────── */
 
+/* Pick an enemy type based on wave number. Later waves introduce harder types. */
+static EnemyType pick_enemy_type(int waves_spawned) {
+    /* Wave 0-2: only swarmers */
+    if (waves_spawned < 3) {
+        return ENEMY_SWARMER;
+    }
+    /* Wave 3-5: introduce grunts (30% chance) */
+    if (waves_spawned < 6) {
+        return (GetRandomValue(1, 10) <= 3) ? ENEMY_GRUNT : ENEMY_SWARMER;
+    }
+    /* Wave 6-9: introduce stalkers */
+    if (waves_spawned < 10) {
+        int roll = GetRandomValue(1, 10);
+        if (roll <= 2) {
+            return ENEMY_STALKER;
+        }
+        if (roll <= 5) {
+            return ENEMY_GRUNT;
+        }
+        return ENEMY_SWARMER;
+    }
+    /* Wave 10+: all types including bombers */
+    int roll = GetRandomValue(1, 10);
+    if (roll <= 1) {
+        return ENEMY_BOMBER;
+    }
+    if (roll <= 3) {
+        return ENEMY_STALKER;
+    }
+    if (roll <= 5) {
+        return ENEMY_GRUNT;
+    }
+    return ENEMY_SWARMER;
+}
+
 /* Spawn a wave of enemies just outside the camera viewport */
 static void spawn_wave(GameState *gs) {
     int count = GetRandomValue(SPAWN_MIN_GROUP, SPAWN_MAX_GROUP);
@@ -132,7 +167,8 @@ static void spawn_wave(GameState *gs) {
 
             /* Spawn if the position is walkable; otherwise retry */
             if (!tilemap_is_solid(&gs->tilemap, pos.x, pos.y)) {
-                enemy_pool_spawn(&gs->enemies, ENEMY_SWARMER, pos);
+                EnemyType type = pick_enemy_type(gs->stats.waves_spawned);
+                enemy_pool_spawn(&gs->enemies, type, pos);
                 break;
             }
         }
@@ -157,8 +193,12 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
 
             if (check_circle_collision(bullet->position, BULLET_RADIUS, enemy->position,
                                        enemy->radius)) {
+                int dmg = (int)bullet->damage;
+                if (dmg < 1) {
+                    dmg = 1;
+                }
                 bullet->active = false;
-                enemy->hp -= 1.0f;
+                enemy->hp -= bullet->damage;
                 enemy->hit_flash = HIT_FLASH_DURATION;
                 audio_play_enemy_hit(&gs->audio);
 
@@ -167,7 +207,7 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                                0.3f, 2.5f, (Color){255, 200, 50, 255});
 
                 /* Damage number */
-                damage_number_spawn(&gs->damage_numbers, enemy->position, 1,
+                damage_number_spawn(&gs->damage_numbers, enemy->position, dmg,
                                     (Color){255, 255, 100, 255});
 
                 if (enemy->hp <= 0.0f) {
@@ -175,11 +215,31 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                     gs->stats.kills++;
                     screenshake_add_trauma(&gs->shake, 0.15f);
 
-                    /* Death explosion */
+                    /* Death explosion particles */
                     particle_burst(&gs->particles, enemy->position, 15, 30.0f, 150.0f,
                                    0.2f, 0.6f, 3.5f, (Color){255, 60, 30, 255});
                     particle_burst(&gs->particles, enemy->position, 8, 20.0f, 80.0f, 0.3f,
                                    0.8f, 2.0f, (Color){255, 160, 40, 200});
+
+                    /* Bomber AoE explosion on death */
+                    if (enemy->type == ENEMY_BOMBER) {
+                        screenshake_add_trauma(&gs->shake, 0.4f);
+                        particle_burst(&gs->particles, enemy->position, 20, 50.0f, 200.0f,
+                                       0.3f, 0.8f, 5.0f, (Color){255, 120, 20, 255});
+                        /* Damage player if within blast radius */
+                        float dx = gs->player.position.x - enemy->position.x;
+                        float dy = gs->player.position.y - enemy->position.y;
+                        float dist_sq = dx * dx + dy * dy;
+                        if (dist_sq < BOMBER_EXPLOSION_RADIUS * BOMBER_EXPLOSION_RADIUS) {
+                            gs->player.hp -= BOMBER_EXPLOSION_DAMAGE;
+                            damage_number_spawn(&gs->damage_numbers, gs->player.position,
+                                                (int)BOMBER_EXPLOSION_DAMAGE,
+                                                (Color){255, 60, 60, 255});
+                            if (gs->player.hp < 0.0f) {
+                                gs->player.hp = 0.0f;
+                            }
+                        }
+                    }
                 }
                 break; /* bullet consumed -- stop checking enemies */
             }
@@ -215,6 +275,40 @@ static void resolve_enemy_player_collisions(GameState *gs) {
             /* Impact particles */
             particle_burst(&gs->particles, enemy->position, 10, 30.0f, 120.0f, 0.15f,
                            0.4f, 3.0f, (Color){255, 40, 20, 255});
+
+            if (p->hp < 0.0f) {
+                p->hp = 0.0f;
+            }
+        }
+    }
+}
+
+static void resolve_enemy_bullet_player_collisions(GameState *gs) {
+    Player *p = &gs->player;
+    EnemyBulletPool *ebp = &gs->enemy_bullets;
+
+    /* Skip if dashing and invincible */
+    if (DASH_INVINCIBLE && p->is_dashing) {
+        return;
+    }
+
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
+        EnemyBullet *b = &ebp->bullets[i];
+        if (!b->active) {
+            continue;
+        }
+
+        if (check_circle_collision(b->position, 4.0f, p->position, PLAYER_RADIUS)) {
+            b->active = false;
+            p->hp -= b->damage;
+            audio_play_hit(&gs->audio);
+            screenshake_add_trauma(&gs->shake, 0.2f);
+
+            damage_number_spawn(&gs->damage_numbers, p->position, (int)b->damage,
+                                (Color){255, 60, 60, 255});
+
+            particle_burst(&gs->particles, b->position, 6, 30.0f, 100.0f, 0.1f, 0.3f, 2.5f,
+                           (Color){255, 80, 80, 255});
 
             if (p->hp < 0.0f) {
                 p->hp = 0.0f;
@@ -277,6 +371,10 @@ static void draw_hud(const GameState *gs) {
     DrawRectangle((int)dash_x, (int)bar_y, (int)(dash_w * cd_ratio), (int)bar_h, SKYBLUE);
     DrawRectangleLines((int)dash_x, (int)bar_y, (int)dash_w, (int)bar_h, RAYWHITE);
     DrawText("DASH", (int)dash_x + 4, (int)bar_y + 2, 12, RAYWHITE);
+
+    /* ── Weapon name (top-left) ────────────────────────────────────────── */
+    const char *weapon_name = p->current_weapon.name ? p->current_weapon.name : "???";
+    DrawText(weapon_name, 10, 10, 20, p->current_weapon.bullet_color);
 }
 
 static void draw_game_over(const GameState *gs) {
@@ -514,11 +612,16 @@ static void update_playing(GameState *gs) {
     player_update(&gs->player, dt, gs->arena, &gs->tilemap, gs->camera,
                   gs->settings.movement_layout);
 
-    /* ── Shooting ─────────────────────────────────────────────────────── */
+    /* ── Shooting (weapon-driven) ────────────────────────────────────── */
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
         Vector2 muzzle = Vector2Add(gs->player.position,
                                     Vector2Scale(gs->player.aim_direction, PLAYER_RADIUS + 2.0f));
-        if (bullet_pool_fire(&gs->bullets, muzzle, gs->player.aim_direction)) {
+        Weapon *w = &gs->player.current_weapon;
+        int fired = bullet_pool_fire_weapon(
+            &gs->bullets, muzzle, gs->player.aim_direction, w->fire_rate, w->damage,
+            w->bullet_speed, w->spread_angle, w->projectile_count, w->bullet_lifetime,
+            w->bullet_color);
+        if (fired > 0) {
             audio_play_shoot(&gs->audio);
 
             /* Muzzle flash particles */
@@ -548,11 +651,14 @@ static void update_playing(GameState *gs) {
 
     /* ── Enemy update ─────────────────────────────────────────────────── */
     tilemap_compute_flow_field(&gs->tilemap, gs->player.position.x, gs->player.position.y);
-    enemy_pool_update(&gs->enemies, dt, gs->player.position, gs->arena, &gs->tilemap);
+    enemy_pool_update(&gs->enemies, dt, gs->player.position, gs->arena, &gs->tilemap,
+                      &gs->enemy_bullets);
+    enemy_bullet_pool_update(&gs->enemy_bullets, dt, gs->arena);
 
     /* ── Collisions ───────────────────────────────────────────────────── */
     resolve_bullet_enemy_collisions(gs);
     resolve_enemy_player_collisions(gs);
+    resolve_enemy_bullet_player_collisions(gs);
 
     /* ── Death check ──────────────────────────────────────────────────── */
     game_check_death(gs);
@@ -721,6 +827,7 @@ void game_init(GameState *gs) {
     player_init(&gs->player, center);
     bullet_pool_init(&gs->bullets);
     enemy_pool_init(&gs->enemies);
+    enemy_bullet_pool_init(&gs->enemy_bullets);
     particle_pool_init(&gs->particles);
     damage_number_pool_init(&gs->damage_numbers);
     screenshake_init(&gs->shake);
@@ -799,6 +906,7 @@ void game_draw(const GameState *gs) {
         BeginMode2D(draw_cam);
         tilemap_draw(&gs->tilemap, gs->camera);
         bullet_pool_draw(&gs->bullets);
+        enemy_bullet_pool_draw(&gs->enemy_bullets);
         enemy_pool_draw(&gs->enemies);
         particle_pool_draw(&gs->particles);
         damage_number_pool_draw(&gs->damage_numbers);

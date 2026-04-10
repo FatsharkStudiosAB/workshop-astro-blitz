@@ -7,6 +7,7 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "settings.h"
+#include "weapon.h"
 #include <stdbool.h>
 
 /* Forward declaration to avoid circular include */
@@ -30,6 +31,9 @@ typedef struct {
     Vector2 aim_direction; /* normalized, toward mouse cursor */
     float hp;
     float max_hp;
+
+    /* Weapon */
+    Weapon current_weapon;
 
     /* Dash state */
     bool is_dashing;

@@ -13,6 +13,7 @@
 #include "screenshake.h"
 #include "settings.h"
 #include "tilemap.h"
+#include "weapon.h"
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
@@ -64,6 +65,7 @@ typedef struct {
     Player player;
     BulletPool bullets;
     EnemyPool enemies;
+    EnemyBulletPool enemy_bullets;
     ParticlePool particles;
     DamageNumberPool damage_numbers;
     Tilemap tilemap;

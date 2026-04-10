@@ -128,6 +128,7 @@ void player_init(Player *p, Vector2 start_pos) {
     p->aim_direction = (Vector2){0.0f, -1.0f};
     p->hp = PLAYER_MAX_HP;
     p->max_hp = PLAYER_MAX_HP;
+    p->current_weapon = weapon_get_default();
 
     p->is_dashing = false;
     p->dash_direction = (Vector2){0};
