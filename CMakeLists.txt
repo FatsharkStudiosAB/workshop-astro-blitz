@@ -28,6 +28,7 @@ add_library(astro_blitz_lib STATIC
     src/player.c
     src/bullet.c
     src/enemy.c
+    src/audio.c
 )
 target_include_directories(astro_blitz_lib PUBLIC src)
 target_link_libraries(astro_blitz_lib PUBLIC raylib)
@@ -92,4 +93,9 @@ if(BUILD_TESTING)
     add_executable(test_tilemap tests/test_tilemap.c)
     target_link_libraries(test_tilemap PRIVATE unity astro_blitz_lib)
     add_test(NAME test_tilemap COMMAND test_tilemap)
+
+    # Audio module tests
+    add_executable(test_audio tests/test_audio.c)
+    target_link_libraries(test_audio PRIVATE unity astro_blitz_lib)
+    add_test(NAME test_audio COMMAND test_audio)
 endif()

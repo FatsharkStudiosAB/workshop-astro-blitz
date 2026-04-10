@@ -59,9 +59,9 @@ void bullet_pool_draw(const BulletPool *pool) {
     }
 }
 
-void bullet_pool_fire(BulletPool *pool, Vector2 origin, Vector2 direction) {
+bool bullet_pool_fire(BulletPool *pool, Vector2 origin, Vector2 direction) {
     if (pool->fire_cooldown > 0.0f) {
-        return; /* Rate limited */
+        return false; /* Rate limited */
     }
 
     /* Find an inactive slot */
@@ -73,8 +73,9 @@ void bullet_pool_fire(BulletPool *pool, Vector2 origin, Vector2 direction) {
             b->lifetime = BULLET_LIFETIME;
             b->active = true;
             pool->fire_cooldown = PISTOL_FIRE_RATE;
-            return;
+            return true;
         }
     }
     /* Pool full -- silently drop the shot */
+    return false;
 }
