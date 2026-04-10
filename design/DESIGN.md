@@ -157,8 +157,8 @@ weight toward more modifiers and stronger modifier types.
 
 | Modifier | Type | Effect |
 |----------|------|--------|
-| **Rapid** | Offensive | +25% fire rate |
-| **Heavy** | Offensive | +40% damage, -20% fire rate |
+| **Rapid** | Offensive | +25% fire rate (percentage) |
+| **Heavy** | Offensive | +40% damage (percentage), -20% fire rate (percentage) |
 | **Scorching** | Offensive | Hits ignite enemies (damage over time) |
 | **Piercing** | Offensive | Projectiles pass through 1 extra enemy |
 | **Volatile** | Offensive | Kills trigger a small AoE explosion |
@@ -181,8 +181,12 @@ Later floors increase the probability of higher-rarity drops.
 | Rarity | Drop weight (floor 1) | Drop weight (floor 5) | Stat bonus |
 |--------|----------------------|----------------------|------------|
 | **Common** | 70% | 40% | Base stats |
-| **Uncommon** | 25% | 40% | +15% to all stats |
-| **Rare** | 5% | 20% | +30% to all stats |
+| **Uncommon** | 25% | 40% | +15% to damage and fire rate |
+| **Rare** | 5% | 20% | +30% to damage and fire rate |
+
+Rarity bonuses apply to **damage** and **fire rate** only. Projectile
+speed, arc, and special properties (pierce, AoE radius) are fixed per
+weapon type and not affected by rarity.
 
 ### Ranged Weapons
 
@@ -252,7 +256,8 @@ numbers becoming hard to reason about.
 
 Normal enemies use their base archetype stats and behavior. **Elite
 enemies** are enhanced variants that spawn at increasing rates on later
-floors (5% chance on floor 1, +10% per floor).
+floors (5% on floor 1, +10 percentage points per floor; see
+[Scaling per floor](#scaling-per-floor)).
 
 Elites are visually distinct (glowing aura, size increase) and always
 roll 1--2 random modifiers:
@@ -335,10 +340,11 @@ Upgrades activate immediately on pickup (no menu).
 | Scavenger Magnet | +50% pickup radius | Additive |
 | Second Wind | Survive a killing blow once per floor (1 HP) | +1 use per stack |
 
-**Synergy design:** Modifiers and passives stack additively, never
-multiplicatively. A Scorching weapon modifier + Incendiary Rounds
-passive = combined burn (longer duration, not double proc). This keeps
-power growth steep but not exponential.
+**Synergy design:** Percentage bonuses from modifiers and passives
+stack **additively with each other** (not multiplicatively). A
+Scorching weapon modifier + Incendiary Rounds passive = combined burn
+(longer duration, not double proc). See the
+[Damage Model](#damage-model) for the full formula.
 
 ## Meta-Progression
 
@@ -372,7 +378,9 @@ weapon. The player selects one before each run.
 
 Talents are build-defining abilities that fundamentally alter playstyle.
 The player selects one before each run. 6--8 total talents; unlocked
-gradually.
+gradually. Each talent's percentage bonuses feed into the same stat
+formula as modifiers and passives (additive within the percentage
+pool). Flat bonuses add directly.
 
 | Talent | Type | Effect | Unlock condition | Cost |
 |--------|------|--------|-----------------|------|
@@ -442,36 +450,50 @@ This formula calculates **per-hit damage** only. It does not cover
 fire rate, projectile count, DoT, or on-hit procs -- those are
 handled separately below.
 
+Bonuses come in two types: **percentage multipliers** (applied to the
+base) and **flat additions** (added after). They never mix in the same
+step.
+
 ```text
 base_damage    = weapon.damage * rarity_multiplier
-modifier_bonus = sum of damage-affecting weapon modifier bonuses (e.g., Heavy: +40%)
-passive_bonus  = sum of damage-affecting passive bonuses (e.g., Targeting Module: +4)
-final_damage   = (base_damage + modifier_bonus + passive_bonus) * talent_multiplier
+pct_multiplier = 1.0 + sum of percentage damage bonuses
+                 (e.g., Heavy modifier: +0.40, Gunslinger talent: +0.30)
+flat_bonus     = sum of flat damage bonuses
+                 (e.g., Targeting Module passive: +4, Sharpened Edge: +6)
+final_damage   = base_damage * pct_multiplier + flat_bonus
 ```
 
-All bonuses within a category are **additive**. The talent multiplier
-is the only multiplicative factor -- this is intentional because
-talents are build-defining (one per run). Within weapons, modifiers,
-and passives, everything stacks additively.
+- Percentage bonuses stack **additively with each other** (Heavy +40%
+  and Gunslinger +30% = x1.70, not x1.40 x 1.30).
+- Flat bonuses are added **after** percentage scaling.
+- Talents apply their effects to the relevant stat category (damage,
+  fire rate, HP, etc.) -- they are not a single global multiplier.
 
 ### Non-Damage Stat Stacking
 
+**Weapon stats:**
+
 | Stat | How it combines |
 |------|-----------------|
-| **Fire rate** | Base weapon rate + additive bonuses from modifiers (Rapid: +25%) and passives (Quick Loader: +15%). `final_rate = base_rate * (1 + sum_of_bonuses)` |
+| **Fire rate** | `final_rate = base_rate * (1 + sum_of_pct_bonuses)`. Rapid (+25%) and Quick Loader (+15%) stack: `base * 1.40`. |
 | **Projectile count** | Fixed per weapon (e.g., Shotgun = 5 pellets). Not affected by modifiers or passives. |
+| **Bounces** | Base bounces (3) + flat modifier bonus (Bouncing: +2) = 5 total. |
 | **DoT effects** | Scorching modifier and Incendiary Rounds passive combine by extending duration, not stacking damage ticks. |
 | **Slow effects** | Chilling modifier and Cryo Coating passive combine by extending duration. Slow percentage does not stack. |
-| **On-hit procs** | Each source rolls independently. Chain Lightning passive (20% chance) and a hypothetical modifier each roll separately per hit. |
-| **Bounces** | Base bounces (3) + modifier bonus (Bouncing: +2) = 5 total. Additive. |
+| **On-hit procs** | Each source rolls independently per hit. |
+
+**Player stats:**
+
+| Stat | How it combines |
+|------|-----------------|
+| **Movement speed** | `final_speed = base_speed * (1 + sum_of_pct_bonuses)`. Adrenaline Shot (+12%) stacks additively with talent bonuses. Juggernaut's -25% is a negative bonus in the same sum. |
+| **Max HP** | `final_hp = base_hp + sum_of_flat_bonuses`. Reinforced Plating (+15) and Juggernaut (+50) stack additively. |
+| **Dash cooldown** | `final_cd = max(base_cd - sum_of_flat_reductions, 0.2)`. Reflex Enhancer (-0.15s) stacks with floor. Ghost talent halves the result. |
 
 ### Enemy HP Scaling
 
-```text
-enemy_hp = base_hp * (1.0 + 0.20 * (floor_number - 1))
-```
-
-Floor 1 is baseline (1.0x). Floor 5 enemies have 1.8x base HP.
+See [Scaling per floor](#scaling-per-floor) for the formula and all
+per-floor scaling rates. Floor 1 is baseline (1.0x).
 
 ### Invincibility Frames
 

@@ -32,7 +32,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
-- Complete rewrite of `design/DESIGN.md` with all major design decisions resolved: hybrid arena-dungeon level model, steep difficulty curve, 5--7 floor run structure, medium damage scale (10--100 HP range), prefix/suffix weapon modifier system, elite enemy modifiers, talent-based meta-progression, Risk of Rain-style loot (all items available from floor 1, rarer drops weighted toward later floors), and full development roadmap with short/medium/long-term sprint goals
+- Rewrote `design/DESIGN.md` to resolve the project's major design decisions
+- `design/DESIGN.md` now defines run structure: hybrid arena-dungeon model, steep difficulty curve, 5--7 floor runs with find-the-exit completion
+- `design/DESIGN.md` now documents combat and progression: medium damage scale (10--100 HP), prefix/suffix weapon modifiers, elite enemy modifiers, talent-based meta-progression, Risk of Rain-style loot weighting
+- `design/DESIGN.md` now includes a full development roadmap with short-, medium-, and long-term sprint goals
 - `AGENTS.md` -- Rewrite: tighten to under 200 lines, add gates from autobuilds-testify (After PR feedback, Before merging, cherry-pick rule, branch name regex), add delegation patterns and context hygiene, extract reference material to `docs/REFERENCE.md`
 - `.gitignore` -- Change `.opencode/` from blanket ignore to selective: session data stays ignored, `skills/`, `agents/`, and `commands/` subdirectories are now committed
 - `.markdownlint-cli2.yaml`, `.yamllint.yml` -- Exclude `build/` directory from linters to avoid noise from fetched dependencies (Raylib, Unity)
