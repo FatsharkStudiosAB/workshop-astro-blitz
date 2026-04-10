@@ -9,6 +9,7 @@
 #include "game.h"
 #include "tilemap.h"
 #include "unity.h"
+#include <string.h>
 
 /* ── Test helpers ──────────────────────────────────────────────────────────── */
 
@@ -23,6 +24,7 @@ void tearDown(void) {}
 
 void test_game_init_arena_position(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     /* Arena origin is at world origin (0,0) */
@@ -32,6 +34,7 @@ void test_game_init_arena_position(void) {
 
 void test_game_init_arena_dimensions(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     /* Arena matches full world bounds from tilemap */
@@ -41,6 +44,7 @@ void test_game_init_arena_dimensions(void) {
 
 void test_game_init_player_centered_in_arena(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     /* Player spawns at center of the center tile */
@@ -53,6 +57,7 @@ void test_game_init_player_centered_in_arena(void) {
 
 void test_game_init_player_hp_full(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, gs.player.max_hp, gs.player.hp);
@@ -60,6 +65,7 @@ void test_game_init_player_hp_full(void) {
 
 void test_game_init_player_not_dashing(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     TEST_ASSERT_FALSE(gs.player.is_dashing);
@@ -67,6 +73,7 @@ void test_game_init_player_not_dashing(void) {
 
 void test_game_init_bullet_pool_empty(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     for (int i = 0; i < MAX_BULLETS; i++) {
@@ -76,6 +83,7 @@ void test_game_init_bullet_pool_empty(void) {
 
 void test_game_init_bullet_pool_cooldown_zero(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, gs.bullets.fire_cooldown);
@@ -97,6 +105,7 @@ void test_world_larger_than_screen(void) {
 
 void test_game_init_camera_offset(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, SCREEN_WIDTH / 2.0f, gs.camera.offset.x);
@@ -105,6 +114,7 @@ void test_game_init_camera_offset(void) {
 
 void test_game_init_camera_zoom(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 1.0f, gs.camera.zoom);
@@ -112,6 +122,7 @@ void test_game_init_camera_zoom(void) {
 
 void test_game_init_camera_rotation(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, gs.camera.rotation);
@@ -121,6 +132,7 @@ void test_game_init_camera_rotation(void) {
 
 void test_game_init_tilemap_dimensions(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     TEST_ASSERT_EQUAL_INT(WORLD_COLS, gs.tilemap.cols);
@@ -130,6 +142,7 @@ void test_game_init_tilemap_dimensions(void) {
 
 void test_game_init_spawn_area_clear(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     /* The center tiles around spawn should be empty */
@@ -142,6 +155,7 @@ void test_game_init_spawn_area_clear(void) {
 
 void test_game_init_phase_is_playing(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     TEST_ASSERT_EQUAL_INT(PHASE_PLAYING, gs.phase);
@@ -149,6 +163,7 @@ void test_game_init_phase_is_playing(void) {
 
 void test_game_init_stats_zeroed(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     TEST_ASSERT_EQUAL_INT(0, gs.stats.kills);
@@ -158,6 +173,7 @@ void test_game_init_stats_zeroed(void) {
 
 void test_game_init_resets_phase_after_game_over(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     /* Simulate a game-over state with some stats */
@@ -177,6 +193,7 @@ void test_game_init_resets_phase_after_game_over(void) {
 
 void test_phase_game_over_on_zero_hp(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     /* Player alive -- phase stays PLAYING */
@@ -192,6 +209,7 @@ void test_phase_game_over_on_zero_hp(void) {
 
 void test_game_check_death_ignores_game_over_phase(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     /* Already in GAME_OVER -- should not re-trigger */
@@ -203,11 +221,53 @@ void test_game_check_death_ignores_game_over_phase(void) {
 
 void test_game_check_death_negative_hp(void) {
     GameState gs;
+    memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
     gs.player.hp = -5.0f;
     game_check_death(&gs);
     TEST_ASSERT_EQUAL_INT(PHASE_GAME_OVER, gs.phase);
+}
+
+/* ── New phase enum tests ──────────────────────────────────────────────────── */
+
+void test_phase_enum_values_are_distinct(void) {
+    TEST_ASSERT_NOT_EQUAL(PHASE_FIRST_RUN, PHASE_MAIN_MENU);
+    TEST_ASSERT_NOT_EQUAL(PHASE_MAIN_MENU, PHASE_PLAYING);
+    TEST_ASSERT_NOT_EQUAL(PHASE_PLAYING, PHASE_PAUSED);
+    TEST_ASSERT_NOT_EQUAL(PHASE_PAUSED, PHASE_SETTINGS);
+    TEST_ASSERT_NOT_EQUAL(PHASE_SETTINGS, PHASE_GAME_OVER);
+    TEST_ASSERT_NOT_EQUAL(PHASE_FIRST_RUN, PHASE_GAME_OVER);
+}
+
+void test_game_init_preserves_settings(void) {
+    GameState gs;
+    memset(&gs, 0, sizeof(gs));
+    gs.settings.movement_layout = MOVEMENT_TANK;
+    game_init(&gs);
+
+    /* Settings should be preserved across game_init */
+    TEST_ASSERT_EQUAL_INT(MOVEMENT_TANK, gs.settings.movement_layout);
+}
+
+void test_game_init_menu_cursor_zero(void) {
+    GameState gs;
+    memset(&gs, 0, sizeof(gs));
+    game_init(&gs);
+
+    TEST_ASSERT_EQUAL_INT(0, gs.menu_cursor);
+}
+
+void test_game_check_death_only_during_playing(void) {
+    /* Death check should NOT trigger in PAUSED phase */
+    GameState gs;
+    memset(&gs, 0, sizeof(gs));
+    game_init(&gs);
+
+    gs.phase = PHASE_PAUSED;
+    gs.player.hp = 0.0f;
+    game_check_death(&gs);
+    TEST_ASSERT_EQUAL_INT(PHASE_PAUSED, gs.phase);
 }
 
 /* ── Runner ────────────────────────────────────────────────────────────────── */
@@ -244,6 +304,12 @@ int main(void) {
     RUN_TEST(test_phase_game_over_on_zero_hp);
     RUN_TEST(test_game_check_death_ignores_game_over_phase);
     RUN_TEST(test_game_check_death_negative_hp);
+
+    /* New phases */
+    RUN_TEST(test_phase_enum_values_are_distinct);
+    RUN_TEST(test_game_init_preserves_settings);
+    RUN_TEST(test_game_init_menu_cursor_zero);
+    RUN_TEST(test_game_check_death_only_during_playing);
 
     return UNITY_END();
 }

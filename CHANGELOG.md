@@ -10,6 +10,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Integration test infrastructure: headless `game_update()` testing via Raylib stubs (`tests/raylib_stubs.c/h`) with controllable input, time, and audio fakes
 - 11 integration tests (`tests/test_integration.c`): bullet kills enemy, enemy damages player, dash invincibility, game-over transition, restart from game-over, player movement via input, enemy wave spawning, survival time accumulation, multiple enemy damage, shooting via game_update, full combat loop
 - CMake object library (`astro_blitz_objs`) for scalable dual-linking: game sources compiled once, linked with real Raylib (exe + unit tests) or stubs (integration tests). Adding new source files requires updating only the object library.
+- First-run movement picker: on first launch (no `settings.ini`), a dedicated screen lets the player choose between 8-Directional and Tank Controls before proceeding to the main menu
+- Main menu screen with Play, Settings, and Quit options
+- Pause menu (ESC during gameplay): Resume, Settings, Main Menu, Quit
+- Settings menu with movement layout toggle (Tank Controls vs 8-Directional)
+- Persistent settings saved to `settings.ini` (text-based key=value format, survives game restarts)
+- 8-directional movement mode: WASD maps to fixed screen directions (up/down/left/right) independent of aim direction
+- New `settings` module (`src/settings.h`, `src/settings.c`) with init, save, load API and path-parameterized variants for testing
+- 14 unit tests for settings module (`tests/test_settings.c`) covering defaults, save/load round-trips, missing files, malformed input, comments
+- 8 unit tests for 8-directional movement (`test_player.c`) covering all cardinal directions, diagonals, normalization, cancellation
+- 4 unit tests for new game phases (`test_game.c`) covering phase enum, settings preservation, menu cursor, and death-check phase guard
 - `.opencode/agents/` -- Lightweight Haiku subagents (lint-check, build-and-test, changelog-drafter) for delegating mechanical checks at lower cost
 - Bullet wall bouncing: bullets reflect off solid tiles up to 3 times before being destroyed (new `BULLET_MAX_BOUNCES` constant and `bounces` field on `Bullet`)
 - 3 new bullet tests: `test_bullet_bounces_off_wall`, `test_bullet_deactivates_after_max_bounces`, `test_fire_initializes_bounces_to_zero`
@@ -36,6 +46,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 
 - `AGENTS.md` -- Added unit vs integration test guidance: unit tests for single-module logic, integration tests required for cross-module features (game_update, collisions, spawning)
+- Rewrote `design/DESIGN.md` to resolve the project's major design decisions
+- `design/DESIGN.md` now defines run structure: hybrid arena-dungeon model, steep difficulty curve, 5--7 floor runs with find-the-exit completion
+- `design/DESIGN.md` now documents combat and progression: medium damage scale (10--100 HP), prefix/suffix weapon modifiers, elite enemy modifiers, talent-based meta-progression, Risk of Rain-style loot weighting
+- `design/DESIGN.md` now includes a full development roadmap with short-, medium-, and long-term sprint goals
+- Default movement layout changed from Tank Controls to 8-Directional (screen-relative WASD)
+- `settings_init` now returns `bool` (true if existing file loaded, false on first run)
+- ESC key now pauses the game instead of closing the window (Raylib's exit key disabled via `SetExitKey(0)`)
+- Game starts at a main menu instead of immediately entering gameplay
+- `GamePhase` enum expanded: `PHASE_MAIN_MENU`, `PHASE_PLAYING`, `PHASE_PAUSED`, `PHASE_SETTINGS`, `PHASE_GAME_OVER`
+- `GameState` now holds a `Settings` struct (persisted across game restarts)
+- `player_update` accepts a `MovementLayout` parameter to select between tank and 8-directional controls
+- `game_init` preserves settings and audio state across restarts
+- Fixed Windows linker error: removed explicit `winmm` link that conflicted with Raylib's `PlaySound` symbol
 - `AGENTS.md` -- Rewrite: tighten to under 200 lines, add gates from autobuilds-testify (After PR feedback, Before merging, cherry-pick rule, branch name regex), add delegation patterns and context hygiene, extract reference material to `docs/REFERENCE.md`
 - `.gitignore` -- Change `.opencode/` from blanket ignore to selective: session data stays ignored, `skills/`, `agents/`, and `commands/` subdirectories are now committed
 - `.markdownlint-cli2.yaml`, `.yamllint.yml` -- Exclude `build/` directory from linters to avoid noise from fetched dependencies (Raylib, Unity)
@@ -54,16 +77,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Wave counter increments each time a new enemy wave spawns
 - 6 new unit tests for game-over phase transitions, stats initialization, and death check
 - Enemy swarmer system: `src/enemy.c/h` with fixed-size enemy pool, swarmer AI (seek toward player), wave spawning from arena edges
-
-### Changed
-
 - Player visual upgraded from plain green circle to layered sci-fi mech: dark teal body with neon cyan outline, directional nose triangle for clear facing, bright reactor core, hot magenta aim line with crosshair dot, and semi-transparent glow aura; electric blue palette shift when dashing
 - Swarmer visual upgraded from plain red circle to layered alien bug: dark maroon body with neon red-orange outline, mandible "V" lines and bright yellow eye dots that face movement direction, and semi-transparent red glow aura
 - Player movement now uses tank controls: W moves toward mouse cursor, S moves away, A/D strafe left/right relative to aim direction
 - Dash direction also follows the new tank controls when WASD keys are held
 - Bullet-enemy and enemy-player collision detection with circle-circle overlap
 - Player takes damage on enemy contact (swarmers die on contact); dash invincibility respected
-- Enemy spawn waves every 3 seconds, groups of 4-8 swarmers from random arena edges
+- Enemy spawn waves every 3 seconds, groups of 2-5 swarmers from random arena edges
 - Unit tests for enemy module (`tests/test_enemy.c`) -- 30 tests covering pool, spawning, movement, collision, constants
 - Vec2 2D vector math module (`src/vec2.h`, `src/vec2.c`) with add, subtract, scale, length, normalize, distance, dot product, lerp
 - 28 unit tests for vec2 (`tests/test_vec2.c`) covering all operations including edge cases

@@ -29,6 +29,7 @@ add_library(astro_blitz_objs OBJECT
     src/bullet.c
     src/enemy.c
     src/audio.c
+    src/settings.c
 )
 target_include_directories(astro_blitz_objs PUBLIC src)
 # Objects need Raylib headers (types, raymath inlines) at compile time, but
@@ -56,10 +57,8 @@ endif()
 add_executable(astro_blitz src/main.c)
 target_link_libraries(astro_blitz PRIVATE astro_blitz_lib)
 
-# On Windows, link required system libraries
-if(WIN32)
-    target_link_libraries(astro_blitz PRIVATE winmm)
-endif()
+# Note: winmm is NOT explicitly linked because Raylib's PlaySound symbol
+# conflicts with winmm's PlaySound. Raylib handles its own Windows deps.
 
 # ── Testing (Unity + CTest) ─────────────────────────────────────────────────
 include(CTest)
@@ -112,6 +111,11 @@ if(BUILD_TESTING)
     add_executable(test_audio tests/test_audio.c)
     target_link_libraries(test_audio PRIVATE unity astro_blitz_lib)
     add_test(NAME test_audio COMMAND test_audio)
+
+    # Settings module tests
+    add_executable(test_settings tests/test_settings.c)
+    target_link_libraries(test_settings PRIVATE unity astro_blitz_lib)
+    add_test(NAME test_settings COMMAND test_settings)
 
     # ── Integration tests (game objects + Raylib stubs, no real Raylib) ───
     add_library(raylib_stubs STATIC tests/raylib_stubs.c)

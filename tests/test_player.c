@@ -199,6 +199,60 @@ void test_calc_move_dir_opposing_inputs_cancel(void) {
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.y);
 }
 
+/* ── 8-directional movement (player_calc_move_dir_8dir) tests ──────────────── */
+
+void test_8dir_up_moves_negative_y(void) {
+    Vector2 dir = player_calc_move_dir_8dir(true, false, false, false);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, -1.0f, dir.y);
+}
+
+void test_8dir_down_moves_positive_y(void) {
+    Vector2 dir = player_calc_move_dir_8dir(false, true, false, false);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 1.0f, dir.y);
+}
+
+void test_8dir_left_moves_negative_x(void) {
+    Vector2 dir = player_calc_move_dir_8dir(false, false, true, false);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, -1.0f, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.y);
+}
+
+void test_8dir_right_moves_positive_x(void) {
+    Vector2 dir = player_calc_move_dir_8dir(false, false, false, true);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 1.0f, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.y);
+}
+
+void test_8dir_diagonal_is_normalized(void) {
+    Vector2 dir = player_calc_move_dir_8dir(true, false, false, true);
+    float len = Vector2Length(dir);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 1.0f, len);
+    /* Up-right: positive x, negative y */
+    TEST_ASSERT_TRUE(dir.x > 0.0f);
+    TEST_ASSERT_TRUE(dir.y < 0.0f);
+}
+
+void test_8dir_no_input_returns_zero(void) {
+    Vector2 dir = player_calc_move_dir_8dir(false, false, false, false);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.y);
+}
+
+void test_8dir_opposing_inputs_cancel(void) {
+    Vector2 dir = player_calc_move_dir_8dir(true, true, false, false);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.y);
+}
+
+void test_8dir_all_four_keys_cancel(void) {
+    /* All four directions held simultaneously should cancel to zero */
+    Vector2 dir = player_calc_move_dir_8dir(true, true, true, true);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.y);
+}
+
 /* ── Runner ────────────────────────────────────────────────────────────────── */
 
 int main(void) {
@@ -230,6 +284,16 @@ int main(void) {
     RUN_TEST(test_calc_move_dir_no_input_returns_zero);
     RUN_TEST(test_calc_move_dir_forward_with_diagonal_aim);
     RUN_TEST(test_calc_move_dir_opposing_inputs_cancel);
+
+    /* 8-directional controls */
+    RUN_TEST(test_8dir_up_moves_negative_y);
+    RUN_TEST(test_8dir_down_moves_positive_y);
+    RUN_TEST(test_8dir_left_moves_negative_x);
+    RUN_TEST(test_8dir_right_moves_positive_x);
+    RUN_TEST(test_8dir_diagonal_is_normalized);
+    RUN_TEST(test_8dir_no_input_returns_zero);
+    RUN_TEST(test_8dir_opposing_inputs_cancel);
+    RUN_TEST(test_8dir_all_four_keys_cancel);
 
     return UNITY_END();
 }

@@ -5,17 +5,19 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Current State
 
-- **Phase:** Scrollable world prototype with audio -- camera follows player over a procedurally generated tilemap with obstacles, procedural audio for SFX and death screen music.
+- **Phase:** Scrollable world prototype with menus and settings -- main menu, pause menu, settings menu with persistent movement layout preference.
 - **Engine/Framework:** Raylib 5.5 (C99), built via CMake FetchContent.
 - **Build:** `task build` (or `cmake -B build && cmake --build build --config Release`)
 - **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest.
-- **Playable:** Yes (player moves in a large world [4096x3072 px], camera follows, tilemap with scattered obstacles and border walls, enemies spawn offscreen relative to viewport). Bullet fire plays a punchy SFX; enemy hits play a metallic ping; taking damage plays a low thud. Game ends when HP reaches zero; game-over screen shows stats, plays looping sci-fi synth music, and pressing R restarts with a new map.
+- **Playable:** Yes. Game launches to a main menu (Play / Settings / Quit). ESC pauses with Resume / Settings / Main Menu / Quit. Settings menu lets player switch between Tank Controls and 8-Directional movement; preference persists to `settings.ini`. Player moves in a large world [4096x3072 px], camera follows, tilemap with scattered obstacles and border walls, enemies spawn offscreen. Bullet fire plays a punchy SFX; enemy hits play a metallic ping; taking damage plays a low thud. Game ends when HP reaches zero; game-over screen shows stats, plays looping sci-fi synth music, and pressing R restarts with a new map.
 
 ## Recent Changes
 
 | Date | Change |
 |------|--------|
 | 2026-04-10 | Added integration test infrastructure: Raylib stubs for headless testing, CMake object library pattern (`astro_blitz_objs`) for scalable dual-linking (real Raylib for game/unit tests, stubs for integration tests). 11 integration tests covering combat, game-over flow, spawning, input, and full combat loops. |
+| 2026-04-10 | First-run movement picker: on first launch (no settings.ini), players choose between 8-Directional (default) and Tank Controls before seeing the main menu. Default movement changed from Tank to 8-Directional. `settings_init` now returns bool for first-run detection. 2 new settings tests. |
+| 2026-04-10 | Added main menu, pause menu, and settings menu. Settings persist to `settings.ini`. Players can switch between Tank Controls and 8-Directional movement. ESC pauses the game. New `settings` module with 14 tests; 8 new player tests for 8-dir movement; 4 new game tests for phases. Fixed winmm linker conflict on Windows. |
 | 2026-04-10 | Bullets now bounce off walls up to 3 times instead of being destroyed on impact. Enemy spawn waves reduced from 4-8 to 2-5 per wave. 3 new bullet bounce tests. |
 | 2026-04-10 | Added BFS flow field pathfinding for enemies: enemies navigate around obstacles via shortest path. Flow field computed each frame from player position. Enemies use flow field at long range, direct-seek at close range (<3 tiles). 8 new tilemap tests, 3 new enemy tests. |
 | 2026-04-10 | Added audio system: procedural bullet SFX, enemy-hit SFX, bullet-hit-enemy SFX, and death screen music (sci-fi synth with detuned oscillators, drone bass, tritone melody) |
@@ -39,17 +41,19 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Known Issues / Next Steps
 
-- Implement basic enemy spawning (Swarmers first -- simplest behavior) -- done
-- Add bullet-enemy collision -- done
-- Add game-over state when HP reaches zero -- done
-- Add Camera2D and scrollable world -- done
-- Add procedural tilemap with obstacles -- done
-- **`PlaySound` linker conflict on Windows:** Raylib's `PlaySound` symbol conflicts with `winmm.lib` (`WINMM.dll`). The game exe fails to link with `LNK2005`/`LNK1169`. Pre-existing since winmm was added. Needs a fix (e.g. `#define PlaySound` rename, or drop winmm and let Raylib handle audio natively).
+<<<<<<< HEAD
+- ~~Implement basic enemy spawning~~ -- done
+- ~~Add bullet-enemy collision~~ -- done
+- ~~Add game-over state when HP reaches zero~~ -- done
+- ~~Add Camera2D and scrollable world~~ -- done
+- ~~Add procedural tilemap with obstacles~~ -- done
+- ~~Decide on level structure~~ -- resolved: hybrid arena-dungeon (combat rooms lock, corridors open)
+- Design doc rewritten with all major design decisions resolved (see design/DESIGN.md)
 - **Redundant include path in CMakeLists.txt:** `astro_blitz_objs` has both `$<TARGET_PROPERTY:raylib,INTERFACE_INCLUDE_DIRECTORIES>` and `${raylib_SOURCE_DIR}/src` which resolve to the same directory. Harmless (CMake deduplicates) but could be cleaned up.
-- Add melee attack (right-click)
-- Room-based level generation (corridors, doors) -- currently open-world with scattered obstacles
+- **Next sprint:** Melee attack (right-click) + game feel (screen shake, damage numbers)
+- Followed by: Grunt enemy (ranged AI), weapon system + prefix/suffix modifiers
+- Room-based level generation (BSP or room-placement) to replace scattered obstacles
 - Minimap overlay (design doc calls for top-right corner)
-- Decide on level structure (linear floors vs branching paths)
 - Source or create placeholder sprite assets -- partially addressed with layered geometric art
 
 ## Workarounds & Patterns
