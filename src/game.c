@@ -624,10 +624,21 @@ static void draw_hud(const GameState *gs) {
         DrawText(combo_text, x, y, font_size, combo_color);
     }
 
-    /* ── Kill counter (top-right) ──────────────────────────────────────── */
+    /* ── Kill counter + floor (top-right) ─────────────────────────────── */
+    const char *floor_text = TextFormat("Floor %d", gs->floor);
+    int floor_w = MeasureText(floor_text, 16);
+    DrawText(floor_text, SCREEN_WIDTH - floor_w - 10, 10, 16, (Color){0, 220, 200, 255});
+
     const char *kills_text = TextFormat("Kills: %d", gs->stats.kills);
     int kills_w = MeasureText(kills_text, 16);
-    DrawText(kills_text, SCREEN_WIDTH - kills_w - 10, 10, 16, RAYWHITE);
+    DrawText(kills_text, SCREEN_WIDTH - kills_w - 10, 30, 16, RAYWHITE);
+
+    /* Exit indicator */
+    if (gs->exit_active) {
+        DrawText("EXIT OPEN - Find the portal!",
+                 (SCREEN_WIDTH - MeasureText("EXIT OPEN - Find the portal!", 16)) / 2,
+                 SCREEN_HEIGHT - 55, 16, (Color){0, 255, 150, 255});
+    }
 }
 
 static void draw_game_over(const GameState *gs) {
@@ -667,11 +678,17 @@ static void draw_game_over(const GameState *gs) {
     DrawText(waves_text, stat_x_center - waves_w / 2, stat_y + 2 * line_spacing, stat_size,
              RAYWHITE);
 
+    /* Floor reached */
+    const char *floor_text = TextFormat("Floor: %d", gs->floor);
+    int floor_w = MeasureText(floor_text, stat_size);
+    DrawText(floor_text, stat_x_center - floor_w / 2, stat_y + 3 * line_spacing, stat_size,
+             (Color){0, 220, 200, 255});
+
     /* Best combo */
     if (gs->combo.best >= 2) {
         const char *combo_text = TextFormat("Best Combo: x%d", gs->combo.best);
         int combo_w = MeasureText(combo_text, stat_size);
-        DrawText(combo_text, stat_x_center - combo_w / 2, stat_y + 3 * line_spacing, stat_size,
+        DrawText(combo_text, stat_x_center - combo_w / 2, stat_y + 4 * line_spacing, stat_size,
                  (Color){255, 200, 50, 255});
     }
 
@@ -859,6 +876,36 @@ static void update_settings(GameState *gs) {
     }
 }
 
+static void advance_floor(GameState *gs) {
+    gs->floor++;
+    gs->floor_waves = 0;
+    gs->exit_active = false;
+
+    /* Regenerate world */
+    int spawn_tx = WORLD_COLS / 2;
+    int spawn_ty = WORLD_ROWS / 2;
+    tilemap_generate(&gs->tilemap, spawn_tx, spawn_ty, 0);
+    gs->arena = tilemap_get_world_bounds(&gs->tilemap);
+
+    /* Place player at center */
+    Vector2 center = tilemap_tile_to_world(&gs->tilemap, spawn_tx, spawn_ty);
+    center.x += TILE_SIZE / 2.0f;
+    center.y += TILE_SIZE / 2.0f;
+    gs->player.position = center;
+
+    /* Reset pools (keep player stats, weapon, HP) */
+    bullet_pool_init(&gs->bullets);
+    enemy_pool_init(&gs->enemies);
+    enemy_bullet_pool_init(&gs->enemy_bullets);
+    particle_pool_init(&gs->particles);
+    damage_number_pool_init(&gs->damage_numbers);
+    weapon_pickup_pool_init(&gs->weapon_pickups);
+    gs->spawn_timer = SPAWN_INTERVAL;
+
+    /* Camera */
+    gs->camera.target = center;
+}
+
 static void update_playing(GameState *gs) {
     /* ESC to pause */
     if (IsKeyPressed(KEY_ESCAPE)) {
@@ -925,6 +972,37 @@ static void update_playing(GameState *gs) {
         spawn_wave(gs);
         gs->spawn_timer = SPAWN_INTERVAL;
         gs->stats.waves_spawned++;
+        gs->floor_waves++;
+
+        /* Spawn exit after enough waves on this floor */
+        if (gs->floor_waves >= WAVES_PER_FLOOR && !gs->exit_active) {
+            /* Place exit at a random walkable tile far from player */
+            for (int attempt = 0; attempt < 20; attempt++) {
+                int tx = GetRandomValue(2, WORLD_COLS - 3);
+                int ty = GetRandomValue(2, WORLD_ROWS - 3);
+                if (gs->tilemap.tiles[ty][tx] == TILE_EMPTY) {
+                    Vector2 epos = tilemap_tile_to_world(&gs->tilemap, tx, ty);
+                    epos.x += TILE_SIZE / 2.0f;
+                    epos.y += TILE_SIZE / 2.0f;
+                    float dx = epos.x - gs->player.position.x;
+                    float dy = epos.y - gs->player.position.y;
+                    if (dx * dx + dy * dy > 200.0f * 200.0f) {
+                        gs->exit_position = epos;
+                        gs->exit_active = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /* ── Floor exit check ─────────────────────────────────────────────── */
+    if (gs->exit_active) {
+        if (check_circle_collision(gs->player.position, PLAYER_RADIUS, gs->exit_position,
+                                   EXIT_RADIUS)) {
+            advance_floor(gs);
+            return; /* skip rest of frame after floor transition */
+        }
     }
 
     /* ── Enemy update ─────────────────────────────────────────────────── */
@@ -1134,6 +1212,10 @@ void game_init(GameState *gs) {
     gs->should_quit = false;
     gs->stats = (GameStats){.kills = 0, .survival_time = 0.0f, .waves_spawned = 0};
     gs->combo = (ComboState){.count = 0, .timer = 0.0f, .display_timer = 0.0f, .best = 0};
+    gs->floor = 1;
+    gs->floor_waves = 0;
+    gs->exit_active = false;
+    gs->exit_position = (Vector2){0};
 
     /* Camera centered on player */
     gs->camera.target = center;
@@ -1202,6 +1284,16 @@ void game_draw(const GameState *gs) {
         /* Draw the world behind any overlay */
         BeginMode2D(draw_cam);
         tilemap_draw(&gs->tilemap, gs->camera);
+        /* Exit portal */
+        if (gs->exit_active) {
+            float pulse = 0.5f + 0.5f * sinf((float)gs->stats.survival_time * 3.0f);
+            unsigned char ga = (unsigned char)(60.0f + 60.0f * pulse);
+            DrawCircleV(gs->exit_position, EXIT_RADIUS + 8.0f, (Color){0, 255, 150, ga});
+            DrawCircleV(gs->exit_position, EXIT_RADIUS, (Color){0, 40, 30, 255});
+            DrawCircleLinesV(gs->exit_position, EXIT_RADIUS, (Color){0, 255, 150, 200});
+            DrawCircleLinesV(gs->exit_position, EXIT_RADIUS + 2.0f, (Color){0, 200, 120, 100});
+        }
+
         weapon_pickup_pool_draw(&gs->weapon_pickups);
         bullet_pool_draw(&gs->bullets);
         enemy_bullet_pool_draw(&gs->enemy_bullets);

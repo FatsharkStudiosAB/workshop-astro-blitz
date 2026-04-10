@@ -84,6 +84,12 @@ typedef struct {
     int best;            /* best combo this run */
 } ComboState;
 
+/* ── Floor progression ─────────────────────────────────────────────────────── */
+
+#define WAVES_PER_FLOOR 5          /* waves before exit spawns */
+#define EXIT_RADIUS 16.0f          /* exit tile collision radius */
+#define FLOOR_ENEMY_HP_SCALE 0.15f /* +15% enemy HP per floor */
+
 /* Run statistics shown on the game-over screen */
 typedef struct {
     int kills;           /* total enemies killed this run */
@@ -110,6 +116,10 @@ typedef struct {
     int menu_cursor;                 /* currently highlighted menu item */
     GameStats stats;
     ComboState combo;
+    int floor;             /* current floor number (1-based) */
+    int floor_waves;       /* waves spawned on current floor */
+    Vector2 exit_position; /* position of exit tile */
+    bool exit_active;      /* true when exit tile is spawned */
     Settings settings;
     bool should_quit; /* set by menu "Quit" action */
 } GameState;
