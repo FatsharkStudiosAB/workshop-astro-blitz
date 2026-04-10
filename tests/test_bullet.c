@@ -173,8 +173,7 @@ void test_fire_pool_full_silently_drops(void) {
     }
 }
 
-void test_fire_returns_true_on_success(void)
-{
+void test_fire_returns_true_on_success(void) {
     BulletPool pool;
     bullet_pool_init(&pool);
 
@@ -182,8 +181,7 @@ void test_fire_returns_true_on_success(void)
     TEST_ASSERT_TRUE(fired);
 }
 
-void test_fire_returns_false_when_rate_limited(void)
-{
+void test_fire_returns_false_when_rate_limited(void) {
     BulletPool pool;
     bullet_pool_init(&pool);
 

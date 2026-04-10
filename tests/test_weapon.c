@@ -2,9 +2,9 @@
  * test_weapon.c -- Unit tests for the weapon system
  */
 
+#include "bullet.h"
 #include "unity.h"
 #include "weapon.h"
-#include "bullet.h"
 
 void setUp(void) {}
 void tearDown(void) {}
@@ -72,9 +72,9 @@ void test_fire_weapon_single_bullet(void) {
     Vector2 origin = {100.0f, 100.0f};
     Vector2 dir = {1.0f, 0.0f};
 
-    int fired = bullet_pool_fire_weapon(&pool, origin, dir, w.fire_rate, w.damage,
-                                        w.bullet_speed, w.spread_angle, w.projectile_count,
-                                        w.bullet_lifetime, w.bullet_color);
+    int fired = bullet_pool_fire_weapon(&pool, origin, dir, w.fire_rate, w.damage, w.bullet_speed,
+                                        w.spread_angle, w.projectile_count, w.bullet_lifetime,
+                                        w.bullet_color);
 
     TEST_ASSERT_EQUAL(1, fired);
 
@@ -92,9 +92,9 @@ void test_fire_weapon_shotgun_multiple_bullets(void) {
     Vector2 origin = {100.0f, 100.0f};
     Vector2 dir = {1.0f, 0.0f};
 
-    int fired = bullet_pool_fire_weapon(&pool, origin, dir, w.fire_rate, w.damage,
-                                        w.bullet_speed, w.spread_angle, w.projectile_count,
-                                        w.bullet_lifetime, w.bullet_color);
+    int fired = bullet_pool_fire_weapon(&pool, origin, dir, w.fire_rate, w.damage, w.bullet_speed,
+                                        w.spread_angle, w.projectile_count, w.bullet_lifetime,
+                                        w.bullet_color);
 
     TEST_ASSERT_EQUAL(w.projectile_count, fired);
 
@@ -117,15 +117,15 @@ void test_fire_weapon_respects_cooldown(void) {
     Vector2 dir = {1.0f, 0.0f};
 
     /* First shot succeeds */
-    int fired1 = bullet_pool_fire_weapon(&pool, origin, dir, w.fire_rate, w.damage,
-                                         w.bullet_speed, w.spread_angle, w.projectile_count,
-                                         w.bullet_lifetime, w.bullet_color);
+    int fired1 = bullet_pool_fire_weapon(&pool, origin, dir, w.fire_rate, w.damage, w.bullet_speed,
+                                         w.spread_angle, w.projectile_count, w.bullet_lifetime,
+                                         w.bullet_color);
     TEST_ASSERT_EQUAL(1, fired1);
 
     /* Second shot immediately should be rate-limited */
-    int fired2 = bullet_pool_fire_weapon(&pool, origin, dir, w.fire_rate, w.damage,
-                                         w.bullet_speed, w.spread_angle, w.projectile_count,
-                                         w.bullet_lifetime, w.bullet_color);
+    int fired2 = bullet_pool_fire_weapon(&pool, origin, dir, w.fire_rate, w.damage, w.bullet_speed,
+                                         w.spread_angle, w.projectile_count, w.bullet_lifetime,
+                                         w.bullet_color);
     TEST_ASSERT_EQUAL(0, fired2);
 }
 

@@ -14,8 +14,7 @@ void setUp(void) {
     screenshake_init(&shake);
 }
 
-void tearDown(void) {
-}
+void tearDown(void) {}
 
 /* ── Init tests ───────────────────────────────────────────────────────────── */
 

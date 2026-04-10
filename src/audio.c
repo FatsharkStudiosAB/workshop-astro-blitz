@@ -59,8 +59,7 @@ static Wave generate_death_music_wave(void) {
 
     /* Melody notes (Hz): eerie sci-fi sequence using tritones and minor intervals.
      * Bb2, E3, Bb3, B3 (cluster), F3, Bb2, E3, C3 */
-    float notes[] = {116.54f, 164.81f, 233.08f, 246.94f,
-                     174.61f, 116.54f, 164.81f, 130.81f};
+    float notes[] = {116.54f, 164.81f, 233.08f, 246.94f, 174.61f, 116.54f, 164.81f, 130.81f};
     int note_count = 8;
     float note_duration = DEATH_MUSIC_DURATION / (float)note_count;
 

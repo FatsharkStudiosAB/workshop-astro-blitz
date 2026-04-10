@@ -142,8 +142,7 @@ static Vector2 compute_seek_direction(const Enemy *e, Vector2 target, const Tile
     return Vector2Scale(diff, 1.0f / dist);
 }
 
-static void update_swarmer(Enemy *e, float dt, Vector2 target, Rectangle arena,
-                           const Tilemap *tm) {
+static void update_swarmer(Enemy *e, float dt, Vector2 target, Rectangle arena, const Tilemap *tm) {
     Vector2 dir = compute_seek_direction(e, target, tm);
     e->velocity = Vector2Scale(dir, e->speed);
     e->position = Vector2Add(e->position, Vector2Scale(e->velocity, dt));
@@ -151,8 +150,8 @@ static void update_swarmer(Enemy *e, float dt, Vector2 target, Rectangle arena,
     resolve_tile_collision_enemy(&e->position, e->radius, tm);
 }
 
-static void update_grunt(Enemy *e, float dt, Vector2 target, Rectangle arena,
-                         const Tilemap *tm, EnemyBulletPool *ebp) {
+static void update_grunt(Enemy *e, float dt, Vector2 target, Rectangle arena, const Tilemap *tm,
+                         EnemyBulletPool *ebp) {
     Vector2 diff = Vector2Subtract(target, e->position);
     float dist = Vector2Length(diff);
 
@@ -182,8 +181,7 @@ static void update_grunt(Enemy *e, float dt, Vector2 target, Rectangle arena,
     }
 }
 
-static void update_stalker(Enemy *e, float dt, Vector2 target, Rectangle arena,
-                           const Tilemap *tm) {
+static void update_stalker(Enemy *e, float dt, Vector2 target, Rectangle arena, const Tilemap *tm) {
     Vector2 diff = Vector2Subtract(target, e->position);
     float dist = Vector2Length(diff);
 
@@ -236,8 +234,7 @@ static void update_stalker(Enemy *e, float dt, Vector2 target, Rectangle arena,
     }
 }
 
-static void update_bomber(Enemy *e, float dt, Vector2 target, Rectangle arena,
-                          const Tilemap *tm) {
+static void update_bomber(Enemy *e, float dt, Vector2 target, Rectangle arena, const Tilemap *tm) {
     Vector2 diff = Vector2Subtract(target, e->position);
     float dist = Vector2Length(diff);
 
@@ -326,17 +323,17 @@ static void draw_swarmer(const Enemy *e) {
     DrawCircleLinesV(pos, r, body_outline);
 
     /* Mandible lines */
-    Vector2 jaw_base_l = Vector2Add(
-        pos, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, r * 0.4f)));
-    Vector2 jaw_base_r = Vector2Add(
-        pos, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, -r * 0.4f)));
+    Vector2 jaw_base_l =
+        Vector2Add(pos, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, r * 0.4f)));
+    Vector2 jaw_base_r =
+        Vector2Add(pos, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, -r * 0.4f)));
     Vector2 jaw_tip = Vector2Add(pos, Vector2Scale(facing, r + 2.0f));
     DrawLineEx(jaw_base_l, jaw_tip, 1.5f, body_outline);
     DrawLineEx(jaw_base_r, jaw_tip, 1.5f, body_outline);
 
     /* Eyes */
-    Vector2 eye_l = Vector2Add(
-        pos, Vector2Add(Vector2Scale(facing, r * 0.35f), Vector2Scale(perp, r * 0.35f)));
+    Vector2 eye_l =
+        Vector2Add(pos, Vector2Add(Vector2Scale(facing, r * 0.35f), Vector2Scale(perp, r * 0.35f)));
     Vector2 eye_r = Vector2Add(
         pos, Vector2Add(Vector2Scale(facing, r * 0.35f), Vector2Scale(perp, -r * 0.35f)));
     DrawCircleV(eye_l, 1.5f, eye_color);
@@ -394,10 +391,10 @@ static void draw_stalker(const Enemy *e) {
     }
 
     /* Two narrow eyes */
-    Vector2 eye_l = Vector2Add(
-        pos, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, r * 0.25f)));
-    Vector2 eye_r = Vector2Add(
-        pos, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, -r * 0.25f)));
+    Vector2 eye_l =
+        Vector2Add(pos, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, r * 0.25f)));
+    Vector2 eye_r =
+        Vector2Add(pos, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, -r * 0.25f)));
     DrawCircleV(eye_l, 1.5f, eye_color);
     DrawCircleV(eye_r, 1.5f, eye_color);
 }
@@ -468,8 +465,8 @@ void enemy_bullet_pool_init(EnemyBulletPool *pool) {
     memset(pool->bullets, 0, sizeof(pool->bullets));
 }
 
-void enemy_bullet_pool_fire(EnemyBulletPool *pool, Vector2 origin, Vector2 direction,
-                            float speed, float damage) {
+void enemy_bullet_pool_fire(EnemyBulletPool *pool, Vector2 origin, Vector2 direction, float speed,
+                            float damage) {
     for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
         EnemyBullet *b = &pool->bullets[i];
         if (!b->active) {

@@ -39,8 +39,7 @@ void setUp(void) {
     game_init(&gs);
 }
 
-void tearDown(void) {
-}
+void tearDown(void) {}
 
 /* ── Test: bullet kills enemy ─────────────────────────────────────────────── */
 
@@ -258,8 +257,7 @@ void test_shooting_via_game_update(void) {
 void test_full_combat_loop(void) {
     /* Place enemy to the right */
     float enemy_x = gs.player.position.x + 40.0f;
-    enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER,
-                     (Vector2){enemy_x, gs.player.position.y});
+    enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER, (Vector2){enemy_x, gs.player.position.y});
 
     /* Aim right: set mouse position to the right of the player in screen
      * space.  Camera offset is (400, 300) and zoom is 1.0, so mouse at

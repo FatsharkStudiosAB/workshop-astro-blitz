@@ -95,14 +95,12 @@ void particle_burst(ParticlePool *pool, Vector2 pos, int count, float speed_min,
                     float life_min, float life_max, float size, Color color) {
     for (int i = 0; i < count; i++) {
         /* Random angle in full circle */
-        float angle =
-            ((float)GetRandomValue(0, 3600) / 3600.0f) * 2.0f * (float)M_PI;
+        float angle = ((float)GetRandomValue(0, 3600) / 3600.0f) * 2.0f * (float)M_PI;
         /* Random speed in range */
         float speed =
             speed_min + ((float)GetRandomValue(0, 1000) / 1000.0f) * (speed_max - speed_min);
         /* Random lifetime in range */
-        float life =
-            life_min + ((float)GetRandomValue(0, 1000) / 1000.0f) * (life_max - life_min);
+        float life = life_min + ((float)GetRandomValue(0, 1000) / 1000.0f) * (life_max - life_min);
 
         Vector2 vel = {cosf(angle) * speed, sinf(angle) * speed};
         particle_emit(pool, pos, vel, life, size, color);

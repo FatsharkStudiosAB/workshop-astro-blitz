@@ -12,8 +12,8 @@
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
-#define SHAKE_MAX_OFFSET 8.0f  /* maximum pixel offset at trauma = 1.0 */
-#define SHAKE_DECAY_RATE 3.0f  /* trauma units lost per second */
+#define SHAKE_MAX_OFFSET 8.0f /* maximum pixel offset at trauma = 1.0 */
+#define SHAKE_DECAY_RATE 3.0f /* trauma units lost per second */
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 

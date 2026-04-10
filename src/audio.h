@@ -17,12 +17,12 @@
 #define SHOOT_SFX_DURATION 0.08f    /* seconds */
 #define SHOOT_SFX_SAMPLE_RATE 44100 /* samples per second */
 
-#define HIT_SFX_FREQ 120.0f        /* Hz -- low impact thud */
-#define HIT_SFX_DURATION 0.15f     /* seconds */
-#define HIT_SFX_SAMPLE_RATE 44100  /* samples per second */
+#define HIT_SFX_FREQ 120.0f       /* Hz -- low impact thud */
+#define HIT_SFX_DURATION 0.15f    /* seconds */
+#define HIT_SFX_SAMPLE_RATE 44100 /* samples per second */
 
-#define ENEMY_HIT_SFX_FREQ 1200.0f    /* Hz -- bright metallic ping */
-#define ENEMY_HIT_SFX_DURATION 0.10f  /* seconds */
+#define ENEMY_HIT_SFX_FREQ 1200.0f   /* Hz -- bright metallic ping */
+#define ENEMY_HIT_SFX_DURATION 0.10f /* seconds */
 #define ENEMY_HIT_SFX_SAMPLE_RATE 44100
 
 #define DEATH_MUSIC_SAMPLE_RATE 44100

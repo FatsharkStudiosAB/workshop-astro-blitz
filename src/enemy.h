@@ -29,7 +29,7 @@ typedef struct Tilemap Tilemap;
 #define GRUNT_SPEED 80.0f
 #define GRUNT_HP 3.0f
 #define GRUNT_RADIUS 10.0f
-#define GRUNT_DAMAGE 5.0f        /* contact damage */
+#define GRUNT_DAMAGE 5.0f /* contact damage */
 #define GRUNT_SHOOT_COOLDOWN 2.0f
 #define GRUNT_BULLET_SPEED 250.0f
 #define GRUNT_BULLET_DAMAGE 8.0f
@@ -42,14 +42,14 @@ typedef struct Tilemap Tilemap;
 #define STALKER_DAMAGE 15.0f
 #define STALKER_CIRCLE_RANGE 120.0f /* distance to circle at */
 #define STALKER_DASH_SPEED 500.0f
-#define STALKER_DASH_INTERVAL 3.0f  /* seconds between dashes */
+#define STALKER_DASH_INTERVAL 3.0f /* seconds between dashes */
 #define STALKER_DASH_DURATION 0.2f
 
 /* Bomber constants */
 #define BOMBER_SPEED 100.0f
 #define BOMBER_HP 4.0f
 #define BOMBER_RADIUS 12.0f
-#define BOMBER_DAMAGE 20.0f       /* contact damage */
+#define BOMBER_DAMAGE 20.0f /* contact damage */
 #define BOMBER_CHARGE_RANGE 150.0f
 #define BOMBER_CHARGE_SPEED 350.0f
 #define BOMBER_EXPLOSION_RADIUS 60.0f
@@ -130,8 +130,8 @@ int enemy_pool_active_count(const EnemyPool *pool);
 void enemy_bullet_pool_init(EnemyBulletPool *pool);
 
 /* Fire an enemy bullet from origin in direction. */
-void enemy_bullet_pool_fire(EnemyBulletPool *pool, Vector2 origin, Vector2 direction,
-                            float speed, float damage);
+void enemy_bullet_pool_fire(EnemyBulletPool *pool, Vector2 origin, Vector2 direction, float speed,
+                            float damage);
 
 /* Update all active enemy bullets (movement + lifetime). */
 void enemy_bullet_pool_update(EnemyBulletPool *pool, float dt, Rectangle arena);

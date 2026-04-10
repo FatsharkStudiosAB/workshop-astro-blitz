@@ -203,8 +203,8 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                 audio_play_enemy_hit(&gs->audio);
 
                 /* Hit sparks */
-                particle_burst(&gs->particles, bullet->position, 6, 40.0f, 120.0f, 0.1f,
-                               0.3f, 2.5f, (Color){255, 200, 50, 255});
+                particle_burst(&gs->particles, bullet->position, 6, 40.0f, 120.0f, 0.1f, 0.3f, 2.5f,
+                               (Color){255, 200, 50, 255});
 
                 /* Damage number */
                 damage_number_spawn(&gs->damage_numbers, enemy->position, dmg,
@@ -216,16 +216,16 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                     screenshake_add_trauma(&gs->shake, 0.15f);
 
                     /* Death explosion particles */
-                    particle_burst(&gs->particles, enemy->position, 15, 30.0f, 150.0f,
-                                   0.2f, 0.6f, 3.5f, (Color){255, 60, 30, 255});
-                    particle_burst(&gs->particles, enemy->position, 8, 20.0f, 80.0f, 0.3f,
-                                   0.8f, 2.0f, (Color){255, 160, 40, 200});
+                    particle_burst(&gs->particles, enemy->position, 15, 30.0f, 150.0f, 0.2f, 0.6f,
+                                   3.5f, (Color){255, 60, 30, 255});
+                    particle_burst(&gs->particles, enemy->position, 8, 20.0f, 80.0f, 0.3f, 0.8f,
+                                   2.0f, (Color){255, 160, 40, 200});
 
                     /* Bomber AoE explosion on death */
                     if (enemy->type == ENEMY_BOMBER) {
                         screenshake_add_trauma(&gs->shake, 0.4f);
-                        particle_burst(&gs->particles, enemy->position, 20, 50.0f, 200.0f,
-                                       0.3f, 0.8f, 5.0f, (Color){255, 120, 20, 255});
+                        particle_burst(&gs->particles, enemy->position, 20, 50.0f, 200.0f, 0.3f,
+                                       0.8f, 5.0f, (Color){255, 120, 20, 255});
                         /* Damage player if within blast radius */
                         float dx = gs->player.position.x - enemy->position.x;
                         float dy = gs->player.position.y - enemy->position.y;
@@ -273,8 +273,8 @@ static void resolve_enemy_player_collisions(GameState *gs) {
                                 (Color){255, 60, 60, 255});
 
             /* Impact particles */
-            particle_burst(&gs->particles, enemy->position, 10, 30.0f, 120.0f, 0.15f,
-                           0.4f, 3.0f, (Color){255, 40, 20, 255});
+            particle_burst(&gs->particles, enemy->position, 10, 30.0f, 120.0f, 0.15f, 0.4f, 3.0f,
+                           (Color){255, 40, 20, 255});
 
             if (p->hp < 0.0f) {
                 p->hp = 0.0f;
@@ -617,10 +617,10 @@ static void update_playing(GameState *gs) {
         Vector2 muzzle = Vector2Add(gs->player.position,
                                     Vector2Scale(gs->player.aim_direction, PLAYER_RADIUS + 2.0f));
         Weapon *w = &gs->player.current_weapon;
-        int fired = bullet_pool_fire_weapon(
-            &gs->bullets, muzzle, gs->player.aim_direction, w->fire_rate, w->damage,
-            w->bullet_speed, w->spread_angle, w->projectile_count, w->bullet_lifetime,
-            w->bullet_color);
+        int fired =
+            bullet_pool_fire_weapon(&gs->bullets, muzzle, gs->player.aim_direction, w->fire_rate,
+                                    w->damage, w->bullet_speed, w->spread_angle,
+                                    w->projectile_count, w->bullet_lifetime, w->bullet_color);
         if (fired > 0) {
             audio_play_shoot(&gs->audio);
 

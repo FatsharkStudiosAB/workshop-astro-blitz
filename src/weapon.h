@@ -22,14 +22,14 @@ typedef enum {
 
 typedef struct {
     WeaponType type;
-    float fire_rate;        /* seconds between shots */
-    float damage;           /* damage per bullet */
-    float bullet_speed;     /* pixels per second */
-    float spread_angle;     /* total cone spread in degrees (0 = perfectly accurate) */
-    int projectile_count;   /* bullets per shot */
-    float bullet_lifetime;  /* seconds before bullet despawns */
-    Color bullet_color;     /* visual color for bullets */
-    const char *name;       /* display name for HUD */
+    float fire_rate;       /* seconds between shots */
+    float damage;          /* damage per bullet */
+    float bullet_speed;    /* pixels per second */
+    float spread_angle;    /* total cone spread in degrees (0 = perfectly accurate) */
+    int projectile_count;  /* bullets per shot */
+    float bullet_lifetime; /* seconds before bullet despawns */
+    Color bullet_color;    /* visual color for bullets */
+    const char *name;      /* display name for HUD */
 } Weapon;
 
 /* ── Public API ────────────────────────────────────────────────────────────── */

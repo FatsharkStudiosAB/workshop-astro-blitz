@@ -54,6 +54,24 @@ typedef struct {
     DamageNumber numbers[MAX_DAMAGE_NUMBERS];
 } DamageNumberPool;
 
+/* ── Weapon pickups ────────────────────────────────────────────────────────── */
+
+#define MAX_WEAPON_PICKUPS 16
+#define WEAPON_PICKUP_RADIUS 10.0f
+#define WEAPON_PICKUP_LIFETIME 15.0f /* seconds before despawn */
+#define WEAPON_DROP_CHANCE 30        /* percent chance to drop on kill (non-swarmer) */
+
+typedef struct {
+    Vector2 position;
+    Weapon weapon;
+    float lifetime;
+    bool active;
+} WeaponPickup;
+
+typedef struct {
+    WeaponPickup pickups[MAX_WEAPON_PICKUPS];
+} WeaponPickupPool;
+
 /* Run statistics shown on the game-over screen */
 typedef struct {
     int kills;           /* total enemies killed this run */

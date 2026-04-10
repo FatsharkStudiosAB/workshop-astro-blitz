@@ -14,8 +14,7 @@ void setUp(void) {
     particle_pool_init(&pool);
 }
 
-void tearDown(void) {
-}
+void tearDown(void) {}
 
 /* ── Init tests ───────────────────────────────────────────────────────────── */
 

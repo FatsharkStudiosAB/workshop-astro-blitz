@@ -26,8 +26,8 @@ typedef struct {
     Vector2 position;
     Vector2 velocity;
     float lifetime;
-    float damage;   /* damage dealt on hit (from weapon) */
-    Color color;    /* visual color (from weapon) */
+    float damage; /* damage dealt on hit (from weapon) */
+    Color color;  /* visual color (from weapon) */
     int bounces;
     bool active;
 } Bullet;

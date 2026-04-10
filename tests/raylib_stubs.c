@@ -153,8 +153,7 @@ void InitWindow(int width, int height, const char *title) {
     (void)title;
 }
 
-void CloseWindow(void) {
-}
+void CloseWindow(void) {}
 
 void SetTargetFPS(int fps) {
     (void)fps;
@@ -166,11 +165,9 @@ bool WindowShouldClose(void) {
 
 /* ── Audio stubs (no-ops) ─────────────────────────────────────────────────── */
 
-void InitAudioDevice(void) {
-}
+void InitAudioDevice(void) {}
 
-void CloseAudioDevice(void) {
-}
+void CloseAudioDevice(void) {}
 
 Sound LoadSoundFromWave(Wave wave) {
     (void)wave;
@@ -205,11 +202,9 @@ bool IsSoundPlaying(Sound sound) {
 
 /* ── Rendering stubs (no-ops) ─────────────────────────────────────────────── */
 
-void BeginDrawing(void) {
-}
+void BeginDrawing(void) {}
 
-void EndDrawing(void) {
-}
+void EndDrawing(void) {}
 
 void ClearBackground(Color color) {
     (void)color;
@@ -219,8 +214,7 @@ void BeginMode2D(Camera2D camera) {
     (void)camera;
 }
 
-void EndMode2D(void) {
-}
+void EndMode2D(void) {}
 
 void DrawPixel(int posX, int posY, Color color) {
     (void)posX;
