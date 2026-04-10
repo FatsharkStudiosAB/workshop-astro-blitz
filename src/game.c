@@ -357,6 +357,7 @@ static void spawn_wave(GameState *gs) {
                         Enemy *fe = &gs->enemies.enemies[fi];
                         if (fe->active && fe->position.x == pos.x && fe->position.y == pos.y) {
                             fe->hp *= scale;
+                            fe->max_hp = fe->hp;
                             break;
                         }
                     }
@@ -389,10 +390,21 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                 if (dmg < 1) {
                     dmg = 1;
                 }
+                /* Knockback: push enemy in bullet direction */
+                float bspeed = Vector2Length(bullet->velocity);
+                if (bspeed > 0.01f) {
+                    Vector2 kb_dir = Vector2Scale(bullet->velocity, 1.0f / bspeed);
+                    enemy->velocity =
+                        Vector2Add(enemy->velocity, Vector2Scale(kb_dir, KNOCKBACK_BULLET));
+                }
+
                 bullet->active = false;
                 enemy->hp -= bullet->damage;
                 enemy->hit_flash = HIT_FLASH_DURATION;
                 audio_play_enemy_hit(&gs->audio);
+
+                /* Hitstop */
+                gs->hitstop_timer = HITSTOP_HIT;
 
                 /* Hit sparks */
                 particle_burst(&gs->particles, bullet->position, 6, 40.0f, 120.0f, 0.1f, 0.3f, 2.5f,
@@ -405,6 +417,11 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                 if (enemy->hp <= 0.0f) {
                     enemy->active = false;
                     gs->stats.kills++;
+
+                    /* Kill juice: longer hitstop + slowmo */
+                    gs->hitstop_timer = HITSTOP_KILL;
+                    gs->slowmo_timer = SLOWMO_DURATION;
+                    gs->slowmo_scale = SLOWMO_SCALE;
 
                     /* Combo system */
                     gs->combo.count++;
@@ -492,6 +509,7 @@ static void resolve_enemy_player_collisions(GameState *gs) {
             enemy->active = false; /* swarmer dies on contact */
             audio_play_hit(&gs->audio);
             screenshake_add_trauma(&gs->shake, 0.35f);
+            gs->hitstop_timer = HITSTOP_PLAYER;
 
             /* Damage number on player */
             damage_number_spawn(&gs->damage_numbers, p->position, (int)enemy->damage,
@@ -528,6 +546,7 @@ static void resolve_enemy_bullet_player_collisions(GameState *gs) {
             p->hp -= b->damage;
             audio_play_hit(&gs->audio);
             screenshake_add_trauma(&gs->shake, 0.2f);
+            gs->hitstop_timer = HITSTOP_PLAYER;
 
             damage_number_spawn(&gs->damage_numbers, p->position, (int)b->damage,
                                 (Color){255, 60, 60, 255});
@@ -579,6 +598,7 @@ static void resolve_melee_enemy_collisions(GameState *gs) {
         enemy->hp -= MELEE_DAMAGE;
         enemy->hit_flash = 0.1f;
         audio_play_enemy_hit(&gs->audio);
+        gs->hitstop_timer = HITSTOP_MELEE;
 
         /* Knockback */
         Vector2 knockback_dir = Vector2Scale(to_enemy, MELEE_KNOCKBACK);
@@ -595,13 +615,19 @@ static void resolve_melee_enemy_collisions(GameState *gs) {
         if (enemy->hp <= 0.0f) {
             enemy->active = false;
             gs->stats.kills++;
+
+            /* Kill juice */
+            gs->hitstop_timer = HITSTOP_KILL + (2.0f / 60.0f); /* melee kills: extra hitstop */
+            gs->slowmo_timer = SLOWMO_DURATION;
+            gs->slowmo_scale = SLOWMO_SCALE;
+
             gs->combo.count++;
             gs->combo.timer = COMBO_TIMEOUT;
             gs->combo.display_timer = COMBO_DISPLAY_DURATION;
             if (gs->combo.count > gs->combo.best) {
                 gs->combo.best = gs->combo.count;
             }
-            screenshake_add_trauma(&gs->shake, 0.2f);
+            screenshake_add_trauma(&gs->shake, 0.25f);
 
             /* Death explosion */
             particle_burst(&gs->particles, enemy->position, 15, 30.0f, 150.0f, 0.2f, 0.6f, 3.5f,
@@ -1042,7 +1068,32 @@ static void update_playing(GameState *gs) {
         return;
     }
 
+    /* ── Hitstop: freeze gameplay but keep rendering ──────────────────── */
+    if (gs->hitstop_timer > 0.0f) {
+        gs->hitstop_timer -= GetFrameTime();
+        return; /* skip ALL gameplay logic this frame */
+    }
+
     float dt = GetFrameTime();
+
+    /* ── Slow-motion: scale time after kills ──────────────────────────── */
+    if (gs->slowmo_timer > 0.0f) {
+        gs->slowmo_timer -= dt;
+        dt *= gs->slowmo_scale;
+    }
+
+    /* ── Camera kick decay ────────────────────────────────────────────── */
+    float kick_len = Vector2Length(gs->camera_kick);
+    if (kick_len > 0.1f) {
+        float decay = CAMERA_KICK_DECAY * dt;
+        if (decay > kick_len) {
+            gs->camera_kick = (Vector2){0, 0};
+        } else {
+            gs->camera_kick = Vector2Scale(gs->camera_kick, 1.0f - decay / kick_len);
+        }
+    } else {
+        gs->camera_kick = (Vector2){0, 0};
+    }
     gs->stats.survival_time += dt;
 
     /* Apply upgrade-driven modifiers before movement */
@@ -1066,6 +1117,11 @@ static void update_playing(GameState *gs) {
                                     w->projectile_count, w->bullet_lifetime, w->bullet_color);
         if (fired > 0) {
             audio_play_shoot(&gs->audio);
+
+            /* Camera kick (nudge opposite to aim direction) */
+            Vector2 kick_dir = {-gs->player.aim_direction.x, -gs->player.aim_direction.y};
+            gs->camera_kick =
+                Vector2Add(gs->camera_kick, Vector2Scale(kick_dir, CAMERA_KICK_STRENGTH));
 
             /* Muzzle flash particles */
             particle_burst(&gs->particles, muzzle, 4, 60.0f, 150.0f, 0.05f, 0.15f, 2.0f,
@@ -1100,6 +1156,48 @@ static void update_playing(GameState *gs) {
     bullet_pool_update(&gs->bullets, dt, gs->arena, &gs->tilemap);
     particle_pool_update(&gs->particles, dt);
     damage_number_pool_update(&gs->damage_numbers, dt);
+
+    /* ── Ambient particles (cosmetic dust motes) ─────────────────────── */
+    {
+        /* Spawn new motes near the camera viewport */
+        float cam_x = gs->camera.target.x;
+        float cam_y = gs->camera.target.y;
+        for (int i = 0; i < MAX_AMBIENT_PARTICLES; i++) {
+            AmbientParticle *ap = &gs->ambient[i];
+            if (!ap->active) {
+                ap->position.x = cam_x + (float)GetRandomValue(-500, 500);
+                ap->position.y = cam_y + (float)GetRandomValue(-400, 400);
+                ap->velocity.x = (float)GetRandomValue(-15, 15);
+                ap->velocity.y = (float)GetRandomValue(-15, 15);
+                ap->alpha = 0.0f;
+                ap->alpha_speed = 0.3f + (float)GetRandomValue(0, 40) / 100.0f;
+                ap->active = true;
+                break; /* spawn one per frame */
+            }
+        }
+        /* Update existing motes */
+        for (int i = 0; i < MAX_AMBIENT_PARTICLES; i++) {
+            AmbientParticle *ap = &gs->ambient[i];
+            if (!ap->active) {
+                continue;
+            }
+            ap->position.x += ap->velocity.x * dt;
+            ap->position.y += ap->velocity.y * dt;
+            ap->alpha += ap->alpha_speed * dt;
+            if (ap->alpha > 0.6f) {
+                ap->alpha_speed = -fabsf(ap->alpha_speed); /* start fading out */
+            }
+            if (ap->alpha < 0.0f) {
+                ap->active = false; /* despawn */
+            }
+            /* Cull if far from camera */
+            float dx = ap->position.x - cam_x;
+            float dy = ap->position.y - cam_y;
+            if (dx * dx + dy * dy > 700.0f * 700.0f) {
+                ap->active = false;
+            }
+        }
+    }
 
     /* ── Enemy spawning ───────────────────────────────────────────────── */
     gs->spawn_timer -= dt;
@@ -1356,6 +1454,12 @@ void game_init(GameState *gs) {
     gs->exit_active = false;
     gs->exit_position = (Vector2){0};
 
+    /* Juice state */
+    gs->hitstop_timer = 0.0f;
+    gs->slowmo_timer = 0.0f;
+    gs->slowmo_scale = SLOWMO_SCALE;
+    gs->camera_kick = (Vector2){0, 0};
+
     /* Camera centered on player */
     gs->camera.target = center;
     gs->camera.offset = (Vector2){SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f};
@@ -1402,9 +1506,6 @@ bool game_should_quit(const GameState *gs) {
 }
 
 void game_draw(const GameState *gs) {
-    BeginDrawing();
-    ClearBackground(BLACK);
-
     switch (gs->phase) {
     case PHASE_FIRST_RUN:
         draw_first_run(gs);
@@ -1417,12 +1518,14 @@ void game_draw(const GameState *gs) {
     case PHASE_PLAYING:
     case PHASE_PAUSED:
     case PHASE_GAME_OVER: {
-        /* Apply screen shake to camera for world rendering */
+        /* Apply screen shake + camera kick to camera for world rendering */
         Camera2D draw_cam = screenshake_apply(&gs->shake, gs->camera);
+        draw_cam.target.x += gs->camera_kick.x;
+        draw_cam.target.y += gs->camera_kick.y;
 
         /* Draw the world behind any overlay */
         BeginMode2D(draw_cam);
-        tilemap_draw(&gs->tilemap, gs->camera);
+        tilemap_draw(&gs->tilemap, gs->camera, gs->stats.survival_time);
         /* Exit portal */
         if (gs->exit_active) {
             float pulse = 0.5f + 0.5f * sinf((float)gs->stats.survival_time * 3.0f);
@@ -1440,6 +1543,17 @@ void game_draw(const GameState *gs) {
         enemy_pool_draw(&gs->enemies);
         particle_pool_draw(&gs->particles);
         damage_number_pool_draw(&gs->damage_numbers);
+
+        /* Ambient dust motes */
+        for (int i = 0; i < MAX_AMBIENT_PARTICLES; i++) {
+            const AmbientParticle *ap = &gs->ambient[i];
+            if (!ap->active || ap->alpha <= 0.0f) {
+                continue;
+            }
+            unsigned char a = (unsigned char)(ap->alpha * 255.0f);
+            DrawCircleV(ap->position, AMBIENT_PARTICLE_RADIUS, (Color){0, 180, 170, a});
+        }
+
         player_draw(&gs->player);
 
         /* Melee swing arc visual */
@@ -1482,7 +1596,7 @@ void game_draw(const GameState *gs) {
         /* Draw world behind if returning to pause, black bg if from main menu */
         if (gs->settings_return_phase != PHASE_MAIN_MENU) {
             BeginMode2D(gs->camera);
-            tilemap_draw(&gs->tilemap, gs->camera);
+            tilemap_draw(&gs->tilemap, gs->camera, gs->stats.survival_time);
             bullet_pool_draw(&gs->bullets);
             enemy_pool_draw(&gs->enemies);
             particle_pool_draw(&gs->particles);
@@ -1493,6 +1607,4 @@ void game_draw(const GameState *gs) {
         draw_settings(gs);
         break;
     }
-
-    EndDrawing();
 }

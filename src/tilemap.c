@@ -261,7 +261,7 @@ void tilemap_compute_flow_field(Tilemap *tm, float target_x, float target_y) {
     }
 }
 
-void tilemap_draw(const Tilemap *tm, Camera2D camera) {
+void tilemap_draw(const Tilemap *tm, Camera2D camera, float time) {
     /* Determine visible tile range from camera viewport */
     float screen_w = (float)GetScreenWidth();
     float screen_h = (float)GetScreenHeight();
@@ -298,27 +298,62 @@ void tilemap_draw(const Tilemap *tm, Camera2D camera) {
 
     int ts = tm->tile_size;
 
+    /* Animated pulse for grid lines (slow wave across floor) */
+    float wave_speed = 0.8f;
+    float wave_scale = 0.03f; /* spatial frequency */
+
     for (int y = start_y; y < end_y; y++) {
         for (int x = start_x; x < end_x; x++) {
             int px = x * ts;
             int py = y * ts;
 
             if (tm->tiles[y][x] == TILE_WALL) {
-                /* Walls: dark steel with subtle edge highlight */
-                Color wall_fill = (Color){40, 45, 55, 255};
+                /* ── Walls: layered steel look ────────────────────── */
+                Color wall_fill = (Color){35, 40, 52, 255};
                 DrawRectangle(px, py, ts, ts, wall_fill);
 
-                /* Subtle inner border for depth */
-                Color wall_edge = (Color){60, 70, 85, 255};
-                DrawRectangleLines(px, py, ts, ts, wall_edge);
+                /* Top/left highlight (light source from top-left) */
+                DrawLineEx((Vector2){(float)px, (float)py}, (Vector2){(float)(px + ts), (float)py},
+                           1.0f, (Color){70, 80, 100, 255});
+                DrawLineEx((Vector2){(float)px, (float)py}, (Vector2){(float)px, (float)(py + ts)},
+                           1.0f, (Color){65, 75, 95, 255});
+
+                /* Bottom/right shadow */
+                DrawLineEx((Vector2){(float)px, (float)(py + ts - 1)},
+                           (Vector2){(float)(px + ts), (float)(py + ts - 1)}, 1.0f,
+                           (Color){20, 22, 30, 255});
+                DrawLineEx((Vector2){(float)(px + ts - 1), (float)py},
+                           (Vector2){(float)(px + ts - 1), (float)(py + ts)}, 1.0f,
+                           (Color){22, 25, 32, 255});
+
+                /* Center rivet dot for detail */
+                DrawPixel(px + ts / 2, py + ts / 2, (Color){55, 62, 78, 255});
             } else {
-                /* Floor: very dark with subtle grid lines */
-                Color floor_fill = (Color){12, 14, 18, 255};
+                /* ── Floor: dark with animated grid lines ─────────── */
+                Color floor_fill = (Color){10, 12, 16, 255};
                 DrawRectangle(px, py, ts, ts, floor_fill);
 
-                /* Subtle grid dot at tile corner for spatial reference */
-                Color grid_dot = (Color){25, 30, 40, 255};
-                DrawPixel(px, py, grid_dot);
+                /* Animated wave: brightness pulses across the floor */
+                float wave_val = sinf((float)x * wave_scale * 40.0f +
+                                      (float)y * wave_scale * 40.0f + time * wave_speed);
+                /* Map -1..1 to 0..1, then use as alpha boost */
+                float pulse = 0.5f + 0.5f * wave_val;
+                unsigned char grid_alpha = (unsigned char)(20.0f + 25.0f * pulse);
+
+                /* Grid lines on tile edges (thin horizontal + vertical) */
+                Color grid_h = (Color){0, 180, 160, grid_alpha};
+                Color grid_v = (Color){0, 160, 180, grid_alpha};
+
+                /* Bottom edge of tile */
+                DrawLineEx((Vector2){(float)px, (float)(py + ts)},
+                           (Vector2){(float)(px + ts), (float)(py + ts)}, 1.0f, grid_h);
+                /* Right edge of tile */
+                DrawLineEx((Vector2){(float)(px + ts), (float)py},
+                           (Vector2){(float)(px + ts), (float)(py + ts)}, 1.0f, grid_v);
+
+                /* Brighter intersection dot at tile corners */
+                unsigned char dot_alpha = (unsigned char)(30.0f + 30.0f * pulse);
+                DrawPixel(px + ts, py + ts, (Color){0, 220, 200, dot_alpha});
             }
         }
     }

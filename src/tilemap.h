@@ -99,9 +99,10 @@ Rectangle tilemap_get_world_bounds(const Tilemap *tm);
  * tilemap_draw -- Draw visible tiles within the camera viewport.
  *
  * Only tiles overlapping the camera's visible area are drawn (frustum culled).
- * Call this between BeginMode2D and EndMode2D.
+ * Call this between BeginMode2D and EndMode2D. The time parameter drives
+ * animated grid lines on the floor.
  */
-void tilemap_draw(const Tilemap *tm, Camera2D camera);
+void tilemap_draw(const Tilemap *tm, Camera2D camera, float time);
 
 /*
  * tilemap_world_to_tile -- Convert a world-pixel coordinate to tile indices.

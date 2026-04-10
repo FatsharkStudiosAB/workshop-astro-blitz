@@ -103,6 +103,18 @@ typedef struct {
     int best;            /* best combo this run */
 } ComboState;
 
+/* ── Juice constants ───────────────────────────────────────────────────────── */
+
+#define HITSTOP_HIT (3.0f / 60.0f)    /* 3 frames at 60fps on enemy hit */
+#define HITSTOP_KILL (5.0f / 60.0f)   /* 5 frames on enemy kill */
+#define HITSTOP_MELEE (4.0f / 60.0f)  /* 4 frames on melee hit */
+#define HITSTOP_PLAYER (4.0f / 60.0f) /* 4 frames when player takes damage */
+#define SLOWMO_DURATION 0.12f         /* seconds of slow-motion after a kill */
+#define SLOWMO_SCALE 0.25f            /* time scale during slow-motion */
+#define CAMERA_KICK_STRENGTH 4.0f     /* pixels of camera kick per shot */
+#define CAMERA_KICK_DECAY 12.0f       /* kick decay speed (per second) */
+#define KNOCKBACK_BULLET 120.0f       /* knockback force from bullet hits */
+
 /* ── Floor progression ─────────────────────────────────────────────────────── */
 
 #define WAVES_PER_FLOOR 5          /* waves before exit spawns */
@@ -115,6 +127,19 @@ typedef struct {
     float survival_time; /* seconds survived */
     int waves_spawned;   /* number of enemy waves spawned */
 } GameStats;
+
+/* ── Ambient particles (cosmetic dust motes) ───────────────────────────────── */
+
+#define MAX_AMBIENT_PARTICLES 64
+#define AMBIENT_PARTICLE_RADIUS 1.5f
+
+typedef struct {
+    Vector2 position;
+    Vector2 velocity;
+    float alpha;       /* current opacity (0-1) */
+    float alpha_speed; /* fade in/out rate */
+    bool active;
+} AmbientParticle;
 
 typedef struct {
     Player player;
@@ -137,10 +162,18 @@ typedef struct {
     int menu_cursor;                 /* currently highlighted menu item */
     GameStats stats;
     ComboState combo;
-    int floor;             /* current floor number (1-based) */
-    int floor_waves;       /* waves spawned on current floor */
-    Vector2 exit_position; /* position of exit tile */
-    bool exit_active;      /* true when exit tile is spawned */
+    int floor;                                      /* current floor number (1-based) */
+    int floor_waves;                                /* waves spawned on current floor */
+    Vector2 exit_position;                          /* position of exit tile */
+    bool exit_active;                               /* true when exit tile is spawned */
+    AmbientParticle ambient[MAX_AMBIENT_PARTICLES]; /* cosmetic floating dust */
+
+    /* ── Juice state ───────────────────────────────────────────────────── */
+    float hitstop_timer; /* frames remaining of hitstop freeze (in seconds) */
+    float slowmo_timer;  /* seconds remaining of slow-motion after kills */
+    float slowmo_scale;  /* time scale during slowmo (e.g. 0.3) */
+    Vector2 camera_kick; /* directional camera offset from shooting, decays */
+
     Settings settings;
     bool should_quit; /* set by menu "Quit" action */
 } GameState;

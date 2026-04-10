@@ -98,6 +98,7 @@ typedef struct {
     Vector2 position;
     Vector2 velocity;
     float hp;
+    float max_hp; /* HP at spawn (for HP bar display) */
     float radius;
     float speed;
     float damage;

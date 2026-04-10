@@ -270,8 +270,10 @@ void test_full_combat_loop(void) {
     stub_set_mouse_button_down(MOUSE_BUTTON_LEFT, true);
     stub_set_frame_time(1.0f / 60.0f);
 
-    /* Advance frames -- bullet should hit and kill the enemy */
-    for (int i = 0; i < 30; i++) {
+    /* Advance frames -- bullet should hit and kill the enemy.
+     * Extra frames needed because hitstop freezes gameplay for a few frames
+     * on each hit/kill. */
+    for (int i = 0; i < 60; i++) {
         game_update(&gs);
         /* Release fire after first frame to avoid cooldown issues */
         if (i == 0) {

@@ -110,6 +110,7 @@ void enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position) {
             default:
                 break;
             }
+            e->max_hp = e->hp;
             return;
         }
     }
@@ -147,6 +148,7 @@ void enemy_pool_spawn_elite(EnemyPool *pool, EnemyType type, Vector2 position,
                 default:
                     break;
                 }
+                e->max_hp = e->hp; /* update max after elite modifiers */
                 return;
             }
         }
@@ -349,31 +351,64 @@ static void draw_swarmer(const Enemy *e) {
     float r = e->radius;
     Vector2 facing, perp;
     get_facing(e, &facing, &perp);
+    Vector2 back = {-facing.x, -facing.y};
 
     bool flashing = e->hit_flash > 0.0f;
-    Color body_fill = flashing ? (Color){255, 255, 255, 255} : (Color){80, 10, 10, 255};
-    Color body_outline = flashing ? (Color){255, 255, 255, 255} : (Color){255, 60, 30, 255};
-    Color glow = flashing ? (Color){255, 255, 255, 80} : (Color){255, 40, 20, 40};
-    Color eye_color = (Color){255, 220, 50, 255};
+    Color fill = flashing ? (Color){255, 255, 255, 255} : (Color){90, 8, 8, 255};
+    Color neon = flashing ? (Color){255, 255, 255, 255} : (Color){255, 50, 25, 255};
+    Color neon_dim = flashing ? (Color){255, 255, 255, 180} : (Color){200, 40, 20, 180};
+    Color glow = flashing ? (Color){255, 255, 255, 80} : (Color){255, 30, 10, 45};
+    Color eye_color = (Color){255, 230, 50, 255};
+    Color abdomen_color = flashing ? (Color){255, 255, 255, 255} : (Color){120, 15, 15, 255};
 
-    DrawCircleV(pos, r + 3.0f, glow);
-    DrawCircleV(pos, r, body_fill);
-    DrawCircleLinesV(pos, r, body_outline);
+    /* Outer glow */
+    DrawCircleV(pos, r + 4.0f, glow);
 
-    /* Mandible lines */
-    Vector2 jaw_base_l =
-        Vector2Add(pos, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, r * 0.4f)));
-    Vector2 jaw_base_r =
-        Vector2Add(pos, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, -r * 0.4f)));
-    Vector2 jaw_tip = Vector2Add(pos, Vector2Scale(facing, r + 2.0f));
-    DrawLineEx(jaw_base_l, jaw_tip, 1.5f, body_outline);
-    DrawLineEx(jaw_base_r, jaw_tip, 1.5f, body_outline);
+    /* Abdomen (rear segment) */
+    Vector2 abd_center = Vector2Add(pos, Vector2Scale(back, r * 0.4f));
+    DrawCircleV(abd_center, r * 0.65f, abdomen_color);
+    DrawCircleLinesV(abd_center, r * 0.65f, neon_dim);
 
-    /* Eyes */
-    Vector2 eye_l =
-        Vector2Add(pos, Vector2Add(Vector2Scale(facing, r * 0.35f), Vector2Scale(perp, r * 0.35f)));
+    /* Main body (head segment) */
+    Vector2 head_center = Vector2Add(pos, Vector2Scale(facing, r * 0.15f));
+    DrawCircleV(head_center, r * 0.75f, fill);
+    DrawCircleLinesV(head_center, r * 0.75f, neon);
+
+    /* Spiny legs (3 pairs, angled outward from body) */
+    for (int s = -1; s <= 1; s++) {
+        float leg_angle = (float)s * 0.5f; /* spread factor */
+        Vector2 leg_dir_l = {facing.x * leg_angle + perp.x, facing.y * leg_angle + perp.y};
+        Vector2 leg_dir_r = {facing.x * leg_angle - perp.x, facing.y * leg_angle - perp.y};
+        float leg_len_inv;
+        leg_len_inv = Vector2Length(leg_dir_l);
+        if (leg_len_inv > 0.01f) {
+            leg_dir_l = Vector2Scale(leg_dir_l, 1.0f / leg_len_inv);
+        }
+        leg_len_inv = Vector2Length(leg_dir_r);
+        if (leg_len_inv > 0.01f) {
+            leg_dir_r = Vector2Scale(leg_dir_r, 1.0f / leg_len_inv);
+        }
+        Vector2 seg_base = Vector2Add(pos, Vector2Scale(facing, (float)s * r * 0.3f));
+        Vector2 leg_tip_l = Vector2Add(seg_base, Vector2Scale(leg_dir_l, r + 2.0f));
+        Vector2 leg_tip_r = Vector2Add(seg_base, Vector2Scale(leg_dir_r, r + 2.0f));
+        DrawLineEx(seg_base, leg_tip_l, 1.0f, neon_dim);
+        DrawLineEx(seg_base, leg_tip_r, 1.0f, neon_dim);
+    }
+
+    /* Mandible pincers (V shape at front) */
+    Vector2 jaw_l =
+        Vector2Add(pos, Vector2Add(Vector2Scale(facing, r * 0.5f), Vector2Scale(perp, r * 0.35f)));
+    Vector2 jaw_r =
+        Vector2Add(pos, Vector2Add(Vector2Scale(facing, r * 0.5f), Vector2Scale(perp, -r * 0.35f)));
+    Vector2 jaw_tip = Vector2Add(pos, Vector2Scale(facing, r + 3.0f));
+    DrawLineEx(jaw_l, jaw_tip, 2.0f, neon);
+    DrawLineEx(jaw_r, jaw_tip, 2.0f, neon);
+
+    /* Eyes (bright dots) */
+    Vector2 eye_l = Vector2Add(
+        head_center, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, r * 0.3f)));
     Vector2 eye_r = Vector2Add(
-        pos, Vector2Add(Vector2Scale(facing, r * 0.35f), Vector2Scale(perp, -r * 0.35f)));
+        head_center, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, -r * 0.3f)));
     DrawCircleV(eye_l, 1.5f, eye_color);
     DrawCircleV(eye_r, 1.5f, eye_color);
 }
@@ -504,6 +539,22 @@ void enemy_pool_draw(const EnemyPool *pool) {
             }
             DrawCircleLinesV(e->position, e->radius + 5.0f, ring_color);
             DrawCircleLinesV(e->position, e->radius + 6.0f, ring_color);
+        }
+
+        /* HP bar above enemy (only if damaged and max_hp > 1) */
+        if (e->max_hp > 1.0f && e->hp < e->max_hp) {
+            float bar_w = e->radius * 2.2f;
+            float bar_h = 3.0f;
+            float bar_x = e->position.x - bar_w * 0.5f;
+            float bar_y = e->position.y - e->radius - 8.0f;
+            float ratio = e->hp / e->max_hp;
+            if (ratio < 0.0f) {
+                ratio = 0.0f;
+            }
+
+            DrawRectangle((int)bar_x, (int)bar_y, (int)bar_w, (int)bar_h, (Color){40, 0, 0, 180});
+            Color fill = (ratio > 0.5f) ? (Color){80, 200, 80, 220} : (Color){220, 60, 30, 220};
+            DrawRectangle((int)bar_x, (int)bar_y, (int)(bar_w * ratio), (int)bar_h, fill);
         }
     }
 }

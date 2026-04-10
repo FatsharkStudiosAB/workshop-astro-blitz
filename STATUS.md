@@ -5,17 +5,18 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Current State
 
-- **Phase:** Visual juice and gameplay depth -- weapon system, multiple enemy types, melee attack, floor progression, combo system, bullet trails, elite modifiers, weapon pickups.
+- **Phase:** Visual overhaul -- post-processing shaders, juice mechanics, lighting. Previously: weapon system, enemy types, melee, floor progression, combos, upgrades.
 - **Engine/Framework:** Raylib 5.5 (C99), built via CMake FetchContent.
 - **Build:** `task build` (or `cmake -B build && cmake --build build --config Release`)
-- **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest. 13 test suites, all passing.
-- **Branch:** `feature/visual-juice-and-gameplay-depth` -- 16 commits ahead of main.
-- **Playable:** Yes. Four weapon types (Pistol, SMG, Shotgun, Plasma), four enemy types (Swarmer, Grunt, Stalker, Bomber), elite modifiers, weapon drops, melee attack, combo system, floor progression with exit portals. All 6 passive upgrades now functional.
+- **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest. 14 test suites, all passing.
+- **Branch:** `feature/visual-juice-and-gameplay-depth` -- 18+ commits ahead of main.
+- **Playable:** Yes. Post-processing shaders (bloom, CRT, vignette, chromatic aberration). Hitstop freeze frames, slow-motion on kills, camera kick, enemy knockback. Animated floor grid, ambient dust particles, enemy HP bars. Player has kite-shaped hull with visor, thrusters, weapon barrel.
 
 ## Recent Changes
 
 | Date | Change |
 |------|--------|
+| 2026-04-11 | Major visual overhaul: post-processing shaders (bloom, CRT scanlines, chromatic aberration, vignette via src/postfx.h/c), animated floor grid, ambient dust particles, enemy HP bars, hitstop/freeze frames, slow-motion on kills, camera kick on shooting, enemy knockback on bullet hit, HLD-inspired player model. |
 | 2026-04-11 | Wired floor difficulty scaling: enemy HP scales by +15% per floor. Wired Speed and Dash CD upgrades to player movement and dash cooldown. 7 new tests. |
 | 2026-04-11 | Fixed linting infrastructure: installed LLVM/clang-format, fixed Taskfile fmt:c (PowerShell script workaround), fixed yamllint CRLF issues, suppressed pre-existing markdownlint MD060/MD036 rules. All three linters pass. |
 | 2026-04-11 | Added weapon system (src/weapon.h/c): 4 weapon presets (Pistol, SMG, Shotgun, Plasma) with per-weapon fire rate, damage, spread, projectile count, bullet speed/lifetime/color. Bullet struct now carries damage and color. 12 weapon unit tests. |
@@ -31,9 +32,11 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Known Issues / Next Steps
 
-- **Remaining features:** Post-processing shaders (A5-A8: bloom, CRT, vignette), minimap (B11), gameplay music (B12)
+- **Next up:** Multiplicative light map (Children of Morta style), pixel-perfect rendering pipeline, pixel art sprites, enemy corpse permanence.
+- **Remaining features:** minimap (B11), gameplay music (B12).
 - **Redundant include path in CMakeLists.txt:** Harmless but could be cleaned up.
-- Room-based level generation would improve map variety
+- Room-based level generation would improve map variety.
+- **PostFX toggle:** F1 key toggles post-processing on/off at runtime.
 
 ## Workarounds & Patterns
 

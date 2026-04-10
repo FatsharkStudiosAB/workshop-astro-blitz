@@ -7,6 +7,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Post-processing shader pipeline** (`src/postfx.h/c`): Combined bloom/glow, CRT scanlines, chromatic aberration, and vignette in a single GLSL 330 fragment shader. Renders scene to off-screen `RenderTexture2D`, then composites through shader. Toggle with F1 key.
+- **Hitstop/freeze frames**: Game freezes for 3 frames on enemy hit, 5 frames on kill, 4 frames on player damage. Vlambeer-style impact feel.
+- **Slow-motion on kills**: 120ms of 25% time scale after every enemy kill for cinematic weight.
+- **Camera kick**: Directional camera nudge opposite to fire direction on every shot. Decays smoothly.
+- **Enemy knockback**: Bullets push enemies in the projectile's direction on hit.
+- **Animated floor grid**: Floor tiles have pulsing teal grid lines that wave across the world. Wall tiles have directional highlights and shadow edges.
+- **Ambient floating particles**: 64 cosmetic dust motes drift near the camera with fade-in/out lifecycle.
+- **Enemy HP bars**: Thin bar above damaged enemies (only shown when HP < max and max > 1). Color shifts green-to-red.
+- **Enemy max_hp field**: Tracks spawn HP for HP bar ratio display, updated by elite modifiers and floor scaling.
+- **HLD-inspired player model**: Kite/shield-shaped hull with visor slit, shoulder pauldrons, weapon barrel, reactor core, and dash thruster flare. Replaces basic circle.
 - Floor difficulty scaling: enemy HP increases by +15% per floor level (applies `FLOOR_ENEMY_HP_SCALE` at spawn time)
 - Speed upgrade now applied: each stack adds +30 movement speed to the player
 - Dash cooldown upgrade now applied: each stack multiplies dash cooldown by 0.85x (shorter cooldown)
@@ -30,6 +40,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- `game_draw()` no longer calls `BeginDrawing()`/`EndDrawing()` -- these are now managed by `postfx_begin()`/`postfx_end()` in `main.c` for the post-processing pipeline
+- `tilemap_draw()` gains `float time` parameter for animated floor grid lines
+- `Enemy` struct gains `max_hp` field for HP bar display
+- `GameState` gains `hitstop_timer`, `slowmo_timer`, `slowmo_scale`, `camera_kick`, and `ambient[]` particle array
+- Wall rendering improved: directional highlight/shadow edges, center rivet detail
+- Player visual completely replaced: kite-shaped hull with layered geometry instead of basic circle
 - `Player` struct gains `speed_bonus` and `dash_cd_mult` fields for upgrade-driven movement modifiers
 - `player_update` uses `speed_bonus` for effective movement speed and `dash_cd_mult` for effective dash cooldown
 - Dash cooldown HUD bar now reflects the effective cooldown (accounting for upgrades)
