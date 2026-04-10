@@ -21,182 +21,155 @@ Top-down sci-fi roguelike shooter built during Fatshark's agentic coding worksho
 
 | File | Purpose |
 |------|---------|
-| `AGENTS.md` | Agent instructions -- how to work in this repo (you are here) |
+| `AGENTS.md` | Agent instructions (you are here) |
 | `STATUS.md` | Persistent memory -- recent changes, bugs, workarounds (~150 lines max) |
 | `CHANGELOG.md` | User-facing change history |
 | `design/DESIGN.md` | Game design document |
-| `design/assets/` | Reference images, mockups, sprites |
+| `docs/REFERENCE.md` | Lookup material -- repo layout, environment, PR how-tos |
 
 ## Gates
 
-**These are mandatory checkpoints, not suggestions. Do not skip any step.**
+**Mandatory checkpoints. Do not skip any step.**
 
 ### Before presenting results
 
-**Before presenting any result to the user -- stop.**
+**Stop and ask yourself:**
 
-- Is this the best solution or just the first one that works? Could it be simpler?
+- Is this the best solution or just the first that works? Could it be simpler? If the answer is unsatisfying, iterate.
 - Do not present results you would not follow yourself.
-- Do not rely on the user to catch issues you can already see.
-- If you identify a problem -- fix it. For obvious fixes, fix directly. For judgment calls, present the problem with a recommended fix and apply it unless the user redirects.
-- Never identify a problem and then rationalize it away or leave it for the user to catch.
+- If you identify a problem -- fix it. Obvious fixes: fix directly. Judgment calls: present with a recommended fix and apply unless the user redirects.
+- Never rationalize a problem away or leave it for the user to catch.
 
 ### Before broad implementation
 
-Before adding a new system, changing more than three files, refactoring across module boundaries, or making architectural changes: produce a plan and get it reviewed by the user. Do not start implementation until the user approves the plan. Workflow: **plan -> user review -> implement.** Routine changes that touch a `.c` and its `.h` file do not require a plan.
+Before adding a new system, changing more than three files, refactoring across module boundaries, or making architectural changes: **plan -> user review -> implement.** Routine changes that touch a `.c` and its `.h` do not require a plan.
 
 ### When the user corrects you
 
-When the user corrects you on a workflow pattern or convention not already covered in this file, add the rule to `AGENTS.md` in your next action. Do not wait until commit time. If the correction is a one-off mistake (e.g. a typo), do not add a rule.
+Add the rule to `AGENTS.md` immediately. Do not wait until commit time. Skip for one-off mistakes (e.g. a typo).
 
 ### Before starting work
 
-1. Run `git status`. If there are uncommitted changes, stash or resolve them before proceeding.
-2. Check out `main` and pull the latest changes.
-3. Create a new branch from `main` -- `main` is protected: do not commit directly to it or push commits straight to it. All changes to `main` must go through a pull request.
-   - Branch names: lowercase, digits, slashes, hyphens only (e.g. `bilal/add-player-movement`, `feature/weapon-system`)
-   - If resuming work on an existing feature branch, stay on that branch and merge or rebase from `main` instead of creating a new branch.
-   - **Parallel sessions:** Multiple sessions share the same `.git` state. Do not use `git checkout` when another session may be active on the same repo -- it changes the branch for all sessions. Use `git worktree add <path> <branch>` to get an independent working directory for each session (e.g. `git worktree add ../astro-blitz-mytask feature/my-task`). Clean up worktrees when done with `git worktree remove <path>`.
+1. Run `git status`. Stash or resolve uncommitted changes before proceeding.
+2. Check out `main` and pull latest.
+3. Create a new branch from `main`. Do not commit or cherry-pick directly onto `main` -- all changes go through a pull request.
+   - Branch names must match: `^[a-z0-9]+(?:[-\/][a-z0-9]+)*$`. Examples: `bilal/add-player-movement`, `feature/weapon-system`.
+   - If resuming an existing feature branch, stay on it and merge or rebase from `main`.
+   - **Parallel sessions:** Do not use `git checkout` when another session may be active. Use `git worktree add <path> <branch>` instead. Clean up with `git worktree remove <path>`.
 
 ### Before every commit
 
-Do not commit (or amend) until all are satisfied.
+Do not commit until all are satisfied.
 
-1. Run `task fmt` to catch style issues. This automatically detects which file types changed and runs only the relevant linters (clang-format, yamllint, markdownlint-cli2). Fix any issues before proceeding.
-2. Run the game (if applicable) to verify nothing is visibly broken. Skip this step if the game is not yet buildable (e.g. missing source files or prerequisites).
-3. Run tests (if they exist) to verify changes don't break existing behavior.
-4. Verify that any user corrections from this session have been captured in `AGENTS.md`.
-5. If any command, API call, or approach failed before succeeding, document the working pattern in `AGENTS.md` so future sessions don't repeat the failed attempts.
-6. Update `STATUS.md` if this commit changes observable game behavior, project structure, dependencies, or introduces/resolves a known issue (see STATUS.md maintenance rules below).
-7. Update `CHANGELOG.md` under `[Unreleased]` if the change is user-facing.
-8. Commit with a clear message. Keep commits small and logical -- one logical change per commit.
-9. After committing, present a brief summary to the user: what changed, what files were affected, and the current state of the branch.
+1. Run `task fmt`. Fix any issues.
+2. Run the game if applicable. Skip if not yet buildable.
+3. Run tests if they exist.
+4. Update `STATUS.md` if this commit changes observable game behavior, project structure, dependencies, or known issues.
+5. Update `CHANGELOG.md` under `[Unreleased]` if user-facing. Changes to `AGENTS.md` are always changelog-worthy.
+6. Commit with a clear message -- one logical change per commit.
+7. Present a brief summary: what changed, files affected, branch state.
 
 ### When done
 
-When the user asks to push, create a PR, or merge -- run these completion steps first.
+Run these when the user asks to push/PR/merge, or when committing the final change of a task.
 
 1. Restate the original goal and verify the work achieves it.
-2. Review your diff (`git diff`) -- look for accidental changes, debug leftovers, or anything that doesn't belong.
-3. If you identify valid improvements that are out of scope, note them in `STATUS.md` under "Known Issues / Next Steps" so they aren't lost.
-4. When adding new features or changing behavior, update relevant documentation.
-5. Document new patterns and conventions in `AGENTS.md` so future sessions can follow them.
+2. Review your diff -- look for accidental changes, debug leftovers, anything that doesn't belong.
+3. Note out-of-scope improvements in `STATUS.md` under "Known Issues / Next Steps".
+4. Update relevant documentation for new features or behavior changes.
+5. Document new patterns and conventions in `AGENTS.md`.
 
 ### Before creating a PR
 
-- Use PowerShell heredoc syntax (`@' ... '@`) when formatting PR body via `gh pr create`.
-- Ask for confirmation before the initial push -- unless the user already explicitly asked you to push and/or create a PR.
+- Ask for confirmation before the initial push -- unless the user already asked you to push/create a PR.
+
+### After PR feedback
+
+- Only look at **unresolved** conversations. Do not re-review resolved threads.
+- Mark each conversation as resolved via the API as you address it. Re-request reviews from all reviewers via the API (not comments).
+- After re-requesting reviews, provide the PR URL to the user.
+- Update `CHANGELOG.md` when feedback results in meaningful changes. Consolidate related entries.
+
+### Before merging
+
+- Complete all "When done" steps. Once merged and deleted, you cannot push to the branch.
+- All review conversations must be resolved -- branch protection enforces this.
 
 ## Development Lifecycle
 
-Follow this lifecycle for non-trivial changes (skip for documentation-only or single-line fixes):
+For non-trivial changes (skip for docs-only or single-line fixes):
 
-1. **Plan** -- State the problem, constraints, and definition of done. If you can't restate the goal, the plan isn't ready.
-2. **Simplify** -- Step back: how could this be simpler and less clever while still achieving the goal? Revise the plan.
-3. **Write a failing test** -- Express expected behavior as a Unity test before implementation. For bug fixes, write a test that reproduces the bug first.
+1. **Plan** -- State the problem, constraints, and definition of done.
+2. **Simplify** -- How could this be simpler? Revise the plan.
+3. **Write a failing test** -- Express expected behavior as a Unity test before implementation. For bugs, reproduce first.
 4. **Implement** -- Minimum code to pass the test.
-5. **Green** -- Run `task test`, fix, repeat until green.
-6. **Simplify (second pass)** -- Could this be simpler? Refactor and re-run tests.
-7. **Self-maintain** -- Check whether `AGENTS.md`, `STATUS.md`, or `CHANGELOG.md` need updating. See `## Self-Maintenance` for the full trigger list.
+5. **Green** -- Run `task test`, fix, repeat.
+6. **Simplify again** -- Refactor and re-run tests.
+7. **Self-maintain** -- Check whether `AGENTS.md`, `STATUS.md`, or `CHANGELOG.md` need updating. Triggers:
+   - User corrected you or reminded you of something -> `AGENTS.md`.
+   - A command/approach failed before succeeding -> document the working pattern in `AGENTS.md`.
+   - Conventions or known issues changed -> `AGENTS.md` and `CHANGELOG.md`.
+   - Observable game behavior, structure, or dependencies changed -> `STATUS.md`.
 
 ## Conventions
 
 ### Writing rules in this file
 
-- Use direct, imperative language -- no "consider", "try to", "should ideally".
-- Be unambiguous -- every rule needs a clear trigger ("when X happens, do Y") and a verifiable outcome.
-- Place rules at the correct scope -- general conventions go in this section, not under feature-specific subsections.
+- Direct, imperative language -- no "consider", "try to", "should ideally".
+- Every rule needs a clear trigger and verifiable outcome.
+- Prefer qualitative wording over fragile numeric thresholds.
 
 ### Change philosophy
 
-- This is a workshop project. Bias toward getting things working and iterating.
-- Prefer the minimal change that achieves the goal. Keep it simple.
-- Write clear code over clever code. Do not introduce abstractions unless they solve a repeated, concrete problem.
+- Workshop project. Bias toward getting things working and iterating.
+- Prefer the minimal change. Keep it simple.
+- Clear code over clever code. No abstractions unless they solve a repeated, concrete problem.
 
 ### Code
 
-- All code changes need tests -- new features, bug fixes, and refactors. When fixing a bug, write a test that reproduces the bug first, then fix it. When adding a feature, write tests covering the new behavior. Do not submit code changes without corresponding test coverage.
-- One logical change per commit. Commit after each logical unit of work is complete -- do not accumulate multiple unrelated changes in the working tree.
-- No unrelated refactors in the same commit.
-- Document all structs, public functions, and modules with comments in the header file. No excessive inline comments inside function bodies.
-- When adding dependencies, verify the latest version and API against current docs -- do not rely on training data.
-- When a bug's root cause is unclear, add logging first and reproduce -- do not guess at fixes.
+- All code changes need tests. Bug fixes: reproduce first, then fix. Features: test the new behavior.
+- One logical change per commit. No unrelated refactors in the same commit.
+- Document all structs, public functions, and modules in header files. No excessive inline comments.
+- When adding dependencies, verify latest version and API against current docs -- do not rely on training data.
+- When a bug's root cause is unclear, add logging first and reproduce -- do not guess.
 
 ### C code style
 
 - **Standard:** C99 (`-std=c99`).
-- **Naming:** `snake_case` for functions, variables, and file names. `UPPER_SNAKE_CASE` for constants and macros. `PascalCase` for typedefs of structs/enums (e.g. `typedef struct { ... } Player;`).
+- **Naming:** `snake_case` for functions/variables/files. `UPPER_SNAKE_CASE` for constants/macros. `PascalCase` for typedefs (e.g. `typedef struct { ... } Player;`).
 - **Indentation:** 4 spaces, no tabs.
-- **Braces:** Opening brace on the same line as the statement. Always use braces for `if`/`else`/`for`/`while`, even for single-line bodies.
-- **Headers:** Each `.c` file has a corresponding `.h` file. Use `#pragma once` or traditional include guards. Public API in the header, internal helpers `static` in the `.c` file.
-- **Compiler warnings:** Compile with `-Wall -Wextra`. Treat warnings as errors to fix, not suppress.
+- **Braces:** Same line. Always use braces, even for single-line bodies.
+- **Headers:** Each `.c` has a `.h`. Use `#pragma once` or include guards. Public API in header, internal helpers `static` in `.c`.
+- **Warnings:** `-Wall -Wextra`. Treat as errors to fix, not suppress.
 
-### Linting and formatting
+### Linting
 
-`task fmt` detects which file types have uncommitted changes and runs only the relevant linters:
+`task fmt` detects changed file types and runs relevant linters:
 
 | Changed files | Linter | Config |
 |---------------|--------|--------|
-| `*.c`, `*.h`, `.clang-format` | clang-format (auto-fix) | `.clang-format` |
-| `*.yml`, `*.yaml`, `.yamllint*` | yamllint (check-only) | `.yamllint.yml` |
-| `*.md`, `.markdownlint*` | markdownlint-cli2 (check-only) | `.markdownlint-cli2.yaml` |
+| `*.c`, `*.h` | clang-format (auto-fix) | `.clang-format` |
+| `*.yml`, `*.yaml` | yamllint (check-only) | `.yamllint.yml` |
+| `*.md` | markdownlint-cli2 (check-only) | `.markdownlint-cli2.yaml` |
 
-`Taskfile.yml` is excluded from yamllint because it uses Go template syntax (`{{.VAR}}`) that is not valid YAML. No Taskfile-specific linter exists. When editing `Taskfile.yml`, always run `task --list-all` to verify the file still parses -- YAML quoting errors around Go templates are the most common breakage.
+`Taskfile.yml` is excluded from yamllint (Go template syntax). After editing it, run `task --list-all` to verify it still parses.
 
-### STATUS.md maintenance
+### STATUS.md
 
-- `STATUS.md` is a rolling log of project state. Keep it under ~150 lines.
-- Before committing, if `STATUS.md` exceeds 150 lines, summarize older entries and remove resolved items to bring it back under the limit.
-- Update `STATUS.md` when a commit changes observable game behavior, project structure, dependencies, or introduces/resolves a known issue. Purely internal refactors and comment-only changes do not require an update.
+- Rolling log of project state. Keep under ~150 lines.
+- Update when a commit changes observable game behavior, structure, dependencies, or known issues.
 - Sections: Current State, Recent Changes, Known Issues / Next Steps, Workarounds & Patterns.
 
 ### Design documents
 
-- `design/DESIGN.md` is the source of truth for game design decisions.
-- Reference images, concept art, and mockups go in `design/assets/`.
-- When a design decision is made during implementation, capture it in `design/DESIGN.md` -- do not leave design rationale only in commit messages or PR descriptions.
-
-## Self-Maintenance
-
-At the end of every work session, check whether changes made in this session affect conventions or patterns documented in `AGENTS.md`, `STATUS.md`, or `CHANGELOG.md`. If they do, update the relevant files. The triggers:
-
-- If the user corrected you or reminded you of something, add it to `AGENTS.md`.
-- If any command, API call, or approach failed before succeeding, document the working pattern in `AGENTS.md`.
-- If conventions, commands, or known issues changed, update `AGENTS.md` and `CHANGELOG.md`.
-- If the commit changes observable game behavior, project structure, or dependencies, update `STATUS.md`.
+- `design/DESIGN.md` is the source of truth for game design. Reference assets go in `design/assets/`.
+- Capture design decisions during implementation -- do not leave rationale only in commit messages.
 
 ## Efficiency
 
-- When using `gh api`, always use `--jq` to filter response fields.
-- Use the Task tool with `explore` or `general` subagents for broad codebase searches.
-- Use `/compact` to manually trigger context compaction when a session gets heavy.
-- **Do not re-read files you just wrote or edited.** After a successful edit, trust the tool's success response. Only re-read a file if a build, test, or lint step reports an error in it.
-- **Suppress only non-actionable build noise.** When you only need pass/fail from `task test` or `task build`, filter output to show only results (e.g. test pass/fail lines). Keep compiler warnings and errors visible -- they must be treated as errors to fix per the C code style rules. Third-party dependency warnings (Unity, Raylib) are non-actionable and safe to filter out.
-- **Merge from main once, at the start of a session.** Do not merge repeatedly mid-flight. If main is actively changing, do one final merge/rebase right before push. This keeps conflict resolution to O(1) instead of O(n).
-- **Explore the codebase before creating new modules.** Before writing new code, check whether existing code or dependencies already provide the functionality. Duplicating what Raylib (or another dependency) already offers wastes implementation and review time.
-
----
-
-## Reference
-
-Everything below this line is lookup material. Behavioral rules are all above.
-
-## Repository Layout
-
-| Path | What |
-|------|------|
-| `src/` | Game source code -- `main.c` (entry point), plus one `.c/.h` pair per module |
-| `tests/` | Unit tests (Unity framework) -- one `test_<module>.c` per module |
-| `design/` | Game design docs and reference assets |
-| `CMakeLists.txt` | Build config -- fetches Raylib 5.5 + Unity 2.6.1 via FetchContent |
-| `Taskfile.yml` | Task runner configuration (go-task) |
-| `build/` | Build output (gitignored) |
-
-## Environment
-
-- **Engine/Framework:** Raylib 5.5
-- **Language:** C (C99)
-- **Build:** CMake with FetchContent (auto-downloads Raylib). Use `task configure` / `task build` / `task run`.
-- **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent
-- **Asset formats:** PNG (sprites), WAV/OGG (audio)
-- **Platform:** Windows (primary), cross-platform possible via Raylib
+- `gh api`: always use `--jq` to filter fields. Prefer over MCP GitHub tools when you only need specific fields.
+- Use the Task tool with `explore`/`general` subagents for broad searches to avoid context bloat.
+- Do not re-read files you just wrote or edited. Trust the tool's success response.
+- Filter non-actionable build noise (Unity/Raylib warnings). Keep compiler warnings visible.
+- Merge from main once at session start. One final merge/rebase before push if main changed.
+- Before creating new modules, check whether existing code or Raylib already provides the functionality.

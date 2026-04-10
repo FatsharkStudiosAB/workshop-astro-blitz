@@ -5,6 +5,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- Rewrite AGENTS.md: tighten prose to 175 lines (under 200-line adherence ceiling), add new gates from autobuilds-testify (After PR feedback, Before merging, cherry-pick rule, branch name regex), extract reference material to `docs/REFERENCE.md`
+
 ### Added
 
 - Bullet wall bouncing: bullets reflect off solid tiles up to 3 times before being destroyed (new `BULLET_MAX_BOUNCES` constant and `bounces` field on `Bullet`)
