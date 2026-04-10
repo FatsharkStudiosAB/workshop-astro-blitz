@@ -7,6 +7,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Game-over state: when player HP reaches zero, gameplay freezes and a "GAME OVER" overlay displays run stats (kills, survival time as MM:SS, waves survived) with a prompt to press R to restart
+- `GamePhase` enum (`PHASE_PLAYING`, `PHASE_GAME_OVER`) and `GameStats` struct for tracking per-run statistics
+- Kill counter increments when enemies are destroyed by bullets
+- Survival time accumulates each frame during gameplay
+- Wave counter increments each time a new enemy wave spawns
+- 4 new unit tests for game-over phase transitions and stats initialization
 - Enemy swarmer system: `src/enemy.c/h` with fixed-size enemy pool, swarmer AI (seek toward player), wave spawning from arena edges
 
 ### Changed

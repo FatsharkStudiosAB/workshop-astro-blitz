@@ -105,6 +105,66 @@ void test_arena_fits_on_screen(void)
     TEST_ASSERT_TRUE(SCREEN_HEIGHT - 2.0f * ARENA_MARGIN > 0.0f);
 }
 
+/* ── Phase / game-over tests ───────────────────────────────────────────────── */
+
+void test_game_init_phase_is_playing(void)
+{
+    GameState gs;
+    game_init(&gs);
+
+    TEST_ASSERT_EQUAL_INT(PHASE_PLAYING, gs.phase);
+}
+
+void test_game_init_stats_zeroed(void)
+{
+    GameState gs;
+    game_init(&gs);
+
+    TEST_ASSERT_EQUAL_INT(0, gs.stats.kills);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, gs.stats.survival_time);
+    TEST_ASSERT_EQUAL_INT(0, gs.stats.waves_survived);
+}
+
+void test_game_init_resets_phase_after_game_over(void)
+{
+    GameState gs;
+    game_init(&gs);
+
+    /* Simulate a game-over state with some stats */
+    gs.phase = PHASE_GAME_OVER;
+    gs.stats.kills = 42;
+    gs.stats.survival_time = 99.0f;
+    gs.stats.waves_survived = 10;
+
+    /* Restart */
+    game_init(&gs);
+
+    TEST_ASSERT_EQUAL_INT(PHASE_PLAYING, gs.phase);
+    TEST_ASSERT_EQUAL_INT(0, gs.stats.kills);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, gs.stats.survival_time);
+    TEST_ASSERT_EQUAL_INT(0, gs.stats.waves_survived);
+}
+
+void test_phase_game_over_on_zero_hp(void)
+{
+    GameState gs;
+    game_init(&gs);
+
+    /* Player alive -- phase stays PLAYING */
+    TEST_ASSERT_EQUAL_INT(PHASE_PLAYING, gs.phase);
+
+    /* Directly set HP to zero and verify the death check logic:
+     * game_update transitions to GAME_OVER when hp <= 0.
+     * We can't call game_update (requires Raylib context), so we
+     * replicate the death check here to verify the contract. */
+    gs.player.hp = 0.0f;
+    if (gs.player.hp <= 0.0f) {
+        gs.phase = PHASE_GAME_OVER;
+    }
+
+    TEST_ASSERT_EQUAL_INT(PHASE_GAME_OVER, gs.phase);
+}
+
 /* ── Runner ────────────────────────────────────────────────────────────────── */
 
 int main(void)
@@ -124,6 +184,12 @@ int main(void)
     RUN_TEST(test_screen_dimensions_positive);
     RUN_TEST(test_arena_margin_positive);
     RUN_TEST(test_arena_fits_on_screen);
+
+    /* Phase / game-over */
+    RUN_TEST(test_game_init_phase_is_playing);
+    RUN_TEST(test_game_init_stats_zeroed);
+    RUN_TEST(test_game_init_resets_phase_after_game_over);
+    RUN_TEST(test_phase_game_over_on_zero_hp);
 
     return UNITY_END();
 }

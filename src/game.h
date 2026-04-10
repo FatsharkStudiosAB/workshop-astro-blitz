@@ -19,12 +19,24 @@
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
+/* Game phase -- controls which branch of update/draw runs */
+typedef enum { PHASE_PLAYING, PHASE_GAME_OVER } GamePhase;
+
+/* Run statistics shown on the game-over screen */
+typedef struct {
+    int kills;           /* total enemies killed this run */
+    float survival_time; /* seconds survived */
+    int waves_survived;  /* number of enemy waves spawned */
+} GameStats;
+
 typedef struct {
     Player player;
     BulletPool bullets;
     EnemyPool enemies;
     Rectangle arena;
     float spawn_timer; /* time until next enemy wave */
+    GamePhase phase;
+    GameStats stats;
 } GameState;
 
 /* ── Public API ────────────────────────────────────────────────────────────── */
