@@ -7,6 +7,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- First playable prototype: player movement (WASD, 8-directional), mouse aiming, shooting (left-click, Basic Pistol), dash (spacebar with cooldown)
+- Arena with boundary clamping -- player and bullets stay within the play area
+- HUD: health bar and dash cooldown indicator
+- New source modules: `game.c/h`, `player.c/h`, `bullet.c/h`
+- Unit tests for player, bullet, and game modules (`tests/test_player.c`, `tests/test_bullet.c`, `tests/test_game.c`)
+- Static library target `astro_blitz_lib` for sharing game logic between exe and tests
 - Linting and formatting: `task fmt` (changed file types) and `task fmt:all` (all files) with clang-format for C, yamllint for YAML, markdownlint-cli2 for Markdown
 - Linter configs: `.clang-format`, `.yamllint.yml`, `.markdownlint-cli2.yaml`
 - Installer tasks: `task install-yamllint`, `task install-markdownlint`
