@@ -13,6 +13,8 @@ Top-down sci-fi roguelike shooter built during Fatshark's agentic coding worksho
 | Run tests | `task test` |
 | Build tests only | `cmake --build build --target test_sample` |
 | Run tests (ctest) | `ctest --test-dir build -C Debug --output-on-failure` |
+| Lint changed file types | `task fmt` |
+| Lint all files | `task fmt:all` |
 | List all tasks | `task --list-all` |
 
 ## Key Files
@@ -59,14 +61,15 @@ When the user corrects you on a workflow pattern or convention not already cover
 
 Do not commit (or amend) until all are satisfied.
 
-1. Run the game (if applicable) to verify nothing is visibly broken. Skip this step if the game is not yet buildable (e.g. missing source files or prerequisites).
-2. Run tests (if they exist) to verify changes don't break existing behavior.
-3. Verify that any user corrections from this session have been captured in `AGENTS.md`.
-4. If any command, API call, or approach failed before succeeding, document the working pattern in `AGENTS.md` so future sessions don't repeat the failed attempts.
-5. Update `STATUS.md` if this commit changes observable game behavior, project structure, dependencies, or introduces/resolves a known issue (see STATUS.md maintenance rules below).
-6. Update `CHANGELOG.md` under `[Unreleased]` if the change is user-facing.
-7. Commit with a clear message. Keep commits small and logical -- one logical change per commit.
-8. After committing, present a brief summary to the user: what changed, what files were affected, and the current state of the branch.
+1. Run `task fmt` to catch style issues. This automatically detects which file types changed and runs only the relevant linters (clang-format, yamllint, markdownlint-cli2). Fix any issues before proceeding.
+2. Run the game (if applicable) to verify nothing is visibly broken. Skip this step if the game is not yet buildable (e.g. missing source files or prerequisites).
+3. Run tests (if they exist) to verify changes don't break existing behavior.
+4. Verify that any user corrections from this session have been captured in `AGENTS.md`.
+5. If any command, API call, or approach failed before succeeding, document the working pattern in `AGENTS.md` so future sessions don't repeat the failed attempts.
+6. Update `STATUS.md` if this commit changes observable game behavior, project structure, dependencies, or introduces/resolves a known issue (see STATUS.md maintenance rules below).
+7. Update `CHANGELOG.md` under `[Unreleased]` if the change is user-facing.
+8. Commit with a clear message. Keep commits small and logical -- one logical change per commit.
+9. After committing, present a brief summary to the user: what changed, what files were affected, and the current state of the branch.
 
 ### When done
 
@@ -126,6 +129,18 @@ Follow this lifecycle for non-trivial changes (skip for documentation-only or si
 - **Braces:** Opening brace on the same line as the statement. Always use braces for `if`/`else`/`for`/`while`, even for single-line bodies.
 - **Headers:** Each `.c` file has a corresponding `.h` file. Use `#pragma once` or traditional include guards. Public API in the header, internal helpers `static` in the `.c` file.
 - **Compiler warnings:** Compile with `-Wall -Wextra`. Treat warnings as errors to fix, not suppress.
+
+### Linting and formatting
+
+`task fmt` detects which file types have uncommitted changes and runs only the relevant linters:
+
+| Changed files | Linter | Config |
+|---------------|--------|--------|
+| `*.c`, `*.h`, `.clang-format` | clang-format (auto-fix) | `.clang-format` |
+| `*.yml`, `*.yaml`, `.yamllint*` | yamllint (check-only) | `.yamllint.yml` |
+| `*.md`, `.markdownlint*` | markdownlint-cli2 (check-only) | `.markdownlint-cli2.yaml` |
+
+`Taskfile.yml` is excluded from yamllint because it uses Go template syntax (`{{.VAR}}`) that is not valid YAML. No Taskfile-specific linter exists. When editing `Taskfile.yml`, always run `task --list-all` to verify the file still parses -- YAML quoting errors around Go templates are the most common breakage.
 
 ### STATUS.md maintenance
 

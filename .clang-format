@@ -1,0 +1,34 @@
+---
+Language: C
+BasedOnStyle: LLVM
+
+# Indentation: 4 spaces, no tabs
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# Braces: opening brace on the same line
+BreakBeforeBraces: Attach
+
+# Column limit
+ColumnLimit: 100
+
+# Always use braces (clang-format cannot enforce this, but keeps existing braces tidy)
+# Reinforced by -Wall -Wextra and code review
+
+# Pointer alignment: right (e.g. int *ptr)
+PointerAlignment: Right
+
+# Sort includes
+SortIncludes: CaseSensitive
+
+# Single-line allowances
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Empty
+
+# Spaces
+SpaceBeforeParens: ControlStatements
+SpaceAfterCStyleCast: false
+SpacesInParentheses: false

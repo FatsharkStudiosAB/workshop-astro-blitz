@@ -16,6 +16,7 @@ When it grows too long, summarize older entries and remove resolved items.
 | Date | Change |
 |------|--------|
 | 2026-04-10 | Added `task test` command; strengthened AGENTS.md with TDD lifecycle, test mandate, self-maintenance |
+| 2026-04-10 | Added linting/formatting: `task fmt` with clang-format, yamllint, markdownlint-cli2 |
 | 2026-04-10 | Added Unity test framework v2.6.1 via FetchContent, sample test, CTest integration |
 | 2026-04-10 | Added Taskfile.yml with configure, build, run, and clean tasks (go-task) |
 | 2026-04-10 | Set up Raylib 5.5 build tooling: CMakeLists.txt with FetchContent, hello window compiles and runs |
