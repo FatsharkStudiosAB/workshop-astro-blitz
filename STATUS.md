@@ -27,4 +27,5 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Workarounds & Patterns
 
-*(None yet -- document anything that fails before succeeding so future sessions don't repeat it.)*
+- **FetchContent + GIT_SHALLOW + commit hash does not work.** `GIT_SHALLOW TRUE` only supports branch/tag names, not commit hashes. Use `URL` + `URL_HASH` with a release tarball instead for pinned, reproducible builds.
+- **Raylib `option()` clears normal variables (CMP0077).** Set `BUILD_EXAMPLES` and `BUILD_GAMES` as `CACHE BOOL` (without `FORCE`) so raylib's `option()` doesn't override them.

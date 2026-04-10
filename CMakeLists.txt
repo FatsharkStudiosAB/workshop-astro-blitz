@@ -9,14 +9,14 @@ include(FetchContent)
 
 FetchContent_Declare(
     raylib
-    GIT_REPOSITORY https://github.com/raysan5/raylib.git
-    GIT_TAG        5.5
-    GIT_SHALLOW    TRUE
+    URL                    https://github.com/raysan5/raylib/archive/refs/tags/5.5.tar.gz
+    URL_HASH               SHA256=aea98ecf5bc5c5e0b789a76de0083a21a70457050ea4cc2aec7566935f5e258e
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
-# Disable raylib examples and extras
-set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
+# Disable raylib examples and extras (CACHE so raylib's option() doesn't override)
+set(BUILD_EXAMPLES OFF CACHE BOOL "Build raylib examples")
+set(BUILD_GAMES    OFF CACHE BOOL "Build raylib example games")
 
 FetchContent_MakeAvailable(raylib)
 
