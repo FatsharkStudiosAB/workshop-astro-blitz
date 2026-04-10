@@ -31,6 +31,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Complete rewrite of `design/DESIGN.md` with all major design decisions resolved: hybrid arena-dungeon level model, steep difficulty curve, 5--7 floor run structure, medium damage scale (10--100 HP range), prefix/suffix weapon modifier system, elite enemy modifiers, talent-based meta-progression, Risk of Rain-style loot (all items available from floor 1, rarer drops weighted toward later floors), and full development roadmap with short/medium/long-term sprint goals
 - Enemy spawn waves reduced from 4-8 swarmers per wave to 2-5 for more balanced difficulty
 - Enemy swarmers now use BFS flow field for pathfinding when far from the player (>3 tiles); fall back to direct seek at close range for smooth final approach
 - Game world is now much larger than the screen (4096x3072 vs 800x600); player moves freely across the full area
@@ -46,9 +47,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Wave counter increments each time a new enemy wave spawns
 - 6 new unit tests for game-over phase transitions, stats initialization, and death check
 - Enemy swarmer system: `src/enemy.c/h` with fixed-size enemy pool, swarmer AI (seek toward player), wave spawning from arena edges
-
-### Changed
-
 - Player visual upgraded from plain green circle to layered sci-fi mech: dark teal body with neon cyan outline, directional nose triangle for clear facing, bright reactor core, hot magenta aim line with crosshair dot, and semi-transparent glow aura; electric blue palette shift when dashing
 - Swarmer visual upgraded from plain red circle to layered alien bug: dark maroon body with neon red-orange outline, mandible "V" lines and bright yellow eye dots that face movement direction, and semi-transparent red glow aura
 - Player movement now uses tank controls: W moves toward mouse cursor, S moves away, A/D strafe left/right relative to aim direction
