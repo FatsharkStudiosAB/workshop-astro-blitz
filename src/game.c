@@ -3,7 +3,6 @@
  */
 
 #include "game.h"
-#include <string.h>
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
@@ -627,6 +626,7 @@ void game_init(GameState *gs) {
     gs->phase = PHASE_PLAYING;
     gs->settings_return_phase = PHASE_MAIN_MENU;
     gs->menu_cursor = 0;
+    gs->should_quit = false;
     gs->stats = (GameStats){.kills = 0, .survival_time = 0.0f, .waves_spawned = 0};
 
     /* Camera centered on player */

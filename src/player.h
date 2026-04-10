@@ -40,6 +40,7 @@ typedef struct {
 
 /* ── Public API ────────────────────────────────────────────────────────────── */
 
+/* Initialize a player at the given world position with full HP and no dash. */
 void player_init(Player *p, Vector2 start_pos);
 
 /*
@@ -52,6 +53,7 @@ void player_init(Player *p, Vector2 start_pos);
 void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Camera2D camera,
                    MovementLayout movement_layout);
 
+/* Draw the player's layered sci-fi visual (body, nose, glow, aim line). */
 void player_draw(const Player *p);
 
 /*

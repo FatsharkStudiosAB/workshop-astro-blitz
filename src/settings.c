@@ -21,9 +21,9 @@ static const char *movement_layout_to_str(MovementLayout layout) {
     case MOVEMENT_8DIR:
         return "8dir";
     case MOVEMENT_TANK:
-    default:
         return "tank";
     }
+    return "8dir"; /* fallback to default */
 }
 
 static MovementLayout str_to_movement_layout(const char *str, MovementLayout fallback) {

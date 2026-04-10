@@ -6,12 +6,8 @@
 #include "tilemap.h"
 #include <math.h>
 
-/* ── Helpers ───────────────────────────────────────────────────────────────── */
+/* ── Movement direction helpers (pure logic, no Raylib input calls) ─────── */
 
-/*
- * player_calc_move_dir -- pure logic, no Raylib input calls.
- * Converts WASD booleans into a world-space direction relative to aim_dir.
- */
 Vector2 player_calc_move_dir(Vector2 aim_dir, bool forward, bool back, bool left, bool right) {
     /* Perpendicular vectors used for strafing relative to aim_dir
      * in Raylib screen coordinates (Y+ is down): perp_left is strafe-left

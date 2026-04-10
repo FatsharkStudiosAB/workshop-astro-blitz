@@ -67,7 +67,10 @@ typedef struct {
  */
 void game_init(GameState *gs);
 
+/* Advance one frame: dispatch to the current phase's update logic. */
 void game_update(GameState *gs);
+
+/* Draw the current frame: dispatch to the current phase's draw logic. */
 void game_draw(const GameState *gs);
 
 /* Transition to PHASE_GAME_OVER if the player is dead. Separated from

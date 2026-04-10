@@ -31,9 +31,10 @@ typedef struct {
 /*
  * settings_init -- Initialize settings with defaults, then load from file.
  *
- * If the settings file does not exist or is malformed, defaults are used.
- * Returns true if an existing settings file was loaded, false if this is
- * the first run (no file found).
+ * If the settings file is missing, malformed, or cannot be opened/read,
+ * defaults are used.
+ * Returns true if an existing settings file was loaded successfully, false
+ * if settings could not be loaded (missing file, I/O error, etc.).
  */
 bool settings_init(Settings *s);
 

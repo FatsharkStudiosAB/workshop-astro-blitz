@@ -40,10 +40,11 @@ void test_default_movement_layout_is_8dir(void) {
 }
 
 void test_load_missing_file_returns_false_and_preserves_value(void) {
-    /* settings_load_from returns false when no file exists and doesn't
-     * clobber the caller's value -- same logic settings_init relies on. */
+    /* TEST_FILE is cleaned up by setUp, so it's guaranteed absent here.
+     * settings_load_from returns false and doesn't clobber the caller's
+     * value -- same logic settings_init relies on. */
     Settings s = {.movement_layout = MOVEMENT_TANK};
-    bool loaded = settings_load_from(&s, "nonexistent_init_test.ini");
+    bool loaded = settings_load_from(&s, TEST_FILE);
     TEST_ASSERT_FALSE(loaded);
     TEST_ASSERT_EQUAL_INT(MOVEMENT_TANK, s.movement_layout);
 }
@@ -99,13 +100,14 @@ void test_save_overwrites_previous(void) {
 /* ── Missing file tests ────────────────────────────────────────────────────── */
 
 void test_load_missing_file_returns_false(void) {
+    /* TEST_FILE is cleaned up by setUp, so it's guaranteed absent here */
     Settings s = {.movement_layout = MOVEMENT_TANK};
-    TEST_ASSERT_FALSE(settings_load_from(&s, "nonexistent_file_xyz.ini"));
+    TEST_ASSERT_FALSE(settings_load_from(&s, TEST_FILE));
 }
 
 void test_load_missing_file_preserves_defaults(void) {
     Settings s = {.movement_layout = MOVEMENT_8DIR};
-    settings_load_from(&s, "nonexistent_file_xyz.ini");
+    settings_load_from(&s, TEST_FILE);
     /* Value should be unchanged */
     TEST_ASSERT_EQUAL_INT(MOVEMENT_8DIR, s.movement_layout);
 }
