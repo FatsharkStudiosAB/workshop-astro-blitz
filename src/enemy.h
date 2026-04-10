@@ -11,6 +11,9 @@
 #include "raymath.h"
 #include <stdbool.h>
 
+/* Forward declaration to avoid circular include */
+typedef struct Tilemap Tilemap;
+
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
 #define MAX_ENEMIES 64
@@ -53,8 +56,12 @@ void enemy_pool_init(EnemyPool *pool);
 /* Spawn a single enemy of the given type at the given position. */
 void enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position);
 
-/* Update all active enemies: move toward target, clamp to arena. */
-void enemy_pool_update(EnemyPool *pool, float dt, Vector2 target, Rectangle arena);
+/*
+ * Update all active enemies: move toward target, clamp to arena.
+ * Pass NULL for tm to skip wall collision checks (e.g. in tests).
+ */
+void enemy_pool_update(EnemyPool *pool, float dt, Vector2 target, Rectangle arena,
+                       const Tilemap *tm);
 
 /* Draw all active enemies. */
 void enemy_pool_draw(const EnemyPool *pool);

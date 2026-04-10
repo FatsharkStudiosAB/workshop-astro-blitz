@@ -3,6 +3,7 @@
  */
 
 #include "bullet.h"
+#include "tilemap.h"
 #include <string.h>
 
 /* ── Public ────────────────────────────────────────────────────────────────── */
@@ -12,7 +13,7 @@ void bullet_pool_init(BulletPool *pool) {
     pool->fire_cooldown = 0.0f;
 }
 
-void bullet_pool_update(BulletPool *pool, float dt, Rectangle arena) {
+void bullet_pool_update(BulletPool *pool, float dt, Rectangle arena, const Tilemap *tm) {
     /* Tick fire cooldown */
     if (pool->fire_cooldown > 0.0f) {
         pool->fire_cooldown -= dt;
@@ -37,6 +38,12 @@ void bullet_pool_update(BulletPool *pool, float dt, Rectangle arena) {
         if (b->lifetime <= 0.0f || b->position.x < arena.x ||
             b->position.x > arena.x + arena.width || b->position.y < arena.y ||
             b->position.y > arena.y + arena.height) {
+            b->active = false;
+            continue;
+        }
+
+        /* Deactivate on wall hit */
+        if (tm && tilemap_is_solid(tm, b->position.x, b->position.y)) {
             b->active = false;
         }
     }

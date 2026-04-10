@@ -8,6 +8,9 @@
 #include "raymath.h"
 #include <stdbool.h>
 
+/* Forward declaration to avoid circular include */
+typedef struct Tilemap Tilemap;
+
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
 #define MAX_BULLETS 128
@@ -33,7 +36,14 @@ typedef struct {
 /* ── Public API ────────────────────────────────────────────────────────────── */
 
 void bullet_pool_init(BulletPool *pool);
-void bullet_pool_update(BulletPool *pool, float dt, Rectangle arena);
+
+/*
+ * bullet_pool_update -- Move bullets, expire old ones, deactivate on wall hit.
+ *
+ * Pass NULL for tm to skip wall collision checks (e.g. in tests).
+ */
+void bullet_pool_update(BulletPool *pool, float dt, Rectangle arena, const Tilemap *tm);
+
 void bullet_pool_draw(const BulletPool *pool);
 
 /* Spawn a bullet from `origin` in `direction` (must be normalized). */

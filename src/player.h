@@ -8,6 +8,9 @@
 #include "raymath.h"
 #include <stdbool.h>
 
+/* Forward declaration to avoid circular include */
+typedef struct Tilemap Tilemap;
+
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
 #define PLAYER_RADIUS 12.0f
@@ -37,7 +40,16 @@ typedef struct {
 /* ── Public API ────────────────────────────────────────────────────────────── */
 
 void player_init(Player *p, Vector2 start_pos);
-void player_update(Player *p, float dt, Rectangle arena);
+
+/*
+ * player_update -- Update player movement, aiming, and dash.
+ *
+ * Uses the camera to convert screen-space mouse position to world coordinates
+ * for aiming. Uses the tilemap for wall collision (NULL tilemap skips wall
+ * checks).
+ */
+void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Camera2D camera);
+
 void player_draw(const Player *p);
 
 /*

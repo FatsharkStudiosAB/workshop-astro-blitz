@@ -3,6 +3,7 @@
  */
 
 #include "enemy.h"
+#include "tilemap.h"
 #include <math.h>
 #include <string.h>
 
@@ -25,6 +26,37 @@ static void clamp_to_arena(Vector2 *pos, float radius, Rectangle arena) {
     }
     if (pos->y > max_y) {
         pos->y = max_y;
+    }
+}
+
+/*
+ * resolve_tile_collision_enemy -- push enemy out of solid tiles.
+ * Same axis-separation approach as the player version.
+ */
+static void resolve_tile_collision_enemy(Vector2 *pos, float radius, const Tilemap *tm) {
+    if (!tm) {
+        return;
+    }
+
+    /* Check right edge */
+    if (tilemap_is_solid(tm, pos->x + radius, pos->y)) {
+        int tx = (int)floorf((pos->x + radius) / (float)tm->tile_size);
+        pos->x = (float)(tx * tm->tile_size) - radius - 0.01f;
+    }
+    /* Check left edge */
+    if (tilemap_is_solid(tm, pos->x - radius, pos->y)) {
+        int tx = (int)floorf((pos->x - radius) / (float)tm->tile_size);
+        pos->x = (float)((tx + 1) * tm->tile_size) + radius + 0.01f;
+    }
+    /* Check bottom edge */
+    if (tilemap_is_solid(tm, pos->x, pos->y + radius)) {
+        int ty = (int)floorf((pos->y + radius) / (float)tm->tile_size);
+        pos->y = (float)(ty * tm->tile_size) - radius - 0.01f;
+    }
+    /* Check top edge */
+    if (tilemap_is_solid(tm, pos->x, pos->y - radius)) {
+        int ty = (int)floorf((pos->y - radius) / (float)tm->tile_size);
+        pos->y = (float)((ty + 1) * tm->tile_size) + radius + 0.01f;
     }
 }
 
@@ -57,7 +89,8 @@ void enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position) {
     /* Pool full -- silently drop the spawn */
 }
 
-void enemy_pool_update(EnemyPool *pool, float dt, Vector2 target, Rectangle arena) {
+void enemy_pool_update(EnemyPool *pool, float dt, Vector2 target, Rectangle arena,
+                       const Tilemap *tm) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
         Enemy *e = &pool->enemies[i];
         if (!e->active) {
@@ -77,6 +110,7 @@ void enemy_pool_update(EnemyPool *pool, float dt, Vector2 target, Rectangle aren
 
         e->position = Vector2Add(e->position, Vector2Scale(e->velocity, dt));
         clamp_to_arena(&e->position, e->radius, arena);
+        resolve_tile_collision_enemy(&e->position, e->radius, tm);
     }
 }
 

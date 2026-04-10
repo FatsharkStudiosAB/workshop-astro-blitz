@@ -7,6 +7,21 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Tilemap system (`src/tilemap.c/h`): procedural world generation with a 128x96 tile grid (~4096x3072 pixels). Generates border walls, randomly scattered obstacles, and obstacle clusters. Spawn area is guaranteed clear.
+- Camera2D follows the player, with edge clamping to keep the viewport within world bounds
+- Tile collision for player, enemies, and bullets: entities slide along walls, bullets are destroyed on wall impact
+- Enemy spawning is now camera-relative: swarmers appear just outside the visible viewport
+- 27 unit tests for tilemap module (`tests/test_tilemap.c`) covering generation, collision queries, coordinate conversion, and constants
+- Camera and tilemap tests added to `test_game.c`
+
+### Changed
+
+- Game world is now much larger than the screen (4096x3072 vs 800x600); player moves freely across the full area
+- All entity rendering happens in world-space via `BeginMode2D`/`EndMode2D`; HUD remains in screen-space
+- Mouse aiming uses `GetScreenToWorld2D` to correctly aim in world coordinates through the camera
+- `bullet_pool_update` and `enemy_pool_update` accept an optional `Tilemap*` for wall collision (NULL to skip)
+- `player_update` accepts `Tilemap*` and `Camera2D` for wall collision and world-space aiming
+- Updated `test_bullet.c` and `test_enemy.c` to use larger test arena and pass NULL tilemap
 - Game-over state: when player HP reaches zero, gameplay freezes and a "GAME OVER" overlay displays run stats (kills, survival time as MM:SS, waves spawned) with a prompt to press R to restart
 - `GamePhase` enum (`PHASE_PLAYING`, `PHASE_GAME_OVER`) and `GameStats` struct for tracking per-run statistics
 - Kill counter increments when enemies are destroyed by bullets

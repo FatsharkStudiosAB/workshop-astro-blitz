@@ -7,6 +7,7 @@
  */
 
 #include "game.h"
+#include "tilemap.h"
 #include "unity.h"
 
 /* ── Test helpers ──────────────────────────────────────────────────────────── */
@@ -24,27 +25,27 @@ void test_game_init_arena_position(void) {
     GameState gs;
     game_init(&gs);
 
-    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, ARENA_MARGIN, gs.arena.x);
-    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, ARENA_MARGIN, gs.arena.y);
+    /* Arena origin is at world origin (0,0) */
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, gs.arena.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, gs.arena.y);
 }
 
 void test_game_init_arena_dimensions(void) {
     GameState gs;
     game_init(&gs);
 
-    float expected_w = SCREEN_WIDTH - 2.0f * ARENA_MARGIN;
-    float expected_h = SCREEN_HEIGHT - 2.0f * ARENA_MARGIN;
-
-    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, expected_w, gs.arena.width);
-    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, expected_h, gs.arena.height);
+    /* Arena matches full world bounds from tilemap */
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, (float)WORLD_WIDTH, gs.arena.width);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, (float)WORLD_HEIGHT, gs.arena.height);
 }
 
 void test_game_init_player_centered_in_arena(void) {
     GameState gs;
     game_init(&gs);
 
-    float expected_x = gs.arena.x + gs.arena.width / 2.0f;
-    float expected_y = gs.arena.y + gs.arena.height / 2.0f;
+    /* Player spawns at center of the center tile */
+    float expected_x = (float)(WORLD_COLS / 2) * TILE_SIZE + TILE_SIZE / 2.0f;
+    float expected_y = (float)(WORLD_ROWS / 2) * TILE_SIZE + TILE_SIZE / 2.0f;
 
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, expected_x, gs.player.position.x);
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, expected_y, gs.player.position.y);
@@ -87,13 +88,54 @@ void test_screen_dimensions_positive(void) {
     TEST_ASSERT_TRUE(SCREEN_HEIGHT > 0);
 }
 
-void test_arena_margin_positive(void) {
-    TEST_ASSERT_TRUE(ARENA_MARGIN > 0.0f);
+void test_world_larger_than_screen(void) {
+    TEST_ASSERT_TRUE(WORLD_WIDTH > SCREEN_WIDTH);
+    TEST_ASSERT_TRUE(WORLD_HEIGHT > SCREEN_HEIGHT);
 }
 
-void test_arena_fits_on_screen(void) {
-    TEST_ASSERT_TRUE(SCREEN_WIDTH - 2.0f * ARENA_MARGIN > 0.0f);
-    TEST_ASSERT_TRUE(SCREEN_HEIGHT - 2.0f * ARENA_MARGIN > 0.0f);
+/* ── Camera tests ──────────────────────────────────────────────────────────── */
+
+void test_game_init_camera_offset(void) {
+    GameState gs;
+    game_init(&gs);
+
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, SCREEN_WIDTH / 2.0f, gs.camera.offset.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, SCREEN_HEIGHT / 2.0f, gs.camera.offset.y);
+}
+
+void test_game_init_camera_zoom(void) {
+    GameState gs;
+    game_init(&gs);
+
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 1.0f, gs.camera.zoom);
+}
+
+void test_game_init_camera_rotation(void) {
+    GameState gs;
+    game_init(&gs);
+
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, gs.camera.rotation);
+}
+
+/* ── Tilemap tests ─────────────────────────────────────────────────────────── */
+
+void test_game_init_tilemap_dimensions(void) {
+    GameState gs;
+    game_init(&gs);
+
+    TEST_ASSERT_EQUAL_INT(WORLD_COLS, gs.tilemap.cols);
+    TEST_ASSERT_EQUAL_INT(WORLD_ROWS, gs.tilemap.rows);
+    TEST_ASSERT_EQUAL_INT(TILE_SIZE, gs.tilemap.tile_size);
+}
+
+void test_game_init_spawn_area_clear(void) {
+    GameState gs;
+    game_init(&gs);
+
+    /* The center tiles around spawn should be empty */
+    int sx = WORLD_COLS / 2;
+    int sy = WORLD_ROWS / 2;
+    TEST_ASSERT_EQUAL_INT(TILE_EMPTY, gs.tilemap.tiles[sy][sx]);
 }
 
 /* ── Phase / game-over tests ───────────────────────────────────────────────── */
@@ -132,6 +174,7 @@ void test_game_init_resets_phase_after_game_over(void) {
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, gs.stats.survival_time);
     TEST_ASSERT_EQUAL_INT(0, gs.stats.waves_spawned);
 }
+
 void test_phase_game_over_on_zero_hp(void) {
     GameState gs;
     game_init(&gs);
@@ -183,8 +226,16 @@ int main(void) {
 
     /* Constants */
     RUN_TEST(test_screen_dimensions_positive);
-    RUN_TEST(test_arena_margin_positive);
-    RUN_TEST(test_arena_fits_on_screen);
+    RUN_TEST(test_world_larger_than_screen);
+
+    /* Camera */
+    RUN_TEST(test_game_init_camera_offset);
+    RUN_TEST(test_game_init_camera_zoom);
+    RUN_TEST(test_game_init_camera_rotation);
+
+    /* Tilemap */
+    RUN_TEST(test_game_init_tilemap_dimensions);
+    RUN_TEST(test_game_init_spawn_area_clear);
 
     /* Phase / game-over */
     RUN_TEST(test_game_init_phase_is_playing);
