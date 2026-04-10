@@ -138,6 +138,9 @@ void player_init(Player *p, Vector2 start_pos) {
     p->melee_cooldown = 0.0f;
     p->melee_timer = 0.0f;
     p->melee_direction = (Vector2){0};
+
+    p->speed_bonus = 0.0f;
+    p->dash_cd_mult = 0.0f; /* 0 means "use 1.0" in player_update */
 }
 
 void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Camera2D camera,
@@ -191,13 +194,15 @@ void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Came
         p->is_dashing = true;
         p->dash_direction = move_dir;
         p->dash_timer = DASH_DURATION;
-        p->dash_cooldown = DASH_COOLDOWN;
+        float cd_mult = (p->dash_cd_mult > 0.0f) ? p->dash_cd_mult : 1.0f;
+        p->dash_cooldown = DASH_COOLDOWN * cd_mult;
         return;
     }
 
     /* ── Normal movement ──────────────────────────────────────────────── */
     Vector2 move_dir = get_movement_input(p->aim_direction, movement_layout);
-    p->position = Vector2Add(p->position, Vector2Scale(move_dir, PLAYER_SPEED * dt));
+    float eff_speed = PLAYER_SPEED + p->speed_bonus;
+    p->position = Vector2Add(p->position, Vector2Scale(move_dir, eff_speed * dt));
     clamp_to_arena(p, arena);
     resolve_tile_collision(p, tm);
 }

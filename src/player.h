@@ -53,6 +53,10 @@ typedef struct {
     float melee_cooldown;    /* time remaining before next melee */
     float melee_timer;       /* time remaining in current swing (0 = not swinging) */
     Vector2 melee_direction; /* direction of current swing */
+
+    /* Upgrade-driven modifiers (set by game.c before player_update) */
+    float speed_bonus;  /* additive bonus to PLAYER_SPEED (default 0) */
+    float dash_cd_mult; /* multiplier for DASH_COOLDOWN (default 0 = use 1.0) */
 } Player;
 
 /* ── Public API ────────────────────────────────────────────────────────────── */

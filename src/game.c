@@ -343,10 +343,23 @@ static void spawn_wave(GameState *gs) {
                     /* ELITE_ARMORED=1, ELITE_SWIFT=2, ELITE_BURNING=3 */
                 }
 
+                int prev = enemy_pool_active_count(&gs->enemies);
                 if (elite != ELITE_NONE) {
                     enemy_pool_spawn_elite(&gs->enemies, type, pos, elite);
                 } else {
                     enemy_pool_spawn(&gs->enemies, type, pos);
+                }
+
+                /* Scale HP by floor level */
+                if (gs->floor > 0 && enemy_pool_active_count(&gs->enemies) > prev) {
+                    float scale = 1.0f + FLOOR_ENEMY_HP_SCALE * (float)gs->floor;
+                    for (int fi = 0; fi < MAX_ENEMIES; fi++) {
+                        Enemy *fe = &gs->enemies.enemies[fi];
+                        if (fe->active && fe->position.x == pos.x && fe->position.y == pos.y) {
+                            fe->hp *= scale;
+                            break;
+                        }
+                    }
                 }
                 break;
             }
@@ -670,9 +683,11 @@ static void draw_hud(const GameState *gs) {
     /* ── Dash cooldown indicator (next to health bar) ─────────────────── */
     float dash_x = bar_x + bar_w + 20.0f;
     float dash_w = 80.0f;
+    float cd_mult = (p->dash_cd_mult > 0.0f) ? p->dash_cd_mult : 1.0f;
+    float eff_dash_cd = DASH_COOLDOWN * cd_mult;
     float cd_ratio = 1.0f;
     if (p->dash_cooldown > 0.0f) {
-        cd_ratio = 1.0f - (p->dash_cooldown / DASH_COOLDOWN);
+        cd_ratio = 1.0f - (p->dash_cooldown / eff_dash_cd);
     }
 
     DrawRectangle((int)dash_x, (int)bar_y, (int)dash_w, (int)bar_h, DARKGRAY);
@@ -1029,6 +1044,10 @@ static void update_playing(GameState *gs) {
 
     float dt = GetFrameTime();
     gs->stats.survival_time += dt;
+
+    /* Apply upgrade-driven modifiers before movement */
+    gs->player.speed_bonus = upgrade_get_speed_bonus(&gs->upgrades);
+    gs->player.dash_cd_mult = upgrade_get_dash_cd_mult(&gs->upgrades);
 
     player_update(&gs->player, dt, gs->arena, &gs->tilemap, gs->camera,
                   gs->settings.movement_layout);

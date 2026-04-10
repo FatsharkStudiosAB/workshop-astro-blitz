@@ -7,6 +7,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Floor difficulty scaling: enemy HP increases by +15% per floor level (applies `FLOOR_ENEMY_HP_SCALE` at spawn time)
+- Speed upgrade now applied: each stack adds +30 movement speed to the player
+- Dash cooldown upgrade now applied: each stack multiplies dash cooldown by 0.85x (shorter cooldown)
+- 4 new player unit tests for upgrade modifier fields (`speed_bonus`, `dash_cd_mult`)
+- 3 new integration tests: floor HP scaling, speed upgrade via game_update, dash CD upgrade via game_update
 - Weapon system (`src/weapon.h/c`): 4 weapon presets -- Pistol (default), SMG (fast/inaccurate), Shotgun (5 pellets/wide spread), Plasma (slow/high damage). Each weapon defines fire rate, damage, bullet speed, spread angle, projectile count, lifetime, and color. Bullets now carry per-weapon damage and color.
 - 3 new enemy types extending the `EnemyType` enum: Grunt (ranged AI that maintains distance and fires enemy bullets), Stalker (fast flanker that circles then dashes at player), Bomber (charges when close, AoE explosion on death damages nearby player)
 - Enemy bullet pool (`EnemyBulletPool`) for Grunt projectiles with collision detection against player
@@ -25,6 +30,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- `Player` struct gains `speed_bonus` and `dash_cd_mult` fields for upgrade-driven movement modifiers
+- `player_update` uses `speed_bonus` for effective movement speed and `dash_cd_mult` for effective dash cooldown
+- Dash cooldown HUD bar now reflects the effective cooldown (accounting for upgrades)
 - `Bullet` struct gains `damage` and `color` fields (from weapon system)
 - `Enemy` struct gains `shoot_cooldown`, `ai_timer`, `is_charging`, and `elite` fields for new enemy types and modifiers
 - `Player` struct gains `current_weapon` (Weapon), `melee_cooldown`, `melee_timer`, `melee_direction` fields

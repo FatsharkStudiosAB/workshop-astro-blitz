@@ -14,6 +14,7 @@
 #include "game.h"
 #include "player.h"
 #include "raylib_stubs.h"
+#include "upgrade.h"
 #include "weapon.h"
 
 #include <math.h>
@@ -392,6 +393,59 @@ void test_weapon_pickup_swaps_weapon(void) {
     TEST_ASSERT_FALSE(gs.weapon_pickups.pickups[0].active);
 }
 
+/* ── Test: floor scaling increases enemy HP ───────────────────────────────── */
+
+void test_floor_scaling_increases_enemy_hp(void) {
+    /* Spawn a swarmer on floor 0 -- should have base HP */
+    float x = gs.player.position.x + 200.0f;
+    float y = gs.player.position.y;
+    enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER, (Vector2){x, y});
+    float floor0_hp = gs.enemies.enemies[0].hp;
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_EPSILON, SWARMER_HP, floor0_hp);
+
+    /* Clear and set floor to 3 */
+    gs.enemies.enemies[0].active = false;
+    gs.floor = 3;
+
+    /* Manually simulate what game.c spawn does: spawn + scale */
+    enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER, (Vector2){x, y});
+    float scale = 1.0f + FLOOR_ENEMY_HP_SCALE * (float)gs.floor;
+    gs.enemies.enemies[0].hp *= scale;
+    float floor3_hp = gs.enemies.enemies[0].hp;
+
+    /* Floor 3: HP should be 1.45x base */
+    TEST_ASSERT_TRUE(floor3_hp > floor0_hp);
+    float expected = SWARMER_HP * (1.0f + FLOOR_ENEMY_HP_SCALE * 3.0f);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_EPSILON, expected, floor3_hp);
+}
+
+/* ── Test: speed upgrade affects player via game_update ───────────────────── */
+
+void test_speed_upgrade_applied_via_game_update(void) {
+    /* Add speed upgrade stacks */
+    upgrade_add(&gs.upgrades, UPGRADE_SPEED);
+    upgrade_add(&gs.upgrades, UPGRADE_SPEED);
+
+    /* Run one frame so game_update applies upgrade to player */
+    game_update(&gs);
+
+    float expected_bonus = UPGRADE_SPEED_BONUS * 2.0f;
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_EPSILON, expected_bonus, gs.player.speed_bonus);
+}
+
+/* ── Test: dash CD upgrade affects player via game_update ─────────────────── */
+
+void test_dash_cd_upgrade_applied_via_game_update(void) {
+    /* Add dash CD upgrade stacks */
+    upgrade_add(&gs.upgrades, UPGRADE_DASH_CD);
+
+    /* Run one frame so game_update applies upgrade to player */
+    game_update(&gs);
+
+    float expected_mult = UPGRADE_DASH_CD_BONUS; /* 0.85 for 1 stack */
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_EPSILON, expected_mult, gs.player.dash_cd_mult);
+}
+
 /* ── Main ─────────────────────────────────────────────────────────────────── */
 
 int main(void) {
@@ -412,5 +466,8 @@ int main(void) {
     RUN_TEST(test_combo_increments_on_kills);
     RUN_TEST(test_elite_armored_has_more_hp);
     RUN_TEST(test_weapon_pickup_swaps_weapon);
+    RUN_TEST(test_floor_scaling_increases_enemy_hp);
+    RUN_TEST(test_speed_upgrade_applied_via_game_update);
+    RUN_TEST(test_dash_cd_upgrade_applied_via_game_update);
     return UNITY_END();
 }

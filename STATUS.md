@@ -10,12 +10,13 @@ When it grows too long, summarize older entries and remove resolved items.
 - **Build:** `task build` (or `cmake -B build && cmake --build build --config Release`)
 - **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest. 13 test suites, all passing.
 - **Branch:** `feature/visual-juice-and-gameplay-depth` -- 16 commits ahead of main.
-- **Playable:** Yes. Four weapon types (Pistol, SMG, Shotgun, Plasma), four enemy types (Swarmer, Grunt, Stalker, Bomber), elite modifiers, weapon drops, melee attack, combo system, floor progression with exit portals.
+- **Playable:** Yes. Four weapon types (Pistol, SMG, Shotgun, Plasma), four enemy types (Swarmer, Grunt, Stalker, Bomber), elite modifiers, weapon drops, melee attack, combo system, floor progression with exit portals. All 6 passive upgrades now functional.
 
 ## Recent Changes
 
 | Date | Change |
 |------|--------|
+| 2026-04-11 | Wired floor difficulty scaling: enemy HP scales by +15% per floor. Wired Speed and Dash CD upgrades to player movement and dash cooldown. 7 new tests. |
 | 2026-04-11 | Fixed linting infrastructure: installed LLVM/clang-format, fixed Taskfile fmt:c (PowerShell script workaround), fixed yamllint CRLF issues, suppressed pre-existing markdownlint MD060/MD036 rules. All three linters pass. |
 | 2026-04-11 | Added weapon system (src/weapon.h/c): 4 weapon presets (Pistol, SMG, Shotgun, Plasma) with per-weapon fire rate, damage, spread, projectile count, bullet speed/lifetime/color. Bullet struct now carries damage and color. 12 weapon unit tests. |
 | 2026-04-11 | Added 3 new enemy types: Grunt (ranged, fires enemy bullets), Stalker (circle + dash AI), Bomber (charges, AoE explosion on death). Enemy bullet pool for Grunt projectiles. Progressive wave spawning. |
@@ -30,8 +31,7 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Known Issues / Next Steps
 
-- **Remaining features:** Passive upgrade system (B9), post-processing shaders (A5-A8: bloom, CRT, vignette), minimap (B11), gameplay music (B12)
-- **Floor difficulty scaling:** Enemy HP/damage should scale with floor number (constants defined but not yet applied to spawned enemies)
+- **Remaining features:** Post-processing shaders (A5-A8: bloom, CRT, vignette), minimap (B11), gameplay music (B12)
 - **Redundant include path in CMakeLists.txt:** Harmless but could be cleaned up.
 - Room-based level generation would improve map variety
 
