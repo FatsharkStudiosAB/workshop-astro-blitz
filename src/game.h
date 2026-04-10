@@ -86,6 +86,7 @@ typedef struct {
     EnemyBulletPool enemy_bullets;
     ParticlePool particles;
     DamageNumberPool damage_numbers;
+    WeaponPickupPool weapon_pickups;
     Tilemap tilemap;
     GameAudio audio;
     Camera2D camera;

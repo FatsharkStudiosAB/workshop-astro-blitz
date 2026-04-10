@@ -65,6 +65,79 @@ static void damage_number_pool_draw(const DamageNumberPool *pool) {
     }
 }
 
+/* ── Weapon pickup helpers ──────────────────────────────────────────────────── */
+
+static void weapon_pickup_pool_init(WeaponPickupPool *pool) {
+    memset(pool->pickups, 0, sizeof(pool->pickups));
+}
+
+static void weapon_pickup_spawn(WeaponPickupPool *pool, Vector2 pos, Weapon weapon) {
+    for (int i = 0; i < MAX_WEAPON_PICKUPS; i++) {
+        WeaponPickup *wp = &pool->pickups[i];
+        if (!wp->active) {
+            wp->position = pos;
+            wp->weapon = weapon;
+            wp->lifetime = WEAPON_PICKUP_LIFETIME;
+            wp->active = true;
+            return;
+        }
+    }
+}
+
+static void weapon_pickup_pool_update(WeaponPickupPool *pool, float dt) {
+    for (int i = 0; i < MAX_WEAPON_PICKUPS; i++) {
+        WeaponPickup *wp = &pool->pickups[i];
+        if (!wp->active) {
+            continue;
+        }
+        wp->lifetime -= dt;
+        if (wp->lifetime <= 0.0f) {
+            wp->active = false;
+        }
+    }
+}
+
+static void weapon_pickup_pool_draw(const WeaponPickupPool *pool) {
+    for (int i = 0; i < MAX_WEAPON_PICKUPS; i++) {
+        const WeaponPickup *wp = &pool->pickups[i];
+        if (!wp->active) {
+            continue;
+        }
+
+        /* Pulsing glow effect based on lifetime */
+        float pulse = 0.5f + 0.5f * sinf(wp->lifetime * 4.0f);
+        unsigned char glow_alpha = (unsigned char)(40.0f + 40.0f * pulse);
+        Color glow = wp->weapon.bullet_color;
+        glow.a = glow_alpha;
+
+        /* Fade out in last 3 seconds */
+        float alpha_mult = 1.0f;
+        if (wp->lifetime < 3.0f) {
+            alpha_mult = wp->lifetime / 3.0f;
+        }
+
+        Color outline = wp->weapon.bullet_color;
+        outline.a = (unsigned char)(255.0f * alpha_mult);
+        Color fill = {outline.r / 4, outline.g / 4, outline.b / 4, outline.a};
+
+        /* Draw pickup: outer glow + diamond shape + weapon initial */
+        DrawCircleV(wp->position, WEAPON_PICKUP_RADIUS + 4.0f, glow);
+        DrawCircleV(wp->position, WEAPON_PICKUP_RADIUS, fill);
+        DrawCircleLinesV(wp->position, WEAPON_PICKUP_RADIUS, outline);
+
+        /* Weapon initial letter */
+        const char *initial = "?";
+        if (wp->weapon.name && wp->weapon.name[0]) {
+            initial = TextFormat("%c", wp->weapon.name[0]);
+        }
+        int font_size = 12;
+        int w = MeasureText(initial, font_size);
+        Color text_color = outline;
+        DrawText(initial, (int)(wp->position.x - w / 2.0f),
+                 (int)(wp->position.y - font_size / 2.0f), font_size, text_color);
+    }
+}
+
 /* ── Helpers ────────────────────────────────────────────────────────────────── */
 
 /* Pick an enemy type based on wave number. Later waves introduce harder types. */
@@ -240,6 +313,18 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                             }
                         }
                     }
+
+                    /* Weapon drop (non-swarmers have a chance) */
+                    if (enemy->type != ENEMY_SWARMER &&
+                        GetRandomValue(1, 100) <= WEAPON_DROP_CHANCE) {
+                        /* Drop a random weapon that differs from current */
+                        WeaponType drop = (WeaponType)GetRandomValue(0, WEAPON_COUNT - 1);
+                        if (drop == gs->player.current_weapon.type) {
+                            drop = (WeaponType)((drop + 1) % WEAPON_COUNT);
+                        }
+                        weapon_pickup_spawn(&gs->weapon_pickups, enemy->position,
+                                            weapon_get_preset(drop));
+                    }
                 }
                 break; /* bullet consumed -- stop checking enemies */
             }
@@ -313,6 +398,29 @@ static void resolve_enemy_bullet_player_collisions(GameState *gs) {
             if (p->hp < 0.0f) {
                 p->hp = 0.0f;
             }
+        }
+    }
+}
+
+static void resolve_weapon_pickup_collisions(GameState *gs) {
+    Player *p = &gs->player;
+    WeaponPickupPool *wpp = &gs->weapon_pickups;
+
+    for (int i = 0; i < MAX_WEAPON_PICKUPS; i++) {
+        WeaponPickup *wp = &wpp->pickups[i];
+        if (!wp->active) {
+            continue;
+        }
+
+        if (check_circle_collision(p->position, PLAYER_RADIUS, wp->position,
+                                   WEAPON_PICKUP_RADIUS)) {
+            /* Swap weapon */
+            p->current_weapon = wp->weapon;
+            wp->active = false;
+
+            /* Pickup effect */
+            particle_burst(&gs->particles, wp->position, 8, 30.0f, 100.0f, 0.1f, 0.3f, 2.5f,
+                           wp->weapon.bullet_color);
         }
     }
 }
@@ -655,10 +763,14 @@ static void update_playing(GameState *gs) {
                       &gs->enemy_bullets);
     enemy_bullet_pool_update(&gs->enemy_bullets, dt, gs->arena);
 
+    /* ── Weapon pickups ────────────────────────────────────────────────── */
+    weapon_pickup_pool_update(&gs->weapon_pickups, dt);
+
     /* ── Collisions ───────────────────────────────────────────────────── */
     resolve_bullet_enemy_collisions(gs);
     resolve_enemy_player_collisions(gs);
     resolve_enemy_bullet_player_collisions(gs);
+    resolve_weapon_pickup_collisions(gs);
 
     /* ── Death check ──────────────────────────────────────────────────── */
     game_check_death(gs);
@@ -830,6 +942,7 @@ void game_init(GameState *gs) {
     enemy_bullet_pool_init(&gs->enemy_bullets);
     particle_pool_init(&gs->particles);
     damage_number_pool_init(&gs->damage_numbers);
+    weapon_pickup_pool_init(&gs->weapon_pickups);
     screenshake_init(&gs->shake);
     gs->spawn_timer = SPAWN_INTERVAL;
     gs->phase = PHASE_PLAYING;
@@ -905,6 +1018,7 @@ void game_draw(const GameState *gs) {
         /* Draw the world behind any overlay */
         BeginMode2D(draw_cam);
         tilemap_draw(&gs->tilemap, gs->camera);
+        weapon_pickup_pool_draw(&gs->weapon_pickups);
         bullet_pool_draw(&gs->bullets);
         enemy_bullet_pool_draw(&gs->enemy_bullets);
         enemy_pool_draw(&gs->enemies);
