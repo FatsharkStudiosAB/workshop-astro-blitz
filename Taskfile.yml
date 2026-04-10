@@ -1,0 +1,48 @@
+version: "3"
+
+vars:
+  BUILD_DIR: build
+  BUILD_CONFIG: Release
+
+tasks:
+  default:
+    desc: Build and run the game
+    cmds:
+      - task: run
+
+  configure:
+    desc: Generate the CMake build system
+    preconditions:
+      - sh: test -f CMakeLists.txt
+        msg: "CMakeLists.txt not found. Add a CMake project before running this task."
+    cmds:
+      - cmake -B {{.BUILD_DIR}} -DCMAKE_BUILD_TYPE={{.BUILD_CONFIG}}
+    sources:
+      - CMakeLists.txt
+    generates:
+      - "{{.BUILD_DIR}}/CMakeCache.txt"
+
+  build:
+    desc: Compile the game
+    deps: [configure]
+    cmds:
+      - cmake --build {{.BUILD_DIR}} --config {{.BUILD_CONFIG}}
+
+  run:
+    desc: Build and run the game
+    deps: [build]
+    cmds:
+      # Multi-config generators (Visual Studio) output to build/<Config>/
+      - cmd: powershell -Command "if (Test-Path '{{.BUILD_DIR}}/{{.BUILD_CONFIG}}/astro_blitz.exe') { & './{{.BUILD_DIR}}/{{.BUILD_CONFIG}}/astro_blitz.exe' } elseif (Test-Path '{{.BUILD_DIR}}/astro_blitz.exe') { & './{{.BUILD_DIR}}/astro_blitz.exe' } else { Write-Error 'Executable not found'; exit 1 }"
+        platforms: [windows]
+      # Single-config generators (Makefiles, Ninja) output to build/
+      - cmd: '{{.BUILD_DIR}}/{{.BUILD_CONFIG}}/astro_blitz || {{.BUILD_DIR}}/astro_blitz'
+        platforms: [linux, darwin]
+
+  clean:
+    desc: Remove all build artifacts
+    cmds:
+      - cmd: powershell -Command "if (Test-Path '{{.BUILD_DIR}}') { Remove-Item -Recurse -Force '{{.BUILD_DIR}}' }"
+        platforms: [windows]
+      - cmd: rm -rf {{.BUILD_DIR}}
+        platforms: [linux, darwin]

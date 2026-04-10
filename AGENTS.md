@@ -6,9 +6,12 @@ Top-down sci-fi roguelike shooter built during Fatshark's agentic coding worksho
 
 | Task | Command |
 |------|---------|
-| Build the game | `cmake -B build -G "Visual Studio 17 2022" -A x64` then `cmake --build build --config Release` |
-| Run the game | `build/Release/astro_blitz.exe` *(after a successful build)* |
-| Run tests | *(TBD -- no test framework yet)* |
+| Configure build | `task configure` |
+| Build the game | `task build` |
+| Run the game | `task run` (or just `task`) |
+| Clean build artifacts | `task clean` |
+| Run tests | *(TBD)* |
+| List all tasks | `task --list-all` |
 
 ## Key Files
 
@@ -137,6 +140,7 @@ Everything below this line is lookup material. Behavioral rules are all above.
 
 | Path | What |
 |------|------|
+| `Taskfile.yml` | Task runner configuration (go-task) |
 | `src/` | Game source code |
 | `src/main.c` | Entry point -- window init, main loop |
 | `CMakeLists.txt` | Build configuration -- fetches Raylib 5.5 via FetchContent |
