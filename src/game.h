@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "audio.h"
 #include "bullet.h"
 #include "enemy.h"
 #include "player.h"
@@ -32,6 +33,7 @@ typedef struct {
     BulletPool bullets;
     EnemyPool enemies;
     Tilemap tilemap;
+    GameAudio audio;
     Camera2D camera;
     Rectangle arena;   /* world bounds (derived from tilemap) */
     float spawn_timer; /* time until next enemy wave */

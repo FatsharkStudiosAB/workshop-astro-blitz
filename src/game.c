@@ -101,6 +101,7 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                                        enemy->radius)) {
                 bullet->active = false;
                 enemy->hp -= 1.0f;
+                audio_play_enemy_hit(&gs->audio);
                 if (enemy->hp <= 0.0f) {
                     enemy->active = false;
                     gs->stats.kills++;
@@ -129,6 +130,7 @@ static void resolve_enemy_player_collisions(GameState *gs) {
         if (check_circle_collision(p->position, PLAYER_RADIUS, enemy->position, enemy->radius)) {
             p->hp -= enemy->damage;
             enemy->active = false; /* swarmer dies on contact */
+            audio_play_hit(&gs->audio);
             if (p->hp < 0.0f) {
                 p->hp = 0.0f;
             }
@@ -269,6 +271,7 @@ void game_update(GameState *gs) {
     /* ── Game-over phase: wait for restart ────────────────────────────── */
     if (gs->phase == PHASE_GAME_OVER) {
         if (IsKeyPressed(KEY_R)) {
+            audio_stop_death_music(&gs->audio);
             game_init(gs);
         }
         return;
@@ -284,7 +287,9 @@ void game_update(GameState *gs) {
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
         Vector2 muzzle = Vector2Add(gs->player.position,
                                     Vector2Scale(gs->player.aim_direction, PLAYER_RADIUS + 2.0f));
-        bullet_pool_fire(&gs->bullets, muzzle, gs->player.aim_direction);
+        if (bullet_pool_fire(&gs->bullets, muzzle, gs->player.aim_direction)) {
+            audio_play_shoot(&gs->audio);
+        }
     }
 
     bullet_pool_update(&gs->bullets, dt, gs->arena, &gs->tilemap);
@@ -314,6 +319,7 @@ void game_update(GameState *gs) {
 void game_check_death(GameState *gs) {
     if (gs->phase == PHASE_PLAYING && gs->player.hp <= 0.0f) {
         gs->phase = PHASE_GAME_OVER;
+        audio_play_death_music(&gs->audio);
     }
 }
 
