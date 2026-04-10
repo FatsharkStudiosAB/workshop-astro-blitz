@@ -6,8 +6,7 @@
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
-static void spawn_wave(GameState *gs)
-{
+static void spawn_wave(GameState *gs) {
     int count = GetRandomValue(SPAWN_MIN_GROUP, SPAWN_MAX_GROUP);
 
     for (int i = 0; i < count; i++) {
@@ -37,10 +36,9 @@ static void spawn_wave(GameState *gs)
     }
 }
 
-static void resolve_bullet_enemy_collisions(GameState *gs)
-{
+static void resolve_bullet_enemy_collisions(GameState *gs) {
     BulletPool *bp = &gs->bullets;
-    EnemyPool  *ep = &gs->enemies;
+    EnemyPool *ep = &gs->enemies;
 
     for (int b = 0; b < MAX_BULLETS; b++) {
         Bullet *bullet = &bp->bullets[b];
@@ -54,8 +52,8 @@ static void resolve_bullet_enemy_collisions(GameState *gs)
                 continue;
             }
 
-            if (check_circle_collision(bullet->position, BULLET_RADIUS,
-                                       enemy->position, enemy->radius)) {
+            if (check_circle_collision(bullet->position, BULLET_RADIUS, enemy->position,
+                                       enemy->radius)) {
                 bullet->active = false;
                 enemy->hp -= 1.0f;
                 if (enemy->hp <= 0.0f) {
@@ -67,9 +65,8 @@ static void resolve_bullet_enemy_collisions(GameState *gs)
     }
 }
 
-static void resolve_enemy_player_collisions(GameState *gs)
-{
-    Player    *p  = &gs->player;
+static void resolve_enemy_player_collisions(GameState *gs) {
+    Player *p = &gs->player;
     EnemyPool *ep = &gs->enemies;
 
     /* Skip damage if player is dashing and invincible */
@@ -83,8 +80,7 @@ static void resolve_enemy_player_collisions(GameState *gs)
             continue;
         }
 
-        if (check_circle_collision(p->position, PLAYER_RADIUS,
-                                   enemy->position, enemy->radius)) {
+        if (check_circle_collision(p->position, PLAYER_RADIUS, enemy->position, enemy->radius)) {
             p->hp -= enemy->damage;
             enemy->active = false; /* swarmer dies on contact */
             if (p->hp < 0.0f) {
@@ -94,8 +90,7 @@ static void resolve_enemy_player_collisions(GameState *gs)
     }
 }
 
-static void draw_hud(const GameState *gs)
-{
+static void draw_hud(const GameState *gs) {
     const Player *p = &gs->player;
 
     /* ── Health bar (bottom-left) ───────────────────────────────────────── */
@@ -127,26 +122,17 @@ static void draw_hud(const GameState *gs)
     DrawText("DASH", (int)dash_x + 4, (int)bar_y + 2, 12, RAYWHITE);
 }
 
-static void draw_arena(const GameState *gs)
-{
+static void draw_arena(const GameState *gs) {
     DrawRectangleLinesEx(gs->arena, 2.0f, DARKGRAY);
 }
 
 /* ── Public ────────────────────────────────────────────────────────────────── */
 
-void game_init(GameState *gs)
-{
-    gs->arena = (Rectangle){
-        ARENA_MARGIN,
-        ARENA_MARGIN,
-        SCREEN_WIDTH - 2.0f * ARENA_MARGIN,
-        SCREEN_HEIGHT - 2.0f * ARENA_MARGIN
-    };
+void game_init(GameState *gs) {
+    gs->arena = (Rectangle){ARENA_MARGIN, ARENA_MARGIN, SCREEN_WIDTH - 2.0f * ARENA_MARGIN,
+                            SCREEN_HEIGHT - 2.0f * ARENA_MARGIN};
 
-    Vector2 center = {
-        gs->arena.x + gs->arena.width / 2.0f,
-        gs->arena.y + gs->arena.height / 2.0f
-    };
+    Vector2 center = {gs->arena.x + gs->arena.width / 2.0f, gs->arena.y + gs->arena.height / 2.0f};
 
     player_init(&gs->player, center);
     bullet_pool_init(&gs->bullets);
@@ -154,18 +140,15 @@ void game_init(GameState *gs)
     gs->spawn_timer = SPAWN_INTERVAL;
 }
 
-void game_update(GameState *gs)
-{
+void game_update(GameState *gs) {
     float dt = GetFrameTime();
 
     player_update(&gs->player, dt, gs->arena);
 
     /* ── Shooting ─────────────────────────────────────────────────────── */
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-        Vector2 muzzle = Vector2Add(
-            gs->player.position,
-            Vector2Scale(gs->player.aim_direction, PLAYER_RADIUS + 2.0f)
-        );
+        Vector2 muzzle = Vector2Add(gs->player.position,
+                                    Vector2Scale(gs->player.aim_direction, PLAYER_RADIUS + 2.0f));
         bullet_pool_fire(&gs->bullets, muzzle, gs->player.aim_direction);
     }
 
@@ -186,14 +169,13 @@ void game_update(GameState *gs)
     resolve_enemy_player_collisions(gs);
 }
 
-void game_draw(const GameState *gs)
-{
+void game_draw(const GameState *gs) {
     BeginDrawing();
-        ClearBackground(BLACK);
-        draw_arena(gs);
-        bullet_pool_draw(&gs->bullets);
-        enemy_pool_draw(&gs->enemies);
-        player_draw(&gs->player);
-        draw_hud(gs);
+    ClearBackground(BLACK);
+    draw_arena(gs);
+    bullet_pool_draw(&gs->bullets);
+    enemy_pool_draw(&gs->enemies);
+    player_draw(&gs->player);
+    draw_hud(gs);
     EndDrawing();
 }

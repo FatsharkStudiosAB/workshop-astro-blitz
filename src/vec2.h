@@ -27,7 +27,8 @@ Vec2 vec2_scale(Vec2 v, float s);
 /* Return the length (magnitude) of a vector. */
 float vec2_length(Vec2 v);
 
-/* Return a unit vector in the same direction. Returns (0, 0) when the input length is smaller than 1e-8. */
+/* Return a unit vector in the same direction. Returns (0, 0) when the input length is smaller than
+ * 1e-8. */
 Vec2 vec2_normalize(Vec2 v);
 
 /* Return the distance between two points. */

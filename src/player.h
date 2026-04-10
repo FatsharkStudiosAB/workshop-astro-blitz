@@ -10,28 +10,28 @@
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
-#define PLAYER_RADIUS       12.0f
-#define PLAYER_SPEED        200.0f
-#define PLAYER_MAX_HP       100.0f
+#define PLAYER_RADIUS 12.0f
+#define PLAYER_SPEED 200.0f
+#define PLAYER_MAX_HP 100.0f
 
-#define DASH_SPEED          600.0f
-#define DASH_DURATION       0.15f
-#define DASH_COOLDOWN       1.0f
-#define DASH_INVINCIBLE     1  /* 1 = invincible during dash */
+#define DASH_SPEED 600.0f
+#define DASH_DURATION 0.15f
+#define DASH_COOLDOWN 1.0f
+#define DASH_INVINCIBLE 1 /* 1 = invincible during dash */
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
 typedef struct {
     Vector2 position;
-    Vector2 aim_direction;     /* normalized, toward mouse cursor */
-    float   hp;
-    float   max_hp;
+    Vector2 aim_direction; /* normalized, toward mouse cursor */
+    float hp;
+    float max_hp;
 
     /* Dash state */
-    bool    is_dashing;
+    bool is_dashing;
     Vector2 dash_direction;
-    float   dash_timer;        /* time remaining in current dash */
-    float   dash_cooldown;     /* time remaining before dash is available */
+    float dash_timer;    /* time remaining in current dash */
+    float dash_cooldown; /* time remaining before dash is available */
 } Player;
 
 /* ── Public API ────────────────────────────────────────────────────────────── */
@@ -56,5 +56,4 @@ void player_draw(const Player *p);
  *
  * Returns a normalized Vector2 (or zero vector if no input).
  */
-Vector2 player_calc_move_dir(Vector2 aim_dir, bool forward, bool back,
-                             bool left, bool right);
+Vector2 player_calc_move_dir(Vector2 aim_dir, bool forward, bool back, bool left, bool right);

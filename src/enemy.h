@@ -13,34 +13,32 @@
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
-#define MAX_ENEMIES         64
+#define MAX_ENEMIES 64
 
 /* Swarmer constants */
-#define SWARMER_SPEED       150.0f
-#define SWARMER_HP          1.0f
-#define SWARMER_RADIUS      8.0f
-#define SWARMER_DAMAGE      10.0f   /* damage dealt to player on contact */
+#define SWARMER_SPEED 150.0f
+#define SWARMER_HP 1.0f
+#define SWARMER_RADIUS 8.0f
+#define SWARMER_DAMAGE 10.0f /* damage dealt to player on contact */
 
 /* Spawning */
-#define SPAWN_INTERVAL      3.0f    /* seconds between spawn waves */
-#define SPAWN_MIN_GROUP     4       /* minimum swarmers per wave */
-#define SPAWN_MAX_GROUP     8       /* maximum swarmers per wave */
+#define SPAWN_INTERVAL 3.0f /* seconds between spawn waves */
+#define SPAWN_MIN_GROUP 4   /* minimum swarmers per wave */
+#define SPAWN_MAX_GROUP 8   /* maximum swarmers per wave */
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
-typedef enum {
-    ENEMY_SWARMER
-} EnemyType;
+typedef enum { ENEMY_SWARMER } EnemyType;
 
 typedef struct {
-    Vector2   position;
-    Vector2   velocity;
-    float     hp;
-    float     radius;
-    float     speed;
-    float     damage;
+    Vector2 position;
+    Vector2 velocity;
+    float hp;
+    float radius;
+    float speed;
+    float damage;
     EnemyType type;
-    bool      active;
+    bool active;
 } Enemy;
 
 typedef struct {
@@ -67,5 +65,4 @@ int enemy_pool_active_count(const EnemyPool *pool);
 /* ── Collision helpers ─────────────────────────────────────────────────────── */
 
 /* Check if two circles overlap (generic circle-circle collision). */
-bool check_circle_collision(Vector2 pos_a, float radius_a,
-                            Vector2 pos_b, float radius_b);
+bool check_circle_collision(Vector2 pos_a, float radius_a, Vector2 pos_b, float radius_b);

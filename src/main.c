@@ -4,11 +4,10 @@
  * Initializes the window, runs the game loop, and cleans up.
  */
 
-#include "raylib.h"
 #include "game.h"
+#include "raylib.h"
 
-int main(void)
-{
+int main(void) {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Astro Blitz");
     SetTargetFPS(60);
 

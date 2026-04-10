@@ -3,13 +3,12 @@
  */
 
 #include "enemy.h"
-#include <string.h>
 #include <math.h>
+#include <string.h>
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
-static void clamp_to_arena(Vector2 *pos, float radius, Rectangle arena)
-{
+static void clamp_to_arena(Vector2 *pos, float radius, Rectangle arena) {
     float min_x = arena.x + radius;
     float max_x = arena.x + arena.width - radius;
     float min_y = arena.y + radius;
@@ -31,26 +30,24 @@ static void clamp_to_arena(Vector2 *pos, float radius, Rectangle arena)
 
 /* ── Public ────────────────────────────────────────────────────────────────── */
 
-void enemy_pool_init(EnemyPool *pool)
-{
+void enemy_pool_init(EnemyPool *pool) {
     memset(pool->enemies, 0, sizeof(pool->enemies));
 }
 
-void enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position)
-{
+void enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
         Enemy *e = &pool->enemies[i];
         if (!e->active) {
             e->position = position;
             e->velocity = (Vector2){0.0f, 0.0f};
-            e->type     = type;
-            e->active   = true;
+            e->type = type;
+            e->active = true;
 
             switch (type) {
             case ENEMY_SWARMER:
-                e->hp     = SWARMER_HP;
+                e->hp = SWARMER_HP;
                 e->radius = SWARMER_RADIUS;
-                e->speed  = SWARMER_SPEED;
+                e->speed = SWARMER_SPEED;
                 e->damage = SWARMER_DAMAGE;
                 break;
             }
@@ -60,9 +57,7 @@ void enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position)
     /* Pool full -- silently drop the spawn */
 }
 
-void enemy_pool_update(EnemyPool *pool, float dt, Vector2 target,
-                       Rectangle arena)
-{
+void enemy_pool_update(EnemyPool *pool, float dt, Vector2 target, Rectangle arena) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
         Enemy *e = &pool->enemies[i];
         if (!e->active) {
@@ -85,8 +80,7 @@ void enemy_pool_update(EnemyPool *pool, float dt, Vector2 target,
     }
 }
 
-void enemy_pool_draw(const EnemyPool *pool)
-{
+void enemy_pool_draw(const EnemyPool *pool) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
         const Enemy *e = &pool->enemies[i];
         if (!e->active) {
@@ -101,8 +95,7 @@ void enemy_pool_draw(const EnemyPool *pool)
     }
 }
 
-int enemy_pool_active_count(const EnemyPool *pool)
-{
+int enemy_pool_active_count(const EnemyPool *pool) {
     int count = 0;
     for (int i = 0; i < MAX_ENEMIES; i++) {
         if (pool->enemies[i].active) {
@@ -114,9 +107,7 @@ int enemy_pool_active_count(const EnemyPool *pool)
 
 /* ── Collision helpers ─────────────────────────────────────────────────────── */
 
-bool check_circle_collision(Vector2 pos_a, float radius_a,
-                            Vector2 pos_b, float radius_b)
-{
+bool check_circle_collision(Vector2 pos_a, float radius_a, Vector2 pos_b, float radius_b) {
     float dx = pos_a.x - pos_b.x;
     float dy = pos_a.y - pos_b.y;
     float dist_sq = dx * dx + dy * dy;
