@@ -178,12 +178,12 @@ Always visible during gameplay. Positioned at screen edges to keep the play area
 | **Position** | Top-right corner |
 | **Size** | Small (~15% of screen width), semi-transparent background |
 | **Content** | Explored rooms shown as filled shapes, unexplored rooms as outlines (if adjacent/detected). Player as a bright dot. Exit doors marked. |
-| **Toggle** | Tab key to expand to a full overlay map. Press again (or Tab) to dismiss. |
+| **Toggle** | Press the map hotkey to expand to a full overlay map. Press again to dismiss. |
 | **Fog of war** | Rooms only appear on the minimap once the player enters them. Adjacent rooms show as dim outlines. |
 
 ### Stats Legend
 
-Displayed as a persistent overlay in the top-right area (below the minimap) or toggled via a hotkey.
+Displayed as a persistent overlay in the top-right area (below the minimap), or optionally hidden/shown through a UI toggle if that behavior is enabled.
 
 | Stat | Description |
 |------|-------------|
