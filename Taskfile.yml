@@ -6,9 +6,9 @@ vars:
 
 tasks:
   default:
-    desc: Build and run the game
+    desc: List all available tasks
     cmds:
-      - task: run
+      - task --list-all
 
   configure:
     desc: Generate the CMake build system
