@@ -6,8 +6,8 @@ Top-down sci-fi roguelike shooter built during Fatshark's agentic coding worksho
 
 | Task | Command |
 |------|---------|
-| Build the game | `gcc -std=c99 -Wall -Wextra -o astro_blitz src/*.c -Iinclude -Llib -lraylib -lm` *(adjust paths once Raylib is installed)* |
-| Run the game | `./astro_blitz` (Linux/macOS) or `astro_blitz.exe` (Windows) |
+| Build the game | `gcc -std=c99 -Wall -Wextra -o astro_blitz src/*.c -Iinclude -Llib -lraylib -lm` *(requires `src/`, `include/`, and Raylib installed in `lib/`)* |
+| Run the game | `./astro_blitz` (Linux/macOS) or `astro_blitz.exe` (Windows) *(after a successful build)* |
 | Run tests | *(TBD -- no test framework yet)* |
 
 ## Key Files
@@ -54,11 +54,11 @@ When the user corrects you on a workflow pattern or convention not already cover
 
 Do not commit (or amend) until all are satisfied.
 
-1. Run the game (if applicable) to verify nothing is visibly broken. Skip this step if no build/run command exists yet.
+1. Run the game (if applicable) to verify nothing is visibly broken. Skip this step if the game is not yet buildable (e.g. missing source files or prerequisites).
 2. Run tests (if they exist) to verify changes don't break existing behavior.
 3. Verify that any user corrections from this session have been captured in `AGENTS.md`.
 4. If any command, API call, or approach failed before succeeding, document the working pattern in `AGENTS.md` so future sessions don't repeat the failed attempts.
-5. Update `STATUS.md` with what changed and any new bugs or workarounds discovered.
+5. Update `STATUS.md` if this commit changes observable game behavior, project structure, dependencies, or introduces/resolves a known issue (see STATUS.md maintenance rules below).
 6. Update `CHANGELOG.md` under `[Unreleased]` if the change is user-facing.
 7. Commit with a clear message. Keep commits small and logical -- one logical change per commit.
 8. After committing, present a brief summary to the user: what changed, what files were affected, and the current state of the branch.
@@ -137,10 +137,10 @@ Everything below this line is lookup material. Behavioral rules are all above.
 
 | Path | What |
 |------|------|
-| `src/` | C source files (`.c`) |
-| `include/` | Header files (`.h`) |
-| `assets/` | Game assets: sprites (PNG), audio (WAV/OGG) |
-| `lib/` | Third-party libraries (Raylib binaries) |
+| `src/` | C source files (`.c`) *(planned)* |
+| `include/` | Header files (`.h`) *(planned)* |
+| `assets/` | Game assets: sprites (PNG), audio (WAV/OGG) *(planned)* |
+| `lib/` | Third-party libraries (Raylib binaries) *(planned)* |
 | `design/` | Game design documents and reference assets |
 | `design/DESIGN.md` | Game design document |
 | `design/assets/` | Reference images, mockups, sprites |
