@@ -328,36 +328,71 @@ static void update_main_menu(GameState *gs) {
 }
 
 static void update_paused(GameState *gs) {
-    enum { PAUSE_RESUME, PAUSE_SETTINGS, PAUSE_MAIN_MENU, PAUSE_QUIT, PAUSE_COUNT };
+    bool dead = gs->player.hp <= 0.0f;
 
-    /* ESC to resume */
-    if (IsKeyPressed(KEY_ESCAPE)) {
-        gs->phase = PHASE_PLAYING;
-        gs->menu_cursor = 0;
-        return;
-    }
+    if (dead) {
+        /* Dead: menu is Settings / Main Menu / Quit (no Resume) */
+        enum { DEAD_SETTINGS, DEAD_MAIN_MENU, DEAD_QUIT, DEAD_COUNT };
 
-    gs->menu_cursor = menu_navigate(gs->menu_cursor, PAUSE_COUNT);
+        /* ESC returns to game-over screen */
+        if (IsKeyPressed(KEY_ESCAPE)) {
+            gs->phase = PHASE_GAME_OVER;
+            gs->menu_cursor = 0;
+            return;
+        }
 
-    if (menu_confirm()) {
-        switch (gs->menu_cursor) {
-        case PAUSE_RESUME:
+        gs->menu_cursor = menu_navigate(gs->menu_cursor, DEAD_COUNT);
+
+        if (menu_confirm()) {
+            switch (gs->menu_cursor) {
+            case DEAD_SETTINGS:
+                gs->settings_return_phase = PHASE_PAUSED;
+                gs->phase = PHASE_SETTINGS;
+                gs->menu_cursor = 0;
+                break;
+            case DEAD_MAIN_MENU:
+                audio_stop_death_music(&gs->audio);
+                gs->phase = PHASE_MAIN_MENU;
+                gs->menu_cursor = 0;
+                break;
+            case DEAD_QUIT:
+                gs->should_quit = true;
+                break;
+            }
+        }
+    } else {
+        /* Alive: full menu with Resume */
+        enum { PAUSE_RESUME, PAUSE_SETTINGS, PAUSE_MAIN_MENU, PAUSE_QUIT, PAUSE_COUNT };
+
+        /* ESC to resume */
+        if (IsKeyPressed(KEY_ESCAPE)) {
             gs->phase = PHASE_PLAYING;
             gs->menu_cursor = 0;
-            break;
-        case PAUSE_SETTINGS:
-            gs->settings_return_phase = PHASE_PAUSED;
-            gs->phase = PHASE_SETTINGS;
-            gs->menu_cursor = 0;
-            break;
-        case PAUSE_MAIN_MENU:
-            audio_stop_death_music(&gs->audio);
-            gs->phase = PHASE_MAIN_MENU;
-            gs->menu_cursor = 0;
-            break;
-        case PAUSE_QUIT:
-            gs->should_quit = true;
-            break;
+            return;
+        }
+
+        gs->menu_cursor = menu_navigate(gs->menu_cursor, PAUSE_COUNT);
+
+        if (menu_confirm()) {
+            switch (gs->menu_cursor) {
+            case PAUSE_RESUME:
+                gs->phase = PHASE_PLAYING;
+                gs->menu_cursor = 0;
+                break;
+            case PAUSE_SETTINGS:
+                gs->settings_return_phase = PHASE_PAUSED;
+                gs->phase = PHASE_SETTINGS;
+                gs->menu_cursor = 0;
+                break;
+            case PAUSE_MAIN_MENU:
+                audio_stop_death_music(&gs->audio);
+                gs->phase = PHASE_MAIN_MENU;
+                gs->menu_cursor = 0;
+                break;
+            case PAUSE_QUIT:
+                gs->should_quit = true;
+                break;
+            }
         }
     }
 }
@@ -509,13 +544,20 @@ static void draw_paused(const GameState *gs) {
     /* Dark overlay */
     DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 180});
 
-    const char *title = "PAUSED";
+    bool dead = gs->player.hp <= 0.0f;
+    const char *title = dead ? "GAME OVER" : "PAUSED";
     int title_size = 40;
     int title_w = MeasureText(title, title_size);
-    DrawText(title, (SCREEN_WIDTH - title_w) / 2, 150, title_size, RAYWHITE);
+    DrawText(title, (SCREEN_WIDTH - title_w) / 2, 150, title_size, dead ? RED : RAYWHITE);
 
-    const char *items[] = {"Resume", "Settings", "Main Menu", "Quit"};
-    draw_menu_items(items, 4, gs->menu_cursor, 240, 22, 36);
+    if (dead) {
+        /* No Resume when player is dead */
+        const char *items[] = {"Settings", "Main Menu", "Quit"};
+        draw_menu_items(items, 3, gs->menu_cursor, 240, 22, 36);
+    } else {
+        const char *items[] = {"Resume", "Settings", "Main Menu", "Quit"};
+        draw_menu_items(items, 4, gs->menu_cursor, 240, 22, 36);
+    }
 }
 
 static void draw_settings(const GameState *gs) {

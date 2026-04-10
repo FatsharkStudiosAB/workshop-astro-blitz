@@ -110,6 +110,13 @@ bool settings_load_from(Settings *s, const char *path) {
         /* Unknown keys are silently ignored */
     }
 
-    fclose(f);
+    if (ferror(f)) {
+        fclose(f);
+        return false;
+    }
+
+    if (fclose(f) != 0) {
+        return false;
+    }
     return true;
 }

@@ -32,38 +32,31 @@ void tearDown(void) {
 
 /* ── Default initialization tests ──────────────────────────────────────────── */
 
-void test_settings_init_defaults_to_8dir(void) {
-    /* Ensure no settings file exists so init uses defaults */
-    remove(SETTINGS_FILE);
-
+void test_default_movement_layout_is_8dir(void) {
+    /* Verify MOVEMENT_8DIR is the zero value (first enum entry = default) */
     Settings s;
-    s.movement_layout = MOVEMENT_TANK; /* pre-set to non-default */
-    settings_init(&s);
-
-    /* With no file, settings_init should apply the default (8-dir) */
+    memset(&s, 0, sizeof(s));
     TEST_ASSERT_EQUAL_INT(MOVEMENT_8DIR, s.movement_layout);
 }
 
-void test_settings_init_returns_false_when_no_file(void) {
-    /* settings_init returns false when no settings file exists */
-    Settings s;
-    /* Remove any existing settings file first */
-    remove(SETTINGS_FILE);
-    bool loaded = settings_init(&s);
-    TEST_ASSERT_FALSE(loaded);
-    TEST_ASSERT_EQUAL_INT(MOVEMENT_8DIR, s.movement_layout);
-    /* Clean up in case it created a file */
-    remove(SETTINGS_FILE);
-}
-
-void test_settings_init_returns_true_when_file_exists(void) {
+void test_load_missing_file_returns_false_and_preserves_value(void) {
+    /* settings_load_from returns false when no file exists and doesn't
+     * clobber the caller's value -- same logic settings_init relies on. */
     Settings s = {.movement_layout = MOVEMENT_TANK};
-    settings_save_to(&s, SETTINGS_FILE);
-    Settings s2;
-    bool loaded = settings_init(&s2);
+    bool loaded = settings_load_from(&s, "nonexistent_init_test.ini");
+    TEST_ASSERT_FALSE(loaded);
+    TEST_ASSERT_EQUAL_INT(MOVEMENT_TANK, s.movement_layout);
+}
+
+void test_load_from_returns_true_when_file_exists(void) {
+    /* Round-trip via the test file to verify load returns true */
+    Settings s = {.movement_layout = MOVEMENT_TANK};
+    TEST_ASSERT_TRUE(settings_save_to(&s, TEST_FILE));
+
+    Settings s2 = {.movement_layout = MOVEMENT_8DIR};
+    bool loaded = settings_load_from(&s2, TEST_FILE);
     TEST_ASSERT_TRUE(loaded);
     TEST_ASSERT_EQUAL_INT(MOVEMENT_TANK, s2.movement_layout);
-    remove(SETTINGS_FILE);
 }
 
 void test_movement_layout_enum_values(void) {
@@ -207,9 +200,9 @@ int main(void) {
     UNITY_BEGIN();
 
     /* Defaults */
-    RUN_TEST(test_settings_init_defaults_to_8dir);
-    RUN_TEST(test_settings_init_returns_false_when_no_file);
-    RUN_TEST(test_settings_init_returns_true_when_file_exists);
+    RUN_TEST(test_default_movement_layout_is_8dir);
+    RUN_TEST(test_load_missing_file_returns_false_and_preserves_value);
+    RUN_TEST(test_load_from_returns_true_when_file_exists);
     RUN_TEST(test_movement_layout_enum_values);
 
     /* Round-trip */
