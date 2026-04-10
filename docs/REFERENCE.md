@@ -30,6 +30,7 @@ How-to patterns for PR operations. The gates for when to do these are in
 | `docs/` | Project documentation and reference material |
 | `CMakeLists.txt` | Build config -- fetches Raylib 5.5 + Unity 2.6.1 via FetchContent |
 | `Taskfile.yml` | Task runner configuration (go-task) |
+| `.opencode/agents/` | Lightweight Haiku subagents for delegating mechanical checks |
 | `build/` | Build output (gitignored) |
 
 ## Environment

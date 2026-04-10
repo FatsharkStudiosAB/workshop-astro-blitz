@@ -5,8 +5,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- `.opencode/agents/` -- Lightweight Haiku subagents (lint-check, build-and-test, changelog-drafter) for delegating mechanical checks at lower cost
+
 ### Changed
 
+- `AGENTS.md` -- Add Efficiency section with delegation patterns and context hygiene
+- `.gitignore` -- Change `.opencode/` from blanket ignore to selective: session data stays ignored, `skills/`, `agents/`, and `commands/` subdirectories are now committed
+- `.markdownlint-cli2.yaml`, `.yamllint.yml` -- Exclude `build/` directory from linters to avoid noise from fetched dependencies (Raylib, Unity)
 - Rewrite AGENTS.md: tighten prose to 175 lines (under 200-line adherence ceiling), add new gates from autobuilds-testify (After PR feedback, Before merging, cherry-pick rule, branch name regex), extract reference material to `docs/REFERENCE.md`
 
 ### Added

@@ -167,9 +167,19 @@ For non-trivial changes (skip for docs-only or single-line fixes):
 
 ## Efficiency
 
+### Delegate mechanical tasks
+
+Use the lightweight subagents in `.opencode/agents/` for routine checks:
+
+- `@lint-check` -- runs `task fmt`, reports issues (Haiku)
+- `@build-and-test` -- builds and runs tests, reports failures (Haiku)
+- `@changelog-drafter` -- drafts CHANGELOG.md entries from diffs (Haiku)
+
+### Context hygiene
+
+- Use the `explore` subagent for broad codebase searches -- results stay in an isolated context and only the summary returns.
 - `gh api`: always use `--jq` to filter fields. Prefer over MCP GitHub tools when you only need specific fields.
-- Use the Task tool with `explore`/`general` subagents for broad searches to avoid context bloat.
 - Do not re-read files you just wrote or edited. Trust the tool's success response.
-- Filter non-actionable build noise (Unity/Raylib warnings). Keep compiler warnings visible.
+- Filter non-actionable build noise (Raylib warnings). Keep compiler warnings visible.
 - Merge from main once at session start. One final merge/rebase before push if main changed.
 - Before creating new modules, check whether existing code or Raylib already provides the functionality.
