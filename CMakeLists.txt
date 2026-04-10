@@ -58,7 +58,7 @@ if(NOT MSVC)
 endif()
 
 # ── Game executable ──────────────────────────────────────────────────────────
-add_executable(astro_blitz src/main.c src/postfx.c)
+add_executable(astro_blitz src/main.c src/postfx.c src/lightmap.c)
 target_link_libraries(astro_blitz PRIVATE astro_blitz_lib)
 
 # Note: winmm is NOT explicitly linked because Raylib's PlaySound symbol
