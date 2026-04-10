@@ -15,6 +15,7 @@ When it grows too long, summarize older entries and remove resolved items.
 
 | Date | Change |
 |------|--------|
+| 2026-04-10 | Added vec2 math module (src/vec2.h, src/vec2.c) with 27 tests; introduced game_lib static library pattern |
 | 2026-04-10 | Added `task test` command; strengthened AGENTS.md with TDD lifecycle, test mandate, self-maintenance |
 | 2026-04-10 | Added linting/formatting: `task fmt` with clang-format, yamllint, markdownlint-cli2 |
 | 2026-04-10 | Added Unity test framework v2.6.1 via FetchContent, sample test, CTest integration |
@@ -37,3 +38,4 @@ When it grows too long, summarize older entries and remove resolved items.
 - **Taskfile `run` task:** Uses platform-specific commands to find the executable in both `build/<Config>/` (multi-config) and `build/` (single-config) layouts.
 - **FetchContent + GIT_SHALLOW + commit hash does not work.** `GIT_SHALLOW TRUE` only supports branch/tag names, not commit hashes. Use `URL` + `URL_HASH` with a release tarball instead for pinned, reproducible builds.
 - **Raylib `option()` clears normal variables (CMP0077).** Set `BUILD_EXAMPLES` and `BUILD_GAMES` as `CACHE BOOL` (without `FORCE`) so raylib's `option()` doesn't override them.
+- **game_lib pattern:** Game logic goes into a `game_lib` static library (no Raylib dependency). Tests link against `game_lib` + Unity. The main executable links `game_lib` + Raylib. This keeps game logic testable without window/rendering dependencies.

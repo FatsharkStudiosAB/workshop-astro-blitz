@@ -20,9 +20,15 @@ set(BUILD_GAMES    OFF CACHE BOOL "Build raylib example games")
 
 FetchContent_MakeAvailable(raylib)
 
+# ── Game logic library (testable, no Raylib dependency) ─────────────────────
+add_library(game_lib STATIC
+    src/vec2.c
+)
+target_include_directories(game_lib PUBLIC src)
+
 # ── Game executable ──────────────────────────────────────────────────────────
 add_executable(astro_blitz src/main.c)
-target_link_libraries(astro_blitz PRIVATE raylib)
+target_link_libraries(astro_blitz PRIVATE game_lib raylib)
 
 # On Windows, link required system libraries
 if(WIN32)
@@ -45,4 +51,9 @@ if(BUILD_TESTING)
     add_executable(test_sample tests/test_sample.c)
     target_link_libraries(test_sample PRIVATE unity)
     add_test(NAME test_sample COMMAND test_sample)
+
+    # Vec2 math tests
+    add_executable(test_vec2 tests/test_vec2.c)
+    target_link_libraries(test_vec2 PRIVATE unity game_lib)
+    add_test(NAME test_vec2 COMMAND test_vec2)
 endif()

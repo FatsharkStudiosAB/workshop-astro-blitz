@@ -183,8 +183,11 @@ Everything below this line is lookup material. Behavioral rules are all above.
 | `Taskfile.yml` | Task runner configuration (go-task) |
 | `src/` | Game source code |
 | `src/main.c` | Entry point -- window init, main loop |
+| `src/vec2.h` | 2D vector math -- public API |
+| `src/vec2.c` | 2D vector math -- implementation |
 | `tests/` | Unit tests (Unity framework) |
 | `tests/test_sample.c` | Sample test verifying framework works |
+| `tests/test_vec2.c` | Vec2 math tests (27 tests) |
 | `CMakeLists.txt` | Build configuration -- fetches Raylib 5.5 + Unity 2.6.1 via FetchContent |
 | `build/` | Build output (gitignored) |
 | `design/` | Game design documents and reference assets |

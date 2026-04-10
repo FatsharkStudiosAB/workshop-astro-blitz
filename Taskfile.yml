@@ -46,7 +46,7 @@ tasks:
     desc: Build and run all tests
     deps: [configure]
     cmds:
-      - cmake --build {{.BUILD_DIR}} --target test_sample --config Debug
+      - cmake --build {{.BUILD_DIR}} --config Debug
       - ctest --test-dir {{.BUILD_DIR}} -C Debug --output-on-failure
 
   clean:

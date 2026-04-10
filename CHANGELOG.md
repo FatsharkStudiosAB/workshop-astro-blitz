@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Vec2 2D vector math module (`src/vec2.h`, `src/vec2.c`) with add, subtract, scale, length, normalize, distance, dot product, lerp
+- 27 unit tests for vec2 (`tests/test_vec2.c`) covering all operations including edge cases
+- `game_lib` static library in CMake -- game logic separated from rendering, testable without Raylib
 - `task test` command in Taskfile.yml -- single command to build and run all tests
 - Development Lifecycle in AGENTS.md -- TDD workflow: plan, test, implement, green, simplify
 - Stronger test mandate: all code changes require tests, not just gameplay systems
