@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // Context management when the session window fills up.
+  "compaction": {
+    "auto": true,
+    "prune": true
+  },
+
+  // Routes lightweight tasks to a cheaper model.
+  "small_model": "anthropic/claude-haiku-4-5"
+}
