@@ -13,6 +13,7 @@
 #include "screenshake.h"
 #include "settings.h"
 #include "tilemap.h"
+#include "upgrade.h"
 #include "weapon.h"
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
@@ -72,6 +73,24 @@ typedef struct {
     WeaponPickup pickups[MAX_WEAPON_PICKUPS];
 } WeaponPickupPool;
 
+/* ── Upgrade pickups ───────────────────────────────────────────────────────── */
+
+#define MAX_UPGRADE_PICKUPS 8
+#define UPGRADE_PICKUP_RADIUS 8.0f
+#define UPGRADE_PICKUP_LIFETIME 12.0f
+#define ELITE_UPGRADE_DROP_CHANCE 50 /* percent chance elite drops an upgrade */
+
+typedef struct {
+    Vector2 position;
+    UpgradeType type;
+    float lifetime;
+    bool active;
+} UpgradePickup;
+
+typedef struct {
+    UpgradePickup pickups[MAX_UPGRADE_PICKUPS];
+} UpgradePickupPool;
+
 /* ── Combo system ──────────────────────────────────────────────────────────── */
 
 #define COMBO_TIMEOUT 2.0f          /* seconds before combo resets */
@@ -105,6 +124,8 @@ typedef struct {
     ParticlePool particles;
     DamageNumberPool damage_numbers;
     WeaponPickupPool weapon_pickups;
+    UpgradePickupPool upgrade_pickups;
+    UpgradeState upgrades;
     Tilemap tilemap;
     GameAudio audio;
     Camera2D camera;

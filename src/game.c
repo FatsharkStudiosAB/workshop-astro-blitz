@@ -139,6 +139,98 @@ static void weapon_pickup_pool_draw(const WeaponPickupPool *pool) {
     }
 }
 
+/* ── Upgrade pickup helpers ─────────────────────────────────────────────────── */
+
+static void upgrade_pickup_pool_init(UpgradePickupPool *pool) {
+    memset(pool->pickups, 0, sizeof(pool->pickups));
+}
+
+static void upgrade_pickup_spawn(UpgradePickupPool *pool, Vector2 pos, UpgradeType type) {
+    for (int i = 0; i < MAX_UPGRADE_PICKUPS; i++) {
+        UpgradePickup *up = &pool->pickups[i];
+        if (!up->active) {
+            up->position = pos;
+            up->type = type;
+            up->lifetime = UPGRADE_PICKUP_LIFETIME;
+            up->active = true;
+            return;
+        }
+    }
+}
+
+static void upgrade_pickup_pool_update(UpgradePickupPool *pool, float dt) {
+    for (int i = 0; i < MAX_UPGRADE_PICKUPS; i++) {
+        UpgradePickup *up = &pool->pickups[i];
+        if (!up->active) {
+            continue;
+        }
+        up->lifetime -= dt;
+        if (up->lifetime <= 0.0f) {
+            up->active = false;
+        }
+    }
+}
+
+static void upgrade_pickup_pool_draw(const UpgradePickupPool *pool) {
+    for (int i = 0; i < MAX_UPGRADE_PICKUPS; i++) {
+        const UpgradePickup *up = &pool->pickups[i];
+        if (!up->active) {
+            continue;
+        }
+
+        Color c = upgrade_get_color(up->type);
+        float pulse = 0.5f + 0.5f * sinf(up->lifetime * 5.0f);
+        unsigned char ga = (unsigned char)(40.0f + 40.0f * pulse);
+        Color glow = c;
+        glow.a = ga;
+
+        /* Fade in last 3 seconds */
+        float alpha_mult = 1.0f;
+        if (up->lifetime < 3.0f) {
+            alpha_mult = up->lifetime / 3.0f;
+        }
+        c.a = (unsigned char)(255.0f * alpha_mult);
+
+        DrawCircleV(up->position, UPGRADE_PICKUP_RADIUS + 3.0f, glow);
+        DrawCircleV(up->position, UPGRADE_PICKUP_RADIUS, (Color){c.r / 4, c.g / 4, c.b / 4, c.a});
+        DrawCircleLinesV(up->position, UPGRADE_PICKUP_RADIUS, c);
+
+        /* Label */
+        const char *name = upgrade_get_name(up->type);
+        int fs = 8;
+        int w = MeasureText(name, fs);
+        DrawText(name, (int)(up->position.x - w / 2.0f), (int)(up->position.y - fs / 2.0f), fs, c);
+    }
+}
+
+static void resolve_upgrade_pickup_collisions(GameState *gs) {
+    Player *p = &gs->player;
+    UpgradePickupPool *pool = &gs->upgrade_pickups;
+
+    for (int i = 0; i < MAX_UPGRADE_PICKUPS; i++) {
+        UpgradePickup *up = &pool->pickups[i];
+        if (!up->active) {
+            continue;
+        }
+
+        if (check_circle_collision(p->position, PLAYER_RADIUS, up->position,
+                                   UPGRADE_PICKUP_RADIUS)) {
+            if (upgrade_add(&gs->upgrades, up->type)) {
+                up->active = false;
+                particle_burst(&gs->particles, up->position, 8, 30.0f, 80.0f, 0.1f, 0.3f, 2.5f,
+                               upgrade_get_color(up->type));
+
+                /* Apply max HP upgrade immediately */
+                if (up->type == UPGRADE_MAX_HP) {
+                    float bonus = UPGRADE_MAX_HP_BONUS;
+                    p->max_hp += bonus;
+                    p->hp += bonus; /* heal the bonus amount too */
+                }
+            }
+        }
+    }
+}
+
 /* ── Helpers ────────────────────────────────────────────────────────────────── */
 
 /* Pick an enemy type based on wave number. Later waves introduce harder types. */
@@ -352,6 +444,13 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                         }
                         weapon_pickup_spawn(&gs->weapon_pickups, enemy->position,
                                             weapon_get_preset(drop));
+                    }
+
+                    /* Upgrade drop (elites have a chance) */
+                    if (enemy->elite != ELITE_NONE &&
+                        GetRandomValue(1, 100) <= ELITE_UPGRADE_DROP_CHANCE) {
+                        UpgradeType utype = (UpgradeType)GetRandomValue(0, UPGRADE_COUNT - 1);
+                        upgrade_pickup_spawn(&gs->upgrade_pickups, enemy->position, utype);
                     }
                 }
                 break; /* bullet consumed -- stop checking enemies */
@@ -597,6 +696,19 @@ static void draw_hud(const GameState *gs) {
     /* ── Weapon name (top-left) ────────────────────────────────────────── */
     const char *weapon_name = p->current_weapon.name ? p->current_weapon.name : "???";
     DrawText(weapon_name, 10, 10, 20, p->current_weapon.bullet_color);
+
+    /* ── Upgrade icons (below weapon name) ─────────────────────────────── */
+    int ux = 10;
+    int uy = 34;
+    for (int i = 0; i < UPGRADE_COUNT; i++) {
+        int stacks = gs->upgrades.stacks[i];
+        if (stacks > 0) {
+            Color c = upgrade_get_color((UpgradeType)i);
+            const char *label = TextFormat("%s x%d", upgrade_get_name((UpgradeType)i), stacks);
+            DrawText(label, ux, uy, 12, c);
+            uy += 14;
+        }
+    }
 
     /* ── Combo counter (top-center) ────────────────────────────────────── */
     if (gs->combo.display_timer > 0.0f && gs->combo.count >= 2) {
@@ -900,6 +1012,7 @@ static void advance_floor(GameState *gs) {
     particle_pool_init(&gs->particles);
     damage_number_pool_init(&gs->damage_numbers);
     weapon_pickup_pool_init(&gs->weapon_pickups);
+    upgrade_pickup_pool_init(&gs->upgrade_pickups);
     gs->spawn_timer = SPAWN_INTERVAL;
 
     /* Camera */
@@ -920,14 +1033,17 @@ static void update_playing(GameState *gs) {
     player_update(&gs->player, dt, gs->arena, &gs->tilemap, gs->camera,
                   gs->settings.movement_layout);
 
-    /* ── Shooting (weapon-driven) ────────────────────────────────────── */
+    /* ── Shooting (weapon-driven, upgraded) ──────────────────────────── */
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
         Vector2 muzzle = Vector2Add(gs->player.position,
                                     Vector2Scale(gs->player.aim_direction, PLAYER_RADIUS + 2.0f));
         Weapon *w = &gs->player.current_weapon;
+        float eff_fire_rate = w->fire_rate * upgrade_get_fire_rate_mult(&gs->upgrades);
+        float eff_damage = w->damage + upgrade_get_damage_bonus(&gs->upgrades);
+        float eff_bullet_speed = w->bullet_speed * upgrade_get_bullet_speed_mult(&gs->upgrades);
         int fired =
-            bullet_pool_fire_weapon(&gs->bullets, muzzle, gs->player.aim_direction, w->fire_rate,
-                                    w->damage, w->bullet_speed, w->spread_angle,
+            bullet_pool_fire_weapon(&gs->bullets, muzzle, gs->player.aim_direction, eff_fire_rate,
+                                    eff_damage, eff_bullet_speed, w->spread_angle,
                                     w->projectile_count, w->bullet_lifetime, w->bullet_color);
         if (fired > 0) {
             audio_play_shoot(&gs->audio);
@@ -1013,6 +1129,7 @@ static void update_playing(GameState *gs) {
 
     /* ── Weapon pickups ────────────────────────────────────────────────── */
     weapon_pickup_pool_update(&gs->weapon_pickups, dt);
+    upgrade_pickup_pool_update(&gs->upgrade_pickups, dt);
 
     /* ── Combo timer ──────────────────────────────────────────────────── */
     if (gs->combo.timer > 0.0f) {
@@ -1032,6 +1149,7 @@ static void update_playing(GameState *gs) {
     resolve_enemy_player_collisions(gs);
     resolve_enemy_bullet_player_collisions(gs);
     resolve_weapon_pickup_collisions(gs);
+    resolve_upgrade_pickup_collisions(gs);
 
     /* ── Death check ──────────────────────────────────────────────────── */
     game_check_death(gs);
@@ -1204,6 +1322,8 @@ void game_init(GameState *gs) {
     particle_pool_init(&gs->particles);
     damage_number_pool_init(&gs->damage_numbers);
     weapon_pickup_pool_init(&gs->weapon_pickups);
+    upgrade_pickup_pool_init(&gs->upgrade_pickups);
+    upgrade_state_init(&gs->upgrades);
     screenshake_init(&gs->shake);
     gs->spawn_timer = SPAWN_INTERVAL;
     gs->phase = PHASE_PLAYING;
@@ -1295,6 +1415,7 @@ void game_draw(const GameState *gs) {
         }
 
         weapon_pickup_pool_draw(&gs->weapon_pickups);
+        upgrade_pickup_pool_draw(&gs->upgrade_pickups);
         bullet_pool_draw(&gs->bullets);
         enemy_bullet_pool_draw(&gs->enemy_bullets);
         enemy_pool_draw(&gs->enemies);
