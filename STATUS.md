@@ -5,22 +5,24 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Current State
 
-- **Phase:** Project setup -- repo created, no game code yet.
-- **Engine/Framework:** Not yet chosen.
+- **Phase:** Pre-development -- design document complete, no game code yet.
+- **Engine/Framework:** Raylib 5.5 (C99).
 - **Playable:** No.
 
 ## Recent Changes
 
 | Date | Change |
 |------|--------|
+| 2026-04-10 | Completed game design document: core loop, weapons, enemies, upgrades, visual style, tech choice (Raylib) |
 | 2026-04-10 | Repository created with initial structure (AGENTS.md, STATUS.md, CHANGELOG.md, design/) |
 
 ## Known Issues / Next Steps
 
-- Choose game engine or framework (Godot, Phaser, Love2D, Pygame, etc.)
-- Define core gameplay loop in `design/DESIGN.md`
-- Set up build/run tooling
-- Create first playable prototype (player movement + shooting)
+- Set up Raylib build tooling (download Raylib, configure compiler, verify "hello window" compiles)
+- Create first playable prototype: player movement + shooting in an empty arena
+- Implement basic enemy spawning (Swarmers first -- simplest behavior)
+- Decide on level structure (linear floors vs branching paths)
+- Source or create placeholder sprite assets
 
 ## Workarounds & Patterns
 

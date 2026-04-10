@@ -138,4 +138,8 @@ Everything below this line is lookup material. Behavioral rules are all above.
 
 ## Environment
 
-*(To be filled in once the game engine/framework is chosen.)*
+- **Engine/Framework:** Raylib 5.5
+- **Language:** C (C99)
+- **Build:** CMake or direct compiler invocation (gcc/MSVC)
+- **Asset formats:** PNG (sprites), WAV/OGG (audio)
+- **Platform:** Windows (primary), cross-platform possible via Raylib
