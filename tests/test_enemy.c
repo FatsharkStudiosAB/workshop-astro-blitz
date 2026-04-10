@@ -7,6 +7,7 @@
 
 #include "unity.h"
 #include "enemy.h"
+#include <math.h>
 
 /* ── Test helpers ──────────────────────────────────────────────────────────── */
 

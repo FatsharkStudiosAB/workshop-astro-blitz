@@ -3,35 +3,33 @@
  */
 
 #include "game.h"
-#include <stdlib.h>
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
 static void spawn_wave(GameState *gs)
 {
-    int count = SPAWN_MIN_GROUP +
-                (rand() % (SPAWN_MAX_GROUP - SPAWN_MIN_GROUP + 1));
+    int count = GetRandomValue(SPAWN_MIN_GROUP, SPAWN_MAX_GROUP);
 
     for (int i = 0; i < count; i++) {
         Vector2 pos;
-        int edge = rand() % 4;
+        int edge = GetRandomValue(0, 3);
 
         switch (edge) {
         case 0: /* top */
-            pos.x = gs->arena.x + (float)(rand() % (int)gs->arena.width);
+            pos.x = gs->arena.x + (float)GetRandomValue(0, (int)gs->arena.width);
             pos.y = gs->arena.y;
             break;
         case 1: /* bottom */
-            pos.x = gs->arena.x + (float)(rand() % (int)gs->arena.width);
+            pos.x = gs->arena.x + (float)GetRandomValue(0, (int)gs->arena.width);
             pos.y = gs->arena.y + gs->arena.height;
             break;
         case 2: /* left */
             pos.x = gs->arena.x;
-            pos.y = gs->arena.y + (float)(rand() % (int)gs->arena.height);
+            pos.y = gs->arena.y + (float)GetRandomValue(0, (int)gs->arena.height);
             break;
         default: /* right */
             pos.x = gs->arena.x + gs->arena.width;
-            pos.y = gs->arena.y + (float)(rand() % (int)gs->arena.height);
+            pos.y = gs->arena.y + (float)GetRandomValue(0, (int)gs->arena.height);
             break;
         }
 
