@@ -71,7 +71,7 @@ void player_update(Player *p, float dt, Rectangle arena)
     Vector2 mouse = GetMousePosition();
     Vector2 to_mouse = Vector2Subtract(mouse, p->position);
     float dist = Vector2Length(to_mouse);
-    if (dist > 0.0f) {
+    if (dist > 1.0f) {  /* dead zone: ignore cursor within 1px of player center */
         p->aim_direction = Vector2Scale(to_mouse, 1.0f / dist);
     }
 
