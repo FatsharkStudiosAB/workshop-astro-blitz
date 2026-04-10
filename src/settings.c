@@ -68,9 +68,14 @@ bool settings_save_to(const Settings *s, const char *path) {
         return false;
     }
 
-    fprintf(f, "movement_layout=%s\n", movement_layout_to_str(s->movement_layout));
+    if (fprintf(f, "movement_layout=%s\n", movement_layout_to_str(s->movement_layout)) < 0) {
+        fclose(f);
+        return false;
+    }
 
-    fclose(f);
+    if (fclose(f) != 0) {
+        return false;
+    }
     return true;
 }
 

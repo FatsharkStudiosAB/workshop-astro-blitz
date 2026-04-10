@@ -33,11 +33,14 @@ void tearDown(void) {
 /* ── Default initialization tests ──────────────────────────────────────────── */
 
 void test_settings_init_defaults_to_8dir(void) {
-    /* Test the default value that settings_init applies before loading */
+    /* Ensure no settings file exists so init uses defaults */
+    remove(SETTINGS_FILE);
+
     Settings s;
     s.movement_layout = MOVEMENT_TANK; /* pre-set to non-default */
-    /* Manually apply defaults (same as what settings_init does before load) */
-    s.movement_layout = MOVEMENT_8DIR;
+    settings_init(&s);
+
+    /* With no file, settings_init should apply the default (8-dir) */
     TEST_ASSERT_EQUAL_INT(MOVEMENT_8DIR, s.movement_layout);
 }
 

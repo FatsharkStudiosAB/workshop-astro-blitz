@@ -53,6 +53,7 @@ typedef struct {
     int menu_cursor;                 /* currently highlighted menu item */
     GameStats stats;
     Settings settings;
+    bool should_quit; /* set by menu "Quit" action */
 } GameState;
 
 /* ── Public API ────────────────────────────────────────────────────────────── */
@@ -60,7 +61,9 @@ typedef struct {
 /*
  * game_init -- Reset all gameplay state for a new run.
  *
- * Does NOT reset settings or phase -- call game_start_new_run() for that.
+ * Regenerates the world, resets the player, bullets, enemies, stats, and
+ * camera. Preserves user settings and audio state across restarts.
+ * Sets phase to PHASE_PLAYING (caller may override afterward).
  */
 void game_init(GameState *gs);
 

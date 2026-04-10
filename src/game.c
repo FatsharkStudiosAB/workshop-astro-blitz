@@ -232,8 +232,8 @@ static void draw_game_over(const GameState *gs) {
     DrawText(waves_text, stat_x_center - waves_w / 2, stat_y + 2 * line_spacing, stat_size,
              RAYWHITE);
 
-    /* Restart prompt */
-    const char *prompt = "Press R to restart";
+    /* Restart / menu prompts */
+    const char *prompt = "Press R to restart  |  ESC for menu";
     int prompt_size = 16;
     int prompt_w = MeasureText(prompt, prompt_size);
     DrawText(prompt, (SCREEN_WIDTH - prompt_w) / 2, stat_y + 3 * line_spacing + 20, prompt_size,
@@ -283,8 +283,6 @@ static void draw_menu_items(const char *items[], int count, int selected, int st
 
 /* ── Phase-specific update helpers ─────────────────────────────────────────── */
 
-static bool quit_requested = false;
-
 static void update_first_run(GameState *gs) {
     enum { PICK_8DIR, PICK_TANK, PICK_COUNT };
 
@@ -323,7 +321,7 @@ static void update_main_menu(GameState *gs) {
             gs->menu_cursor = 0;
             break;
         case MENU_QUIT:
-            quit_requested = true;
+            gs->should_quit = true;
             break;
         }
     }
@@ -358,7 +356,7 @@ static void update_paused(GameState *gs) {
             gs->menu_cursor = 0;
             break;
         case PAUSE_QUIT:
-            quit_requested = true;
+            gs->should_quit = true;
             break;
         }
     }
@@ -372,9 +370,8 @@ static void update_settings(GameState *gs) {
         return;
     }
 
-    /* Left/Right or Enter to toggle movement layout */
-    if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_A) ||
-        IsKeyPressed(KEY_D) || menu_confirm()) {
+    /* Left/Right to toggle movement layout */
+    if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT)) {
         if (gs->settings.movement_layout == MOVEMENT_TANK) {
             gs->settings.movement_layout = MOVEMENT_8DIR;
         } else {
@@ -632,8 +629,7 @@ void game_check_death(GameState *gs) {
 }
 
 bool game_should_quit(const GameState *gs) {
-    (void)gs;
-    return quit_requested;
+    return gs->should_quit;
 }
 
 void game_draw(const GameState *gs) {

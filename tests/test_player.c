@@ -246,13 +246,11 @@ void test_8dir_opposing_inputs_cancel(void) {
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.y);
 }
 
-void test_8dir_ignores_aim_direction(void) {
-    /* 8-dir movement should produce the same result regardless of aim.
-     * We can only test the pure function here -- aim is used in tank mode. */
-    Vector2 dir1 = player_calc_move_dir_8dir(true, false, false, false);
-    Vector2 dir2 = player_calc_move_dir_8dir(true, false, false, false);
-    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, dir1.x, dir2.x);
-    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, dir1.y, dir2.y);
+void test_8dir_all_four_keys_cancel(void) {
+    /* All four directions held simultaneously should cancel to zero */
+    Vector2 dir = player_calc_move_dir_8dir(true, true, true, true);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.y);
 }
 
 /* ── Runner ────────────────────────────────────────────────────────────────── */
@@ -295,7 +293,7 @@ int main(void) {
     RUN_TEST(test_8dir_diagonal_is_normalized);
     RUN_TEST(test_8dir_no_input_returns_zero);
     RUN_TEST(test_8dir_opposing_inputs_cancel);
-    RUN_TEST(test_8dir_ignores_aim_direction);
+    RUN_TEST(test_8dir_all_four_keys_cancel);
 
     return UNITY_END();
 }
