@@ -6,9 +6,9 @@ Top-down sci-fi roguelike shooter built during Fatshark's agentic coding worksho
 
 | Task | Command |
 |------|---------|
-| Run the game | *(TBD -- depends on chosen engine/framework)* |
-| Run tests | *(TBD)* |
-| List all tasks | `task --list-all` |
+| Build the game | `gcc -std=c99 -Wall -Wextra -o astro_blitz src/*.c -Iinclude -Llib -lraylib -lm` *(adjust paths once Raylib is installed)* |
+| Run the game | `./astro_blitz` (Linux/macOS) or `astro_blitz.exe` (Windows) |
+| Run tests | *(TBD -- no test framework yet)* |
 
 ## Key Files
 
@@ -36,11 +36,11 @@ Top-down sci-fi roguelike shooter built during Fatshark's agentic coding worksho
 
 ### Before broad implementation
 
-Before changing more than one file, refactoring, or implementing anything beyond a targeted fix: produce a plan and get it reviewed by the user. Do not start implementation until the user approves the plan. Workflow: **plan -> user review -> implement.**
+Before adding a new system, changing more than three files, refactoring across module boundaries, or making architectural changes: produce a plan and get it reviewed by the user. Do not start implementation until the user approves the plan. Workflow: **plan -> user review -> implement.** Routine changes that touch a `.c` and its `.h` file do not require a plan.
 
 ### When the user corrects you
 
-When the user corrects you or reminds you of something you missed, update `AGENTS.md` in your next action. Do not wait until commit time.
+When the user corrects you on a workflow pattern or convention not already covered in this file, add the rule to `AGENTS.md` in your next action. Do not wait until commit time. If the correction is a one-off mistake (e.g. a typo), do not add a rule.
 
 ### Before starting work
 
@@ -48,12 +48,13 @@ When the user corrects you or reminds you of something you missed, update `AGENT
 2. Check out `main` and pull the latest changes.
 3. Create a new branch from `main` -- `main` is protected: do not commit directly to it or push commits straight to it. All changes to `main` must go through a pull request.
    - Branch names: lowercase, digits, slashes, hyphens only (e.g. `bilal/add-player-movement`, `feature/weapon-system`)
+   - If resuming work on an existing feature branch, stay on that branch and merge or rebase from `main` instead of creating a new branch.
 
 ### Before every commit
 
 Do not commit (or amend) until all are satisfied.
 
-1. Run the game (if applicable) to verify nothing is visibly broken.
+1. Run the game (if applicable) to verify nothing is visibly broken. Skip this step if no build/run command exists yet.
 2. Run tests (if they exist) to verify changes don't break existing behavior.
 3. Verify that any user corrections from this session have been captured in `AGENTS.md`.
 4. If any command, API call, or approach failed before succeeding, document the working pattern in `AGENTS.md` so future sessions don't repeat the failed attempts.
@@ -98,11 +99,20 @@ When the user asks to push, create a PR, or merge -- run these completion steps 
 - When adding dependencies, verify the latest version and API against current docs -- do not rely on training data.
 - When a bug's root cause is unclear, add logging first and reproduce -- do not guess at fixes.
 
+### C code style
+
+- **Standard:** C99 (`-std=c99`).
+- **Naming:** `snake_case` for functions, variables, and file names. `UPPER_SNAKE_CASE` for constants and macros. `PascalCase` for typedefs of structs/enums (e.g. `typedef struct { ... } Player;`).
+- **Indentation:** 4 spaces, no tabs.
+- **Braces:** Opening brace on the same line as the statement. Always use braces for `if`/`else`/`for`/`while`, even for single-line bodies.
+- **Headers:** Each `.c` file has a corresponding `.h` file. Use `#pragma once` or traditional include guards. Public API in the header, internal helpers `static` in the `.c` file.
+- **Compiler warnings:** Compile with `-Wall -Wextra`. Treat warnings as errors to fix, not suppress.
+
 ### STATUS.md maintenance
 
 - `STATUS.md` is a rolling log of project state. Keep it under ~150 lines.
-- When it grows too long, summarize older entries and remove resolved items.
-- Every commit that changes behavior must update `STATUS.md`.
+- Before committing, if `STATUS.md` exceeds 150 lines, summarize older entries and remove resolved items to bring it back under the limit.
+- Update `STATUS.md` when a commit changes observable game behavior, project structure, dependencies, or introduces/resolves a known issue. Purely internal refactors and comment-only changes do not require an update.
 - Sections: Current State, Recent Changes, Known Issues / Next Steps, Workarounds & Patterns.
 
 ### Design documents
@@ -127,6 +137,10 @@ Everything below this line is lookup material. Behavioral rules are all above.
 
 | Path | What |
 |------|------|
+| `src/` | C source files (`.c`) |
+| `include/` | Header files (`.h`) |
+| `assets/` | Game assets: sprites (PNG), audio (WAV/OGG) |
+| `lib/` | Third-party libraries (Raylib binaries) |
 | `design/` | Game design documents and reference assets |
 | `design/DESIGN.md` | Game design document |
 | `design/assets/` | Reference images, mockups, sprites |
@@ -134,7 +148,7 @@ Everything below this line is lookup material. Behavioral rules are all above.
 | `CHANGELOG.md` | User-facing change history |
 | `AGENTS.md` | Agent instructions (this file) |
 
-*(Repository layout will expand as the game takes shape.)*
+*(Layout will expand as the game takes shape.)*
 
 ## Environment
 
