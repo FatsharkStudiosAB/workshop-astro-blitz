@@ -158,8 +158,8 @@ static void draw_game_over(const GameState *gs) {
     int time_w = MeasureText(time_text, stat_size);
     DrawText(time_text, stat_x_center - time_w / 2, stat_y + line_spacing, stat_size, RAYWHITE);
 
-    /* Waves survived */
-    const char *waves_text = TextFormat("Waves: %d", gs->stats.waves_survived);
+    /* Waves spawned */
+    const char *waves_text = TextFormat("Waves: %d", gs->stats.waves_spawned);
     int waves_w = MeasureText(waves_text, stat_size);
     DrawText(waves_text, stat_x_center - waves_w / 2, stat_y + 2 * line_spacing, stat_size,
              RAYWHITE);
@@ -185,7 +185,7 @@ void game_init(GameState *gs) {
     enemy_pool_init(&gs->enemies);
     gs->spawn_timer = SPAWN_INTERVAL;
     gs->phase = PHASE_PLAYING;
-    gs->stats = (GameStats){0, 0.0f, 0};
+    gs->stats = (GameStats){.kills = 0, .survival_time = 0.0f, .waves_spawned = 0};
 }
 
 void game_update(GameState *gs) {
@@ -217,7 +217,7 @@ void game_update(GameState *gs) {
     if (gs->spawn_timer <= 0.0f) {
         spawn_wave(gs);
         gs->spawn_timer = SPAWN_INTERVAL;
-        gs->stats.waves_survived++;
+        gs->stats.waves_spawned++;
     }
 
     /* ── Enemy update ─────────────────────────────────────────────────── */
@@ -228,7 +228,11 @@ void game_update(GameState *gs) {
     resolve_enemy_player_collisions(gs);
 
     /* ── Death check ──────────────────────────────────────────────────── */
-    if (gs->player.hp <= 0.0f) {
+    game_check_death(gs);
+}
+
+void game_check_death(GameState *gs) {
+    if (gs->phase == PHASE_PLAYING && gs->player.hp <= 0.0f) {
         gs->phase = PHASE_GAME_OVER;
     }
 }

@@ -1,12 +1,13 @@
 /*
  * test_game.c -- Unit tests for the game module
  *
- * Tests game_init (arena dimensions, player placement, bullet pool state).
+ * Tests game_init (arena dimensions, player placement, bullet pool state)
+ * and game_check_death (phase transitions on player death).
  * Does NOT test game_update/game_draw (require Raylib window context).
  */
 
-#include "unity.h"
 #include "game.h"
+#include "unity.h"
 
 /* ── Test helpers ──────────────────────────────────────────────────────────── */
 
@@ -19,8 +20,7 @@ void tearDown(void) {}
 
 /* ── game_init tests ───────────────────────────────────────────────────────── */
 
-void test_game_init_arena_position(void)
-{
+void test_game_init_arena_position(void) {
     GameState gs;
     game_init(&gs);
 
@@ -28,8 +28,7 @@ void test_game_init_arena_position(void)
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, ARENA_MARGIN, gs.arena.y);
 }
 
-void test_game_init_arena_dimensions(void)
-{
+void test_game_init_arena_dimensions(void) {
     GameState gs;
     game_init(&gs);
 
@@ -40,8 +39,7 @@ void test_game_init_arena_dimensions(void)
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, expected_h, gs.arena.height);
 }
 
-void test_game_init_player_centered_in_arena(void)
-{
+void test_game_init_player_centered_in_arena(void) {
     GameState gs;
     game_init(&gs);
 
@@ -52,24 +50,21 @@ void test_game_init_player_centered_in_arena(void)
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, expected_y, gs.player.position.y);
 }
 
-void test_game_init_player_hp_full(void)
-{
+void test_game_init_player_hp_full(void) {
     GameState gs;
     game_init(&gs);
 
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, gs.player.max_hp, gs.player.hp);
 }
 
-void test_game_init_player_not_dashing(void)
-{
+void test_game_init_player_not_dashing(void) {
     GameState gs;
     game_init(&gs);
 
     TEST_ASSERT_FALSE(gs.player.is_dashing);
 }
 
-void test_game_init_bullet_pool_empty(void)
-{
+void test_game_init_bullet_pool_empty(void) {
     GameState gs;
     game_init(&gs);
 
@@ -78,8 +73,7 @@ void test_game_init_bullet_pool_empty(void)
     }
 }
 
-void test_game_init_bullet_pool_cooldown_zero(void)
-{
+void test_game_init_bullet_pool_cooldown_zero(void) {
     GameState gs;
     game_init(&gs);
 
@@ -88,45 +82,39 @@ void test_game_init_bullet_pool_cooldown_zero(void)
 
 /* ── Constants sanity checks ───────────────────────────────────────────────── */
 
-void test_screen_dimensions_positive(void)
-{
+void test_screen_dimensions_positive(void) {
     TEST_ASSERT_TRUE(SCREEN_WIDTH > 0);
     TEST_ASSERT_TRUE(SCREEN_HEIGHT > 0);
 }
 
-void test_arena_margin_positive(void)
-{
+void test_arena_margin_positive(void) {
     TEST_ASSERT_TRUE(ARENA_MARGIN > 0.0f);
 }
 
-void test_arena_fits_on_screen(void)
-{
+void test_arena_fits_on_screen(void) {
     TEST_ASSERT_TRUE(SCREEN_WIDTH - 2.0f * ARENA_MARGIN > 0.0f);
     TEST_ASSERT_TRUE(SCREEN_HEIGHT - 2.0f * ARENA_MARGIN > 0.0f);
 }
 
 /* ── Phase / game-over tests ───────────────────────────────────────────────── */
 
-void test_game_init_phase_is_playing(void)
-{
+void test_game_init_phase_is_playing(void) {
     GameState gs;
     game_init(&gs);
 
     TEST_ASSERT_EQUAL_INT(PHASE_PLAYING, gs.phase);
 }
 
-void test_game_init_stats_zeroed(void)
-{
+void test_game_init_stats_zeroed(void) {
     GameState gs;
     game_init(&gs);
 
     TEST_ASSERT_EQUAL_INT(0, gs.stats.kills);
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, gs.stats.survival_time);
-    TEST_ASSERT_EQUAL_INT(0, gs.stats.waves_survived);
+    TEST_ASSERT_EQUAL_INT(0, gs.stats.waves_spawned);
 }
 
-void test_game_init_resets_phase_after_game_over(void)
-{
+void test_game_init_resets_phase_after_game_over(void) {
     GameState gs;
     game_init(&gs);
 
@@ -134,7 +122,7 @@ void test_game_init_resets_phase_after_game_over(void)
     gs.phase = PHASE_GAME_OVER;
     gs.stats.kills = 42;
     gs.stats.survival_time = 99.0f;
-    gs.stats.waves_survived = 10;
+    gs.stats.waves_spawned = 10;
 
     /* Restart */
     game_init(&gs);
@@ -142,33 +130,46 @@ void test_game_init_resets_phase_after_game_over(void)
     TEST_ASSERT_EQUAL_INT(PHASE_PLAYING, gs.phase);
     TEST_ASSERT_EQUAL_INT(0, gs.stats.kills);
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, gs.stats.survival_time);
-    TEST_ASSERT_EQUAL_INT(0, gs.stats.waves_survived);
+    TEST_ASSERT_EQUAL_INT(0, gs.stats.waves_spawned);
 }
-
-void test_phase_game_over_on_zero_hp(void)
-{
+void test_phase_game_over_on_zero_hp(void) {
     GameState gs;
     game_init(&gs);
 
     /* Player alive -- phase stays PLAYING */
     TEST_ASSERT_EQUAL_INT(PHASE_PLAYING, gs.phase);
+    game_check_death(&gs);
+    TEST_ASSERT_EQUAL_INT(PHASE_PLAYING, gs.phase);
 
-    /* Directly set HP to zero and verify the death check logic:
-     * game_update transitions to GAME_OVER when hp <= 0.
-     * We can't call game_update (requires Raylib context), so we
-     * replicate the death check here to verify the contract. */
+    /* Set HP to zero and run the death check */
     gs.player.hp = 0.0f;
-    if (gs.player.hp <= 0.0f) {
-        gs.phase = PHASE_GAME_OVER;
-    }
+    game_check_death(&gs);
+    TEST_ASSERT_EQUAL_INT(PHASE_GAME_OVER, gs.phase);
+}
 
+void test_game_check_death_ignores_game_over_phase(void) {
+    GameState gs;
+    game_init(&gs);
+
+    /* Already in GAME_OVER -- should not re-trigger */
+    gs.phase = PHASE_GAME_OVER;
+    gs.player.hp = 50.0f; /* alive but phase is already over */
+    game_check_death(&gs);
+    TEST_ASSERT_EQUAL_INT(PHASE_GAME_OVER, gs.phase);
+}
+
+void test_game_check_death_negative_hp(void) {
+    GameState gs;
+    game_init(&gs);
+
+    gs.player.hp = -5.0f;
+    game_check_death(&gs);
     TEST_ASSERT_EQUAL_INT(PHASE_GAME_OVER, gs.phase);
 }
 
 /* ── Runner ────────────────────────────────────────────────────────────────── */
 
-int main(void)
-{
+int main(void) {
     UNITY_BEGIN();
 
     /* game_init */
@@ -190,6 +191,8 @@ int main(void)
     RUN_TEST(test_game_init_stats_zeroed);
     RUN_TEST(test_game_init_resets_phase_after_game_over);
     RUN_TEST(test_phase_game_over_on_zero_hp);
+    RUN_TEST(test_game_check_death_ignores_game_over_phase);
+    RUN_TEST(test_game_check_death_negative_hp);
 
     return UNITY_END();
 }

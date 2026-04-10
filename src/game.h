@@ -26,7 +26,7 @@ typedef enum { PHASE_PLAYING, PHASE_GAME_OVER } GamePhase;
 typedef struct {
     int kills;           /* total enemies killed this run */
     float survival_time; /* seconds survived */
-    int waves_survived;  /* number of enemy waves spawned */
+    int waves_spawned;   /* number of enemy waves spawned */
 } GameStats;
 
 typedef struct {
@@ -44,3 +44,7 @@ typedef struct {
 void game_init(GameState *gs);
 void game_update(GameState *gs);
 void game_draw(const GameState *gs);
+
+/* Transition to PHASE_GAME_OVER if the player is dead. Separated from
+ * game_update so it can be unit-tested without a Raylib window context. */
+void game_check_death(GameState *gs);
