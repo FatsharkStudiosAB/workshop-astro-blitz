@@ -24,7 +24,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Stronger test mandate: all code changes require tests, not just gameplay systems
 - Self-Maintenance section in AGENTS.md -- explicit triggers for keeping docs up to date
 - Documentation convention: all structs, public functions, and modules require header comments
-- First playable prototype: player movement (WASD, 8-directional), mouse aiming, shooting (left-click, Basic Pistol), dash (spacebar with cooldown)
+- First playable prototype: player movement (WASD, tank controls), mouse aiming, shooting (left-click, Basic Pistol), dash (spacebar with cooldown)
 - Arena with boundary clamping -- player and bullets stay within the play area
 - HUD: health bar and dash cooldown indicator
 - New source modules: `game.c/h`, `player.c/h`, `bullet.c/h`

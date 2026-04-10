@@ -14,7 +14,10 @@
 Vector2 player_calc_move_dir(Vector2 aim_dir, bool forward, bool back,
                              bool left, bool right)
 {
-    /* Perpendicular vectors: left = rotate aim 90° CW (screen-left), right = 90° CCW */
+    /* Perpendicular vectors used for strafing relative to aim_dir
+     * in Raylib screen coordinates (Y+ is down): perp_left is strafe-left
+     * relative to aim_dir, and perp_right is strafe-right.
+     */
     Vector2 perp_left  = { aim_dir.y, -aim_dir.x};
     Vector2 perp_right = {-aim_dir.y,  aim_dir.x};
 
