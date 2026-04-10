@@ -341,6 +341,77 @@ void test_update_clamps_fire_cooldown_to_zero(void) {
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, pool.fire_cooldown);
 }
 
+/* ── Wall bounce tests ─────────────────────────────────────────────────────── */
+
+void test_bullet_bounces_off_wall(void) {
+    BulletPool pool;
+    bullet_pool_init(&pool);
+
+    const int wall_tile_x = 5;
+    const int wall_tile_y = 4;
+    const float wall_world_x = (float)(wall_tile_x * TILE_SIZE);
+    const float bullet_start_x = wall_world_x - BULLET_RADIUS - 1.0f;
+    const float bullet_start_y = (float)(wall_tile_y * TILE_SIZE) + (TILE_SIZE * 0.375f);
+
+    /* Create a tilemap with a wall tile at (5,4) */
+    Tilemap tm;
+    tilemap_init(&tm);
+    tm.tiles[wall_tile_y][wall_tile_x] = TILE_WALL;
+
+    /* Place bullet heading right, about to enter the wall tile */
+    pool.bullets[0].active = true;
+    pool.bullets[0].position = (Vector2){bullet_start_x, bullet_start_y};
+    pool.bullets[0].velocity = (Vector2){BULLET_SPEED, 0.0f};
+    pool.bullets[0].lifetime = BULLET_LIFETIME;
+    pool.bullets[0].bounces = 0;
+
+    /* Large enough dt to move into the wall tile */
+    bullet_pool_update(&pool, 0.01f, TEST_ARENA, &tm);
+
+    /* Bullet should still be active (bounced, not deactivated) */
+    TEST_ASSERT_TRUE(pool.bullets[0].active);
+    /* Horizontal velocity should be reversed */
+    TEST_ASSERT_TRUE(pool.bullets[0].velocity.x < 0.0f);
+    /* Bounce counter should have incremented */
+    TEST_ASSERT_EQUAL_INT(1, pool.bullets[0].bounces);
+}
+
+void test_bullet_deactivates_after_max_bounces(void) {
+    BulletPool pool;
+    bullet_pool_init(&pool);
+
+    const int wall_tile_x = 5;
+    const int wall_tile_y = 4;
+    const float wall_world_x = (float)(wall_tile_x * TILE_SIZE);
+    const float bullet_start_x = wall_world_x - BULLET_RADIUS - 1.0f;
+    const float bullet_start_y = (float)(wall_tile_y * TILE_SIZE) + (TILE_SIZE * 0.375f);
+
+    Tilemap tm;
+    tilemap_init(&tm);
+    tm.tiles[wall_tile_y][wall_tile_x] = TILE_WALL;
+
+    /* Place bullet already at max bounces, heading into wall */
+    pool.bullets[0].active = true;
+    pool.bullets[0].position = (Vector2){bullet_start_x, bullet_start_y};
+    pool.bullets[0].velocity = (Vector2){BULLET_SPEED, 0.0f};
+    pool.bullets[0].lifetime = BULLET_LIFETIME;
+    pool.bullets[0].bounces = BULLET_MAX_BOUNCES;
+
+    bullet_pool_update(&pool, 0.01f, TEST_ARENA, &tm);
+
+    /* Should be deactivated -- max bounces exceeded */
+    TEST_ASSERT_FALSE(pool.bullets[0].active);
+}
+
+void test_fire_initializes_bounces_to_zero(void) {
+    BulletPool pool;
+    bullet_pool_init(&pool);
+
+    bullet_pool_fire(&pool, (Vector2){100.0f, 100.0f}, (Vector2){1.0f, 0.0f});
+
+    TEST_ASSERT_EQUAL_INT(0, pool.bullets[0].bounces);
+}
+
 /* ── Constants sanity checks ───────────────────────────────────────────────── */
 
 void test_max_bullets_is_positive(void) {
@@ -392,6 +463,11 @@ int main(void) {
     RUN_TEST(test_update_skips_inactive_bullets);
     RUN_TEST(test_update_ticks_fire_cooldown);
     RUN_TEST(test_update_clamps_fire_cooldown_to_zero);
+
+    /* Wall bounce */
+    RUN_TEST(test_bullet_bounces_off_wall);
+    RUN_TEST(test_bullet_deactivates_after_max_bounces);
+    RUN_TEST(test_fire_initializes_bounces_to_zero);
 
     /* Constants */
     RUN_TEST(test_max_bullets_is_positive);

@@ -42,9 +42,49 @@ void bullet_pool_update(BulletPool *pool, float dt, Rectangle arena, const Tilem
             continue;
         }
 
-        /* Deactivate on wall hit */
-        if (tm && tilemap_is_solid(tm, b->position.x, b->position.y)) {
-            b->active = false;
+        /* Bounce off walls (or deactivate if max bounces reached).
+         * Check using BULLET_RADIUS so the circle never visually overlaps a wall. */
+        if (tm) {
+            float r = BULLET_RADIUS;
+            bool hit_right = tilemap_is_solid(tm, b->position.x + r, b->position.y);
+            bool hit_left = tilemap_is_solid(tm, b->position.x - r, b->position.y);
+            bool hit_bottom = tilemap_is_solid(tm, b->position.x, b->position.y + r);
+            bool hit_top = tilemap_is_solid(tm, b->position.x, b->position.y - r);
+
+            if (hit_right || hit_left || hit_bottom || hit_top) {
+                if (b->bounces >= BULLET_MAX_BOUNCES) {
+                    b->active = false;
+                    continue;
+                }
+
+                /* Reflect velocity on the axis that hit a wall */
+                if (hit_right || hit_left) {
+                    b->velocity.x = -b->velocity.x;
+                }
+                if (hit_bottom || hit_top) {
+                    b->velocity.y = -b->velocity.y;
+                }
+
+                /* Snap the bullet edge out of the wall */
+                if (hit_right) {
+                    int tx = (int)(b->position.x + r) / tm->tile_size;
+                    b->position.x = (float)(tx * tm->tile_size) - r - 0.01f;
+                }
+                if (hit_left) {
+                    int tx = (int)(b->position.x - r) / tm->tile_size;
+                    b->position.x = (float)((tx + 1) * tm->tile_size) + r + 0.01f;
+                }
+                if (hit_bottom) {
+                    int ty = (int)(b->position.y + r) / tm->tile_size;
+                    b->position.y = (float)(ty * tm->tile_size) - r - 0.01f;
+                }
+                if (hit_top) {
+                    int ty = (int)(b->position.y - r) / tm->tile_size;
+                    b->position.y = (float)((ty + 1) * tm->tile_size) + r + 0.01f;
+                }
+
+                b->bounces++;
+            }
         }
     }
 }
@@ -71,6 +111,7 @@ bool bullet_pool_fire(BulletPool *pool, Vector2 origin, Vector2 direction) {
             b->position = origin;
             b->velocity = Vector2Scale(direction, BULLET_SPEED);
             b->lifetime = BULLET_LIFETIME;
+            b->bounces = 0;
             b->active = true;
             pool->fire_cooldown = PISTOL_FIRE_RATE;
             return true;

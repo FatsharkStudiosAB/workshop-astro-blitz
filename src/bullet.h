@@ -18,6 +18,7 @@ typedef struct Tilemap Tilemap;
 #define BULLET_RADIUS 3.0f
 #define BULLET_LIFETIME 2.0f   /* seconds before despawn */
 #define PISTOL_FIRE_RATE 0.25f /* seconds between shots (Basic Pistol) */
+#define BULLET_MAX_BOUNCES 3   /* max wall bounces before despawn */
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
@@ -25,6 +26,7 @@ typedef struct {
     Vector2 position;
     Vector2 velocity;
     float lifetime;
+    int bounces;
     bool active;
 } Bullet;
 
@@ -38,9 +40,12 @@ typedef struct {
 void bullet_pool_init(BulletPool *pool);
 
 /*
- * bullet_pool_update -- Move bullets, expire old ones, deactivate on wall hit.
+ * bullet_pool_update -- Move bullets, expire old ones, bounce off walls.
  *
- * Pass NULL for tm to skip wall collision checks (e.g. in tests).
+ * Bullets reflect off solid tiles up to BULLET_MAX_BOUNCES times before
+ * being deactivated. Wall collision uses BULLET_RADIUS so the circle
+ * never visually overlaps a wall. Pass NULL for tm to skip wall
+ * collision checks (e.g. in tests).
  */
 void bullet_pool_update(BulletPool *pool, float dt, Rectangle arena, const Tilemap *tm);
 

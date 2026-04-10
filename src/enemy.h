@@ -26,8 +26,8 @@ typedef struct Tilemap Tilemap;
 
 /* Spawning */
 #define SPAWN_INTERVAL 3.0f /* seconds between spawn waves */
-#define SPAWN_MIN_GROUP 4   /* minimum swarmers per wave */
-#define SPAWN_MAX_GROUP 8   /* maximum swarmers per wave */
+#define SPAWN_MIN_GROUP 2   /* minimum swarmers per wave */
+#define SPAWN_MAX_GROUP 5   /* maximum swarmers per wave */
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
