@@ -20,8 +20,8 @@ set(BUILD_GAMES    OFF CACHE BOOL "Build raylib example games")
 
 FetchContent_MakeAvailable(raylib)
 
-# ── Game logic library (shared between exe and tests) ────────────────────────
-add_library(astro_blitz_lib STATIC
+# ── Game logic objects (compiled once, linked into multiple targets) ──────────
+add_library(astro_blitz_objs OBJECT
     src/vec2.c
     src/tilemap.c
     src/game.c
@@ -30,6 +30,20 @@ add_library(astro_blitz_lib STATIC
     src/enemy.c
     src/audio.c
 )
+target_include_directories(astro_blitz_objs PUBLIC src)
+# Objects need Raylib headers (types, raymath inlines) at compile time, but
+# we deliberately do NOT link raylib here -- that happens in the consuming
+# targets so integration tests can substitute stubs.
+target_include_directories(astro_blitz_objs SYSTEM PUBLIC
+    $<TARGET_PROPERTY:raylib,INTERFACE_INCLUDE_DIRECTORIES>
+)
+# Also pull in the raylib source include directory for raymath.h
+target_include_directories(astro_blitz_objs SYSTEM PUBLIC
+    ${raylib_SOURCE_DIR}/src
+)
+
+# ── Game logic library (objects + real Raylib, for exe and unit tests) ────────
+add_library(astro_blitz_lib STATIC $<TARGET_OBJECTS:astro_blitz_objs>)
 target_include_directories(astro_blitz_lib PUBLIC src)
 target_link_libraries(astro_blitz_lib PUBLIC raylib)
 
@@ -98,4 +112,27 @@ if(BUILD_TESTING)
     add_executable(test_audio tests/test_audio.c)
     target_link_libraries(test_audio PRIVATE unity astro_blitz_lib)
     add_test(NAME test_audio COMMAND test_audio)
+
+    # ── Integration tests (game objects + Raylib stubs, no real Raylib) ───
+    add_library(raylib_stubs STATIC tests/raylib_stubs.c)
+    target_include_directories(raylib_stubs PUBLIC
+        ${raylib_SOURCE_DIR}/src   # raylib.h, raymath.h type definitions
+    )
+
+    add_executable(test_integration tests/test_integration.c)
+    target_include_directories(test_integration PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src    # game headers (game.h, player.h, etc.)
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests  # raylib_stubs.h
+        ${raylib_SOURCE_DIR}/src           # raylib.h, raymath.h (types only)
+    )
+    target_link_libraries(test_integration PRIVATE
+        unity
+        $<TARGET_OBJECTS:astro_blitz_objs>
+        raylib_stubs
+    )
+    # On non-MSVC platforms, link the math library for sqrtf etc.
+    if(NOT MSVC)
+        target_link_libraries(test_integration PRIVATE m)
+    endif()
+    add_test(NAME test_integration COMMAND test_integration)
 endif()

@@ -15,6 +15,7 @@ When it grows too long, summarize older entries and remove resolved items.
 
 | Date | Change |
 |------|--------|
+| 2026-04-10 | Added integration test infrastructure: Raylib stubs for headless testing, CMake object library pattern (`astro_blitz_objs`) for scalable dual-linking (real Raylib for game/unit tests, stubs for integration tests). 11 integration tests covering combat, game-over flow, spawning, input, and full combat loops. |
 | 2026-04-10 | Bullets now bounce off walls up to 3 times instead of being destroyed on impact. Enemy spawn waves reduced from 4-8 to 2-5 per wave. 3 new bullet bounce tests. |
 | 2026-04-10 | Added BFS flow field pathfinding for enemies: enemies navigate around obstacles via shortest path. Flow field computed each frame from player position. Enemies use flow field at long range, direct-seek at close range (<3 tiles). 8 new tilemap tests, 3 new enemy tests. |
 | 2026-04-10 | Added audio system: procedural bullet SFX, enemy-hit SFX, bullet-hit-enemy SFX, and death screen music (sci-fi synth with detuned oscillators, drone bass, tritone melody) |
@@ -43,6 +44,8 @@ When it grows too long, summarize older entries and remove resolved items.
 - Add game-over state when HP reaches zero -- done
 - Add Camera2D and scrollable world -- done
 - Add procedural tilemap with obstacles -- done
+- **`PlaySound` linker conflict on Windows:** Raylib's `PlaySound` symbol conflicts with `winmm.lib` (`WINMM.dll`). The game exe fails to link with `LNK2005`/`LNK1169`. Pre-existing since winmm was added. Needs a fix (e.g. `#define PlaySound` rename, or drop winmm and let Raylib handle audio natively).
+- **Redundant include path in CMakeLists.txt:** `astro_blitz_objs` has both `$<TARGET_PROPERTY:raylib,INTERFACE_INCLUDE_DIRECTORIES>` and `${raylib_SOURCE_DIR}/src` which resolve to the same directory. Harmless (CMake deduplicates) but could be cleaned up.
 - Add melee attack (right-click)
 - Room-based level generation (corridors, doors) -- currently open-world with scattered obstacles
 - Minimap overlay (design doc calls for top-right corner)
@@ -57,4 +60,5 @@ When it grows too long, summarize older entries and remove resolved items.
 - **Taskfile `run` task:** Uses platform-specific commands to find the executable in both `build/<Config>/` (multi-config) and `build/` (single-config) layouts.
 - **FetchContent + GIT_SHALLOW + commit hash does not work.** `GIT_SHALLOW TRUE` only supports branch/tag names, not commit hashes. Use `URL` + `URL_HASH` with a release tarball instead for pinned, reproducible builds.
 - **Raylib `option()` clears normal variables (CMP0077).** Set `BUILD_EXAMPLES` and `BUILD_GAMES` as `CACHE BOOL` (without `FORCE`) so raylib's `option()` doesn't override them.
-- **astro_blitz_lib pattern:** Game logic goes into `astro_blitz_lib` static library (links Raylib publicly). Tests link against `astro_blitz_lib` + Unity. The main executable links `astro_blitz_lib`. This shares game logic between exe and test suites.
+- **astro_blitz_objs + dual-link pattern:** Game logic is compiled once as a CMake OBJECT library (`astro_blitz_objs`). `astro_blitz_lib` links objects + real Raylib (for exe and unit tests). `test_integration` links objects + `raylib_stubs` (for headless integration tests). Adding a new `.c` file requires updating only the object library source list.
+- **Raylib stubs (`tests/raylib_stubs.c/h`):** Controllable fakes for input, time, audio, and rendering. Tests configure stub state via `stub_set_*()` helpers and call `game_update()` headlessly. `GetRandomValue` clamps to the requested `[min, max]` range.
