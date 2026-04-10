@@ -8,5 +8,18 @@
   },
 
   // Routes lightweight tasks to a cheaper model.
-  "small_model": "anthropic/claude-haiku-4-5"
+  "small_model": "anthropic/claude-haiku-4-5",
+
+  // Pin built-in subagent models explicitly. Without this, the "general" and
+  // "explore" agents inherit the primary model (Opus 4.6), which is expensive
+  // and slow for delegated tasks like codebase search and parallel sub-work.
+  // Docs: https://opencode.ai/docs/agents#model
+  "agent": {
+    "general": {
+      "model": "anthropic/claude-sonnet-4-20250514"
+    },
+    "explore": {
+      "model": "anthropic/claude-sonnet-4-20250514"
+    }
+  }
 }
