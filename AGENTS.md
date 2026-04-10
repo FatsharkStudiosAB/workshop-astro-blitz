@@ -56,6 +56,7 @@ When the user corrects you on a workflow pattern or convention not already cover
 3. Create a new branch from `main` -- `main` is protected: do not commit directly to it or push commits straight to it. All changes to `main` must go through a pull request.
    - Branch names: lowercase, digits, slashes, hyphens only (e.g. `bilal/add-player-movement`, `feature/weapon-system`)
    - If resuming work on an existing feature branch, stay on that branch and merge or rebase from `main` instead of creating a new branch.
+   - **Parallel sessions:** Multiple sessions share the same `.git` state. Do not use `git checkout` when another session may be active on the same repo -- it changes the branch for all sessions. Use `git worktree add <path> <branch>` to get an independent working directory for each session (e.g. `git worktree add ../astro-blitz-mytask feature/my-task`). Clean up worktrees when done with `git worktree remove <path>`.
 
 ### Before every commit
 
