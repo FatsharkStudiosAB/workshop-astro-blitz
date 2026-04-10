@@ -170,7 +170,7 @@ At the end of every work session, check whether changes made in this session aff
 - Use the Task tool with `explore` or `general` subagents for broad codebase searches.
 - Use `/compact` to manually trigger context compaction when a session gets heavy.
 - **Do not re-read files you just wrote or edited.** After a successful edit, trust the tool's success response. Only re-read a file if a build, test, or lint step reports an error in it.
-- **Suppress noisy build output.** When you only need pass/fail from `task test` or `task build`, pipe stdout to null or use quiet flags. Hundreds of lines of third-party compiler warnings waste context for zero value.
+- **Suppress only non-actionable build noise.** When you only need pass/fail from `task test` or `task build`, filter output to show only results (e.g. test pass/fail lines). Keep compiler warnings and errors visible -- they must be treated as errors to fix per the C code style rules. Third-party dependency warnings (Unity, Raylib) are non-actionable and safe to filter out.
 - **Merge from main once, at the start of a session.** Do not merge repeatedly mid-flight. If main is actively changing, do one final merge/rebase right before push. This keeps conflict resolution to O(1) instead of O(n).
 - **Explore the codebase before creating new modules.** Before writing new code, check whether existing code or dependencies already provide the functionality. Duplicating what Raylib (or another dependency) already offers wastes implementation and review time.
 
