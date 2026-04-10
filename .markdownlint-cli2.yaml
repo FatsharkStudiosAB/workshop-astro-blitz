@@ -1,6 +1,9 @@
 # markdownlint-cli2 configuration
 # https://github.com/DavidAnson/markdownlint-cli2
 
+ignores:
+  - "build/**"
+
 config:
   # Allow long lines -- tables, URLs, and code blocks routinely exceed 80 chars
   MD013: false
