@@ -128,6 +128,8 @@ For non-trivial changes (skip for docs-only or single-line fixes):
 ### Code
 
 - All code changes need tests. Bug fixes: reproduce first, then fix. Features: test the new behavior.
+- **Unit tests** for pure logic in isolation (single module, no cross-module interaction). Link against `astro_blitz_lib`.
+- **Integration tests** when a feature involves multiple modules interacting (e.g. bullets hitting enemies, game-over flow, input-driven updates). Add tests to `tests/test_integration.c` using the Raylib stubs. New features that touch `game_update` or cross-module collision/spawning must have at least one integration test.
 - One logical change per commit. No unrelated refactors in the same commit.
 - Document all structs, public functions, and modules in header files. No excessive inline comments.
 - When adding dependencies, verify latest version and API against current docs -- do not rely on training data.

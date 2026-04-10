@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Integration test infrastructure: headless `game_update()` testing via Raylib stubs (`tests/raylib_stubs.c/h`) with controllable input, time, and audio fakes
+- 11 integration tests (`tests/test_integration.c`): bullet kills enemy, enemy damages player, dash invincibility, game-over transition, restart from game-over, player movement via input, enemy wave spawning, survival time accumulation, multiple enemy damage, shooting via game_update, full combat loop
+- CMake object library (`astro_blitz_objs`) for scalable dual-linking: game sources compiled once, linked with real Raylib (exe + unit tests) or stubs (integration tests). Adding new source files requires updating only the object library.
 - First-run movement picker: on first launch (no `settings.ini`), a dedicated screen lets the player choose between 8-Directional and Tank Controls before proceeding to the main menu
 - Main menu screen with Play, Settings, and Quit options
 - Pause menu (ESC during gameplay): Resume, Settings, Main Menu, Quit
@@ -42,6 +45,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- `AGENTS.md` -- Added unit vs integration test guidance: unit tests for single-module logic, integration tests required for cross-module features (game_update, collisions, spawning)
 - Rewrote `design/DESIGN.md` to resolve the project's major design decisions
 - `design/DESIGN.md` now defines run structure: hybrid arena-dungeon model, steep difficulty curve, 5--7 floor runs with find-the-exit completion
 - `design/DESIGN.md` now documents combat and progression: medium damage scale (10--100 HP), prefix/suffix weapon modifiers, elite enemy modifiers, talent-based meta-progression, Risk of Rain-style loot weighting

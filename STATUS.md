@@ -15,6 +15,7 @@ When it grows too long, summarize older entries and remove resolved items.
 
 | Date | Change |
 |------|--------|
+| 2026-04-10 | Added integration test infrastructure: Raylib stubs for headless testing, CMake object library pattern (`astro_blitz_objs`) for scalable dual-linking (real Raylib for game/unit tests, stubs for integration tests). 11 integration tests covering combat, game-over flow, spawning, input, and full combat loops. |
 | 2026-04-10 | First-run movement picker: on first launch (no settings.ini), players choose between 8-Directional (default) and Tank Controls before seeing the main menu. Default movement changed from Tank to 8-Directional. `settings_init` now returns bool for first-run detection. 2 new settings tests. |
 | 2026-04-10 | Added main menu, pause menu, and settings menu. Settings persist to `settings.ini`. Players can switch between Tank Controls and 8-Directional movement. ESC pauses the game. New `settings` module with 14 tests; 8 new player tests for 8-dir movement; 4 new game tests for phases. Fixed winmm linker conflict on Windows. |
 | 2026-04-10 | Bullets now bounce off walls up to 3 times instead of being destroyed on impact. Enemy spawn waves reduced from 4-8 to 2-5 per wave. 3 new bullet bounce tests. |
@@ -40,6 +41,7 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Known Issues / Next Steps
 
+<<<<<<< HEAD
 - ~~Implement basic enemy spawning~~ -- done
 - ~~Add bullet-enemy collision~~ -- done
 - ~~Add game-over state when HP reaches zero~~ -- done
@@ -47,6 +49,7 @@ When it grows too long, summarize older entries and remove resolved items.
 - ~~Add procedural tilemap with obstacles~~ -- done
 - ~~Decide on level structure~~ -- resolved: hybrid arena-dungeon (combat rooms lock, corridors open)
 - Design doc rewritten with all major design decisions resolved (see design/DESIGN.md)
+- **Redundant include path in CMakeLists.txt:** `astro_blitz_objs` has both `$<TARGET_PROPERTY:raylib,INTERFACE_INCLUDE_DIRECTORIES>` and `${raylib_SOURCE_DIR}/src` which resolve to the same directory. Harmless (CMake deduplicates) but could be cleaned up.
 - **Next sprint:** Melee attack (right-click) + game feel (screen shake, damage numbers)
 - Followed by: Grunt enemy (ranged AI), weapon system + prefix/suffix modifiers
 - Room-based level generation (BSP or room-placement) to replace scattered obstacles
@@ -61,4 +64,5 @@ When it grows too long, summarize older entries and remove resolved items.
 - **Taskfile `run` task:** Uses platform-specific commands to find the executable in both `build/<Config>/` (multi-config) and `build/` (single-config) layouts.
 - **FetchContent + GIT_SHALLOW + commit hash does not work.** `GIT_SHALLOW TRUE` only supports branch/tag names, not commit hashes. Use `URL` + `URL_HASH` with a release tarball instead for pinned, reproducible builds.
 - **Raylib `option()` clears normal variables (CMP0077).** Set `BUILD_EXAMPLES` and `BUILD_GAMES` as `CACHE BOOL` (without `FORCE`) so raylib's `option()` doesn't override them.
-- **astro_blitz_lib pattern:** Game logic goes into `astro_blitz_lib` static library (links Raylib publicly). Tests link against `astro_blitz_lib` + Unity. The main executable links `astro_blitz_lib`. This shares game logic between exe and test suites.
+- **astro_blitz_objs + dual-link pattern:** Game logic is compiled once as a CMake OBJECT library (`astro_blitz_objs`). `astro_blitz_lib` links objects + real Raylib (for exe and unit tests). `test_integration` links objects + `raylib_stubs` (for headless integration tests). Adding a new `.c` file requires updating only the object library source list.
+- **Raylib stubs (`tests/raylib_stubs.c/h`):** Controllable fakes for input, time, audio, and rendering. Tests configure stub state via `stub_set_*()` helpers and call `game_update()` headlessly. `GetRandomValue` clamps to the requested `[min, max]` range.
