@@ -6,8 +6,37 @@
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
+/* Spawn a wave of enemies just outside the camera viewport */
 static void spawn_wave(GameState *gs) {
     int count = GetRandomValue(SPAWN_MIN_GROUP, SPAWN_MAX_GROUP);
+
+    /* Calculate viewport edges in world space */
+    float half_w = (float)SCREEN_WIDTH / 2.0f;
+    float half_h = (float)SCREEN_HEIGHT / 2.0f;
+    float cam_x = gs->camera.target.x;
+    float cam_y = gs->camera.target.y;
+
+    /* Spawn margin: a little outside the visible area */
+    float margin = 40.0f;
+    float left = cam_x - half_w - margin;
+    float right = cam_x + half_w + margin;
+    float top = cam_y - half_h - margin;
+    float bottom = cam_y + half_h + margin;
+
+    /* Clamp to world bounds */
+    Rectangle wb = gs->arena;
+    if (left < wb.x) {
+        left = wb.x + 10.0f;
+    }
+    if (right > wb.x + wb.width) {
+        right = wb.x + wb.width - 10.0f;
+    }
+    if (top < wb.y) {
+        top = wb.y + 10.0f;
+    }
+    if (bottom > wb.y + wb.height) {
+        bottom = wb.y + wb.height - 10.0f;
+    }
 
     for (int i = 0; i < count; i++) {
         Vector2 pos;
@@ -15,24 +44,27 @@ static void spawn_wave(GameState *gs) {
 
         switch (edge) {
         case 0: /* top */
-            pos.x = gs->arena.x + (float)GetRandomValue(0, (int)gs->arena.width);
-            pos.y = gs->arena.y;
+            pos.x = (float)GetRandomValue((int)left, (int)right);
+            pos.y = top;
             break;
         case 1: /* bottom */
-            pos.x = gs->arena.x + (float)GetRandomValue(0, (int)gs->arena.width);
-            pos.y = gs->arena.y + gs->arena.height;
+            pos.x = (float)GetRandomValue((int)left, (int)right);
+            pos.y = bottom;
             break;
         case 2: /* left */
-            pos.x = gs->arena.x;
-            pos.y = gs->arena.y + (float)GetRandomValue(0, (int)gs->arena.height);
+            pos.x = left;
+            pos.y = (float)GetRandomValue((int)top, (int)bottom);
             break;
         default: /* right */
-            pos.x = gs->arena.x + gs->arena.width;
-            pos.y = gs->arena.y + (float)GetRandomValue(0, (int)gs->arena.height);
+            pos.x = right;
+            pos.y = (float)GetRandomValue((int)top, (int)bottom);
             break;
         }
 
-        enemy_pool_spawn(&gs->enemies, ENEMY_SWARMER, pos);
+        /* Only spawn in walkable tiles */
+        if (!tilemap_is_solid(&gs->tilemap, pos.x, pos.y)) {
+            enemy_pool_spawn(&gs->enemies, ENEMY_SWARMER, pos);
+        }
     }
 }
 
@@ -91,6 +123,28 @@ static void resolve_enemy_player_collisions(GameState *gs) {
     }
 }
 
+static void update_camera(GameState *gs) {
+    gs->camera.target = gs->player.position;
+
+    /* Clamp camera so it doesn't show outside the world */
+    float half_w = gs->camera.offset.x;
+    float half_h = gs->camera.offset.y;
+    Rectangle wb = gs->arena;
+
+    if (gs->camera.target.x - half_w < wb.x) {
+        gs->camera.target.x = wb.x + half_w;
+    }
+    if (gs->camera.target.x + half_w > wb.x + wb.width) {
+        gs->camera.target.x = wb.x + wb.width - half_w;
+    }
+    if (gs->camera.target.y - half_h < wb.y) {
+        gs->camera.target.y = wb.y + half_h;
+    }
+    if (gs->camera.target.y + half_h > wb.y + wb.height) {
+        gs->camera.target.y = wb.y + wb.height - half_h;
+    }
+}
+
 static void draw_hud(const GameState *gs) {
     const Player *p = &gs->player;
 
@@ -121,10 +175,6 @@ static void draw_hud(const GameState *gs) {
     DrawRectangle((int)dash_x, (int)bar_y, (int)(dash_w * cd_ratio), (int)bar_h, SKYBLUE);
     DrawRectangleLines((int)dash_x, (int)bar_y, (int)dash_w, (int)bar_h, RAYWHITE);
     DrawText("DASH", (int)dash_x + 4, (int)bar_y + 2, 12, RAYWHITE);
-}
-
-static void draw_arena(const GameState *gs) {
-    DrawRectangleLinesEx(gs->arena, 2.0f, DARKGRAY);
 }
 
 static void draw_game_over(const GameState *gs) {
@@ -175,10 +225,16 @@ static void draw_game_over(const GameState *gs) {
 /* ── Public ────────────────────────────────────────────────────────────────── */
 
 void game_init(GameState *gs) {
-    gs->arena = (Rectangle){ARENA_MARGIN, ARENA_MARGIN, SCREEN_WIDTH - 2.0f * ARENA_MARGIN,
-                            SCREEN_HEIGHT - 2.0f * ARENA_MARGIN};
+    /* Generate world */
+    int spawn_tx = WORLD_COLS / 2;
+    int spawn_ty = WORLD_ROWS / 2;
+    tilemap_generate(&gs->tilemap, spawn_tx, spawn_ty, 0);
+    gs->arena = tilemap_get_world_bounds(&gs->tilemap);
 
-    Vector2 center = {gs->arena.x + gs->arena.width / 2.0f, gs->arena.y + gs->arena.height / 2.0f};
+    /* Place player at center of spawn tile */
+    Vector2 center = tilemap_tile_to_world(&gs->tilemap, spawn_tx, spawn_ty);
+    center.x += TILE_SIZE / 2.0f;
+    center.y += TILE_SIZE / 2.0f;
 
     player_init(&gs->player, center);
     bullet_pool_init(&gs->bullets);
@@ -186,6 +242,12 @@ void game_init(GameState *gs) {
     gs->spawn_timer = SPAWN_INTERVAL;
     gs->phase = PHASE_PLAYING;
     gs->stats = (GameStats){.kills = 0, .survival_time = 0.0f, .waves_spawned = 0};
+
+    /* Camera centered on player */
+    gs->camera.target = center;
+    gs->camera.offset = (Vector2){SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f};
+    gs->camera.rotation = 0.0f;
+    gs->camera.zoom = 1.0f;
 }
 
 void game_update(GameState *gs) {
@@ -201,7 +263,7 @@ void game_update(GameState *gs) {
     float dt = GetFrameTime();
     gs->stats.survival_time += dt;
 
-    player_update(&gs->player, dt, gs->arena);
+    player_update(&gs->player, dt, gs->arena, &gs->tilemap, gs->camera);
 
     /* ── Shooting ─────────────────────────────────────────────────────── */
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
@@ -210,7 +272,7 @@ void game_update(GameState *gs) {
         bullet_pool_fire(&gs->bullets, muzzle, gs->player.aim_direction);
     }
 
-    bullet_pool_update(&gs->bullets, dt, gs->arena);
+    bullet_pool_update(&gs->bullets, dt, gs->arena, &gs->tilemap);
 
     /* ── Enemy spawning ───────────────────────────────────────────────── */
     gs->spawn_timer -= dt;
@@ -221,7 +283,7 @@ void game_update(GameState *gs) {
     }
 
     /* ── Enemy update ─────────────────────────────────────────────────── */
-    enemy_pool_update(&gs->enemies, dt, gs->player.position, gs->arena);
+    enemy_pool_update(&gs->enemies, dt, gs->player.position, gs->arena, &gs->tilemap);
 
     /* ── Collisions ───────────────────────────────────────────────────── */
     resolve_bullet_enemy_collisions(gs);
@@ -229,6 +291,9 @@ void game_update(GameState *gs) {
 
     /* ── Death check ──────────────────────────────────────────────────── */
     game_check_death(gs);
+
+    /* ── Camera ───────────────────────────────────────────────────────── */
+    update_camera(gs);
 }
 
 void game_check_death(GameState *gs) {
@@ -240,13 +305,22 @@ void game_check_death(GameState *gs) {
 void game_draw(const GameState *gs) {
     BeginDrawing();
     ClearBackground(BLACK);
-    draw_arena(gs);
+
+    /* ── World-space drawing (camera-relative) ────────────────────────── */
+    BeginMode2D(gs->camera);
+
+    tilemap_draw(&gs->tilemap, gs->camera);
     bullet_pool_draw(&gs->bullets);
     enemy_pool_draw(&gs->enemies);
     player_draw(&gs->player);
+
+    EndMode2D();
+
+    /* ── Screen-space drawing (HUD, overlays) ─────────────────────────── */
     draw_hud(gs);
     if (gs->phase == PHASE_GAME_OVER) {
         draw_game_over(gs);
     }
+
     EndDrawing();
 }

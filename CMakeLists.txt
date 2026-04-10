@@ -23,6 +23,7 @@ FetchContent_MakeAvailable(raylib)
 # ── Game logic library (shared between exe and tests) ────────────────────────
 add_library(astro_blitz_lib STATIC
     src/vec2.c
+    src/tilemap.c
     src/game.c
     src/player.c
     src/bullet.c
@@ -86,4 +87,9 @@ if(BUILD_TESTING)
     add_executable(test_enemy tests/test_enemy.c)
     target_link_libraries(test_enemy PRIVATE unity astro_blitz_lib)
     add_test(NAME test_enemy COMMAND test_enemy)
+
+    # Tilemap module tests
+    add_executable(test_tilemap tests/test_tilemap.c)
+    target_link_libraries(test_tilemap PRIVATE unity astro_blitz_lib)
+    add_test(NAME test_tilemap COMMAND test_tilemap)
 endif()

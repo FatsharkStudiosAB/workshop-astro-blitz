@@ -5,16 +5,17 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Current State
 
-- **Phase:** First playable prototype -- player movement, shooting, dash, and enemy swarmers.
+- **Phase:** Scrollable world prototype -- camera follows player over a procedurally generated tilemap with obstacles.
 - **Engine/Framework:** Raylib 5.5 (C99), built via CMake FetchContent.
 - **Build:** `task build` (or `cmake -B build && cmake --build build --config Release`)
 - **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest.
-- **Playable:** Yes (player moves with tank controls -- WASD relative to aim direction, aims with mouse, shoots with left-click, dashes with spacebar, enemies spawn in waves). Game ends when HP reaches zero; game-over screen shows stats (kills, time, waves) and pressing R restarts.
+- **Playable:** Yes (player moves in a large world [4096x3072 px], camera follows, tilemap with scattered obstacles and border walls, enemies spawn offscreen relative to viewport). Game ends when HP reaches zero; game-over screen shows stats and pressing R restarts with a new map.
 
 ## Recent Changes
 
 | Date | Change |
 |------|--------|
+| 2026-04-10 | Added Camera2D, tilemap module, procedural generation, and scrollable world (128x96 tile grid, ~4096x3072 px). Player, enemies, and bullets now operate in world coordinates. Camera follows player with edge clamping. Obstacles block movement and bullets. Enemies spawn offscreen relative to camera. 27 new tilemap tests, updated game/bullet/enemy tests. |
 | 2026-04-10 | Upgraded player and swarmer visuals: layered neon sci-fi art with glow, outlines, facing indicators |
 | 2026-04-10 | Added game-over state: death screen with stats (kills, time, waves), restart with R key |
 | 2026-04-10 | Fixed .clang-format config (`Language: C` -> `Language: Cpp` for clang-format 18 compatibility) |
@@ -36,7 +37,11 @@ When it grows too long, summarize older entries and remove resolved items.
 - Implement basic enemy spawning (Swarmers first -- simplest behavior) -- done
 - Add bullet-enemy collision -- done
 - Add game-over state when HP reaches zero -- done
+- Add Camera2D and scrollable world -- done
+- Add procedural tilemap with obstacles -- done
 - Add melee attack (right-click)
+- Room-based level generation (corridors, doors) -- currently open-world with scattered obstacles
+- Minimap overlay (design doc calls for top-right corner)
 - Decide on level structure (linear floors vs branching paths)
 - Source or create placeholder sprite assets -- partially addressed with layered geometric art
 

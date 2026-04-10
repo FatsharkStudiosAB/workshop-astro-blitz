@@ -3,6 +3,7 @@
  */
 
 #include "player.h"
+#include "tilemap.h"
 #include <math.h>
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
@@ -47,14 +48,54 @@ static Vector2 get_movement_input(Vector2 aim_dir) {
 
 static void clamp_to_arena(Player *p, Rectangle arena) {
     float r = PLAYER_RADIUS;
-    if (p->position.x - r < arena.x)
+    if (p->position.x - r < arena.x) {
         p->position.x = arena.x + r;
-    if (p->position.x + r > arena.x + arena.width)
+    }
+    if (p->position.x + r > arena.x + arena.width) {
         p->position.x = arena.x + arena.width - r;
-    if (p->position.y - r < arena.y)
+    }
+    if (p->position.y - r < arena.y) {
         p->position.y = arena.y + r;
-    if (p->position.y + r > arena.y + arena.height)
+    }
+    if (p->position.y + r > arena.y + arena.height) {
         p->position.y = arena.y + arena.height - r;
+    }
+}
+
+/*
+ * resolve_tile_collision -- push the player out of any solid tiles.
+ *
+ * Checks the four cardinal points on the player's bounding circle. If any
+ * point is inside a solid tile, the player is pushed back along that axis.
+ * This gives smooth sliding along walls.
+ */
+static void resolve_tile_collision(Player *p, const Tilemap *tm) {
+    if (!tm) {
+        return;
+    }
+
+    float r = PLAYER_RADIUS;
+
+    /* Check right edge */
+    if (tilemap_is_solid(tm, p->position.x + r, p->position.y)) {
+        int tx = (int)floorf((p->position.x + r) / (float)tm->tile_size);
+        p->position.x = (float)(tx * tm->tile_size) - r - 0.01f;
+    }
+    /* Check left edge */
+    if (tilemap_is_solid(tm, p->position.x - r, p->position.y)) {
+        int tx = (int)floorf((p->position.x - r) / (float)tm->tile_size);
+        p->position.x = (float)((tx + 1) * tm->tile_size) + r + 0.01f;
+    }
+    /* Check bottom edge */
+    if (tilemap_is_solid(tm, p->position.x, p->position.y + r)) {
+        int ty = (int)floorf((p->position.y + r) / (float)tm->tile_size);
+        p->position.y = (float)(ty * tm->tile_size) - r - 0.01f;
+    }
+    /* Check top edge */
+    if (tilemap_is_solid(tm, p->position.x, p->position.y - r)) {
+        int ty = (int)floorf((p->position.y - r) / (float)tm->tile_size);
+        p->position.y = (float)((ty + 1) * tm->tile_size) + r + 0.01f;
+    }
 }
 
 /* ── Public ────────────────────────────────────────────────────────────────── */
@@ -71,10 +112,11 @@ void player_init(Player *p, Vector2 start_pos) {
     p->dash_cooldown = 0.0f;
 }
 
-void player_update(Player *p, float dt, Rectangle arena) {
-    /* ── Aim toward mouse cursor ──────────────────────────────────────── */
-    Vector2 mouse = GetMousePosition();
-    Vector2 to_mouse = Vector2Subtract(mouse, p->position);
+void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Camera2D camera) {
+    /* ── Aim toward mouse cursor (world space) ───────────────────────── */
+    Vector2 screen_mouse = GetMousePosition();
+    Vector2 world_mouse = GetScreenToWorld2D(screen_mouse, camera);
+    Vector2 to_mouse = Vector2Subtract(world_mouse, p->position);
     float dist = Vector2Length(to_mouse);
     if (dist > 1.0f) { /* dead zone: ignore cursor within 1px of player center */
         p->aim_direction = Vector2Scale(to_mouse, 1.0f / dist);
@@ -98,6 +140,7 @@ void player_update(Player *p, float dt, Rectangle arena) {
         p->position =
             Vector2Add(p->position, Vector2Scale(p->dash_direction, DASH_SPEED * dash_dt));
         clamp_to_arena(p, arena);
+        resolve_tile_collision(p, tm);
 
         p->dash_timer -= dash_dt;
         if (p->dash_timer > 0.0f) {
@@ -127,6 +170,7 @@ void player_update(Player *p, float dt, Rectangle arena) {
     Vector2 move_dir = get_movement_input(p->aim_direction);
     p->position = Vector2Add(p->position, Vector2Scale(move_dir, PLAYER_SPEED * dt));
     clamp_to_arena(p, arena);
+    resolve_tile_collision(p, tm);
 }
 
 void player_draw(const Player *p) {
