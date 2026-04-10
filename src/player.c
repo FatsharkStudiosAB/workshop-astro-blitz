@@ -7,13 +7,22 @@
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
-static Vector2 get_movement_input(void)
+/*
+ * player_calc_move_dir -- pure logic, no Raylib input calls.
+ * Converts WASD booleans into a world-space direction relative to aim_dir.
+ */
+Vector2 player_calc_move_dir(Vector2 aim_dir, bool forward, bool back,
+                             bool left, bool right)
 {
+    /* Perpendicular vectors: left = rotate aim 90° CW (screen-left), right = 90° CCW */
+    Vector2 perp_left  = { aim_dir.y, -aim_dir.x};
+    Vector2 perp_right = {-aim_dir.y,  aim_dir.x};
+
     Vector2 dir = {0};
-    if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP))    dir.y -= 1.0f;
-    if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN))   dir.y += 1.0f;
-    if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))   dir.x -= 1.0f;
-    if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))  dir.x += 1.0f;
+    if (forward) dir = Vector2Add(dir, aim_dir);
+    if (back)    dir = Vector2Add(dir, Vector2Scale(aim_dir, -1.0f));
+    if (left)    dir = Vector2Add(dir, perp_left);
+    if (right)   dir = Vector2Add(dir, perp_right);
 
     /* Normalize so diagonals aren't faster */
     float len = Vector2Length(dir);
@@ -21,6 +30,15 @@ static Vector2 get_movement_input(void)
         dir = Vector2Scale(dir, 1.0f / len);
     }
     return dir;
+}
+
+static Vector2 get_movement_input(Vector2 aim_dir)
+{
+    bool fwd   = IsKeyDown(KEY_W) || IsKeyDown(KEY_UP);
+    bool back  = IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN);
+    bool left  = IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT);
+    bool right = IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT);
+    return player_calc_move_dir(aim_dir, fwd, back, left, right);
 }
 
 static void clamp_to_arena(Player *p, Rectangle arena)
@@ -87,7 +105,7 @@ void player_update(Player *p, float dt, Rectangle arena)
 
     /* ── Initiate dash ────────────────────────────────────────────────── */
     if (IsKeyPressed(KEY_SPACE) && p->dash_cooldown <= 0.0f) {
-        Vector2 move_dir = get_movement_input();
+        Vector2 move_dir = get_movement_input(p->aim_direction);
         /* If no movement keys held, dash toward aim direction */
         if (Vector2Length(move_dir) < 0.01f) {
             move_dir = p->aim_direction;
@@ -100,7 +118,7 @@ void player_update(Player *p, float dt, Rectangle arena)
     }
 
     /* ── Normal movement ──────────────────────────────────────────────── */
-    Vector2 move_dir = get_movement_input();
+    Vector2 move_dir = get_movement_input(p->aim_direction);
     p->position = Vector2Add(p->position, Vector2Scale(move_dir, PLAYER_SPEED * dt));
     clamp_to_arena(p, arena);
 }

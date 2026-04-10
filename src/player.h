@@ -39,3 +39,22 @@ typedef struct {
 void player_init(Player *p, Vector2 start_pos);
 void player_update(Player *p, float dt, Rectangle arena);
 void player_draw(const Player *p);
+
+/*
+ * player_calc_move_dir -- Compute world-space movement direction from raw input.
+ *
+ * Converts raw WASD/arrow key input (forward/back/left/right) into a
+ * world-space direction vector relative to the player's aim direction
+ * (tank controls). The result is normalized so diagonals aren't faster.
+ *
+ * Parameters:
+ *   aim_dir -- Normalized aim direction (where the player is pointing).
+ *   forward -- True if W or Up is held.
+ *   back    -- True if S or Down is held.
+ *   left    -- True if A or Left is held.
+ *   right   -- True if D or Right is held.
+ *
+ * Returns a normalized Vector2 (or zero vector if no input).
+ */
+Vector2 player_calc_move_dir(Vector2 aim_dir, bool forward, bool back,
+                             bool left, bool right);

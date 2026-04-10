@@ -8,6 +8,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - Enemy swarmer system: `src/enemy.c/h` with fixed-size enemy pool, swarmer AI (seek toward player), wave spawning from arena edges
+
+### Changed
+
+- Player movement now uses tank controls: W moves toward mouse cursor, S moves away, A/D strafe left/right relative to aim direction
+- Dash direction also follows the new tank controls when WASD keys are held
 - Bullet-enemy and enemy-player collision detection with circle-circle overlap
 - Player takes damage on enemy contact (swarmers die on contact); dash invincibility respected
 - Enemy spawn waves every 3 seconds, groups of 4-8 swarmers from random arena edges

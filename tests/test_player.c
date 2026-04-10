@@ -144,6 +144,80 @@ void test_player_max_hp_is_positive(void)
     TEST_ASSERT_TRUE(PLAYER_MAX_HP > 0.0f);
 }
 
+/* ── Tank controls (player_calc_move_dir) tests ────────────────────────────── */
+
+void test_calc_move_dir_forward_follows_aim(void)
+{
+    /* Aim right -> W should move right */
+    Vector2 aim = {1.0f, 0.0f};
+    Vector2 dir = player_calc_move_dir(aim, true, false, false, false);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 1.0f, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.y);
+}
+
+void test_calc_move_dir_backward_opposes_aim(void)
+{
+    /* Aim right -> S should move left */
+    Vector2 aim = {1.0f, 0.0f};
+    Vector2 dir = player_calc_move_dir(aim, false, true, false, false);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, -1.0f, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.y);
+}
+
+void test_calc_move_dir_strafe_left_perpendicular(void)
+{
+    /* Aim right -> A should move up (screen up = -Y) */
+    Vector2 aim = {1.0f, 0.0f};
+    Vector2 dir = player_calc_move_dir(aim, false, false, true, false);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, -1.0f, dir.y);
+}
+
+void test_calc_move_dir_strafe_right_perpendicular(void)
+{
+    /* Aim right -> D should move down (screen down = +Y) */
+    Vector2 aim = {1.0f, 0.0f};
+    Vector2 dir = player_calc_move_dir(aim, false, false, false, true);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 1.0f, dir.y);
+}
+
+void test_calc_move_dir_diagonal_is_normalized(void)
+{
+    /* W + D with aim right -> should have length 1 */
+    Vector2 aim = {1.0f, 0.0f};
+    Vector2 dir = player_calc_move_dir(aim, true, false, false, true);
+    float len = Vector2Length(dir);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 1.0f, len);
+}
+
+void test_calc_move_dir_no_input_returns_zero(void)
+{
+    Vector2 aim = {1.0f, 0.0f};
+    Vector2 dir = player_calc_move_dir(aim, false, false, false, false);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.y);
+}
+
+void test_calc_move_dir_forward_with_diagonal_aim(void)
+{
+    /* Aim at 45 degrees (down-right) -> W should move in that direction */
+    float inv_sqrt2 = 1.0f / sqrtf(2.0f);
+    Vector2 aim = {inv_sqrt2, inv_sqrt2};
+    Vector2 dir = player_calc_move_dir(aim, true, false, false, false);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, inv_sqrt2, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, inv_sqrt2, dir.y);
+}
+
+void test_calc_move_dir_opposing_inputs_cancel(void)
+{
+    /* W + S simultaneously -> zero */
+    Vector2 aim = {1.0f, 0.0f};
+    Vector2 dir = player_calc_move_dir(aim, true, true, false, false);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.y);
+}
+
 /* ── Runner ────────────────────────────────────────────────────────────────── */
 
 int main(void)
@@ -166,6 +240,16 @@ int main(void)
     RUN_TEST(test_player_radius_is_positive);
     RUN_TEST(test_player_speed_is_positive);
     RUN_TEST(test_player_max_hp_is_positive);
+
+    /* Tank controls */
+    RUN_TEST(test_calc_move_dir_forward_follows_aim);
+    RUN_TEST(test_calc_move_dir_backward_opposes_aim);
+    RUN_TEST(test_calc_move_dir_strafe_left_perpendicular);
+    RUN_TEST(test_calc_move_dir_strafe_right_perpendicular);
+    RUN_TEST(test_calc_move_dir_diagonal_is_normalized);
+    RUN_TEST(test_calc_move_dir_no_input_returns_zero);
+    RUN_TEST(test_calc_move_dir_forward_with_diagonal_aim);
+    RUN_TEST(test_calc_move_dir_opposing_inputs_cancel);
 
     return UNITY_END();
 }

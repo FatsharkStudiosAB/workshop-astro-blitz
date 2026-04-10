@@ -33,7 +33,7 @@ Meta-progression does **not** carry over power -- each run starts from scratch.
 
 ## Player
 
-- **Movement:** 8-directional (WASD)
+- **Movement:** Tank controls (WASD relative to aim direction -- W moves toward cursor, S moves away, A/D strafe)
 - **Aiming:** Mouse-aimed (cursor determines facing and shot direction)
 - **Actions:**
   - **Shoot** (left click) -- fire equipped ranged weapon
