@@ -7,6 +7,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Unity test framework v2.6.1 with CTest integration and sample test (`tests/test_sample.c`)
 - Task runner configuration (`Taskfile.yml`) with `task configure`, `task build`, `task run`, and `task clean`
 - Raylib 5.5 build tooling via CMake FetchContent -- `cmake -B build` fetches and builds Raylib automatically
 - Hello window: `src/main.c` opens an 800x600 window with "ASTRO BLITZ" title text
