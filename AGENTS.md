@@ -6,8 +6,11 @@ Top-down sci-fi roguelike shooter built during Fatshark's agentic coding worksho
 
 | Task | Command |
 |------|---------|
-| Run the game | *(TBD -- depends on chosen engine/framework)* |
-| Run tests | *(TBD)* |
+| Configure build | `cmake -B build` |
+| Build game | `cmake --build build --target astro_blitz` |
+| Build tests | `cmake --build build --target test_sample` |
+| Run tests | `ctest --test-dir build -C Debug --output-on-failure` |
+| Run game | `build\Debug\astro_blitz.exe` (Windows) |
 | List all tasks | `task --list-all` |
 
 ## Key Files
@@ -127,6 +130,11 @@ Everything below this line is lookup material. Behavioral rules are all above.
 
 | Path | What |
 |------|------|
+| `src/` | Game source code |
+| `src/main.c` | Game entry point (Raylib window) |
+| `tests/` | Unit tests (Unity framework) |
+| `tests/test_sample.c` | Sample test verifying framework works |
+| `CMakeLists.txt` | Build configuration (CMake) |
 | `design/` | Game design documents and reference assets |
 | `design/DESIGN.md` | Game design document |
 | `design/assets/` | Reference images, mockups, sprites |
@@ -134,12 +142,11 @@ Everything below this line is lookup material. Behavioral rules are all above.
 | `CHANGELOG.md` | User-facing change history |
 | `AGENTS.md` | Agent instructions (this file) |
 
-*(Repository layout will expand as the game takes shape.)*
-
 ## Environment
 
 - **Engine/Framework:** Raylib 5.5
 - **Language:** C (C99)
-- **Build:** CMake or direct compiler invocation (gcc/MSVC)
+- **Build:** CMake (FetchContent for dependencies)
+- **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent
 - **Asset formats:** PNG (sprites), WAV/OGG (audio)
 - **Platform:** Windows (primary), cross-platform possible via Raylib

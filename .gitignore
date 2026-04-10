@@ -21,7 +21,7 @@ Desktop.ini
 .env.*
 !.env.example
 
-# Build output (update once engine is chosen)
-# build/
+# Build output
+build/
 # dist/
 # export/
