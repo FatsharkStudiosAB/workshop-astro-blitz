@@ -42,9 +42,35 @@ void bullet_pool_update(BulletPool *pool, float dt, Rectangle arena, const Tilem
             continue;
         }
 
-        /* Deactivate on wall hit */
+        /* Bounce off walls (or deactivate if max bounces reached) */
         if (tm && tilemap_is_solid(tm, b->position.x, b->position.y)) {
-            b->active = false;
+            if (b->bounces >= BULLET_MAX_BOUNCES) {
+                b->active = false;
+                continue;
+            }
+
+            /* Rewind to previous position */
+            Vector2 prev = Vector2Subtract(b->position, Vector2Scale(b->velocity, dt));
+
+            /* Determine which axes crossed into a solid tile */
+            bool solid_h = tilemap_is_solid(tm, b->position.x, prev.y);
+            bool solid_v = tilemap_is_solid(tm, prev.x, b->position.y);
+
+            if (solid_h) {
+                b->velocity.x = -b->velocity.x;
+            }
+            if (solid_v) {
+                b->velocity.y = -b->velocity.y;
+            }
+            /* Corner case: both axes free individually but diagonal is solid */
+            if (!solid_h && !solid_v) {
+                b->velocity.x = -b->velocity.x;
+                b->velocity.y = -b->velocity.y;
+            }
+
+            /* Snap back to pre-collision position */
+            b->position = prev;
+            b->bounces++;
         }
     }
 }
@@ -71,6 +97,7 @@ bool bullet_pool_fire(BulletPool *pool, Vector2 origin, Vector2 direction) {
             b->position = origin;
             b->velocity = Vector2Scale(direction, BULLET_SPEED);
             b->lifetime = BULLET_LIFETIME;
+            b->bounces = 0;
             b->active = true;
             pool->fire_cooldown = PISTOL_FIRE_RATE;
             return true;

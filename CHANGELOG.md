@@ -7,6 +7,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Bullet wall bouncing: bullets reflect off solid tiles up to 3 times before being destroyed (new `BULLET_MAX_BOUNCES` constant and `bounces` field on `Bullet`)
+- 3 new bullet tests: `test_bullet_bounces_off_wall`, `test_bullet_deactivates_after_max_bounces`, `test_fire_initializes_bounces_to_zero`
 - BFS flow field pathfinding for enemies: enemies now navigate around obstacles instead of getting stuck against walls
 - `tilemap_compute_flow_field()` function computes a grid-wide BFS from the player's position each frame
 - Tilemap struct now stores flow direction (`flow`) and BFS distance (`flow_dist`) arrays
@@ -29,6 +31,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Enemy spawn waves reduced from 4-8 swarmers per wave to 2-5 for more balanced difficulty
 - Enemy swarmers now use BFS flow field for pathfinding when far from the player (>3 tiles); fall back to direct seek at close range for smooth final approach
 - Game world is now much larger than the screen (4096x3072 vs 800x600); player moves freely across the full area
 - All entity rendering happens in world-space via `BeginMode2D`/`EndMode2D`; HUD remains in screen-space
