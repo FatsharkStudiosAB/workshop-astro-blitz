@@ -17,8 +17,8 @@
 
 /* Movement layout controls how WASD maps to world-space directions */
 typedef enum {
-    MOVEMENT_TANK, /* W/S = forward/back relative to aim, A/D = strafe (default) */
-    MOVEMENT_8DIR  /* W = up, S = down, A = left, D = right (screen-relative) */
+    MOVEMENT_8DIR, /* W = up, S = down, A = left, D = right (screen-relative, default) */
+    MOVEMENT_TANK  /* W/S = forward/back relative to aim, A/D = strafe */
 } MovementLayout;
 
 /* All persistent game settings */
@@ -32,8 +32,10 @@ typedef struct {
  * settings_init -- Initialize settings with defaults, then load from file.
  *
  * If the settings file does not exist or is malformed, defaults are used.
+ * Returns true if an existing settings file was loaded, false if this is
+ * the first run (no file found).
  */
-void settings_init(Settings *s);
+bool settings_init(Settings *s);
 
 /*
  * settings_save -- Write current settings to the settings file.

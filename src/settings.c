@@ -46,12 +46,12 @@ static void strip_newline(char *str) {
 
 /* ── Public ────────────────────────────────────────────────────────────────── */
 
-void settings_init(Settings *s) {
+bool settings_init(Settings *s) {
     /* Defaults */
-    s->movement_layout = MOVEMENT_TANK;
+    s->movement_layout = MOVEMENT_8DIR;
 
     /* Try to load from file; if it fails, defaults remain */
-    settings_load(s);
+    return settings_load(s);
 }
 
 bool settings_save(const Settings *s) {

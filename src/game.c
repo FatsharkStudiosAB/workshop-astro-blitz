@@ -285,6 +285,26 @@ static void draw_menu_items(const char *items[], int count, int selected, int st
 
 static bool quit_requested = false;
 
+static void update_first_run(GameState *gs) {
+    enum { PICK_8DIR, PICK_TANK, PICK_COUNT };
+
+    gs->menu_cursor = menu_navigate(gs->menu_cursor, PICK_COUNT);
+
+    if (menu_confirm()) {
+        switch (gs->menu_cursor) {
+        case PICK_8DIR:
+            gs->settings.movement_layout = MOVEMENT_8DIR;
+            break;
+        case PICK_TANK:
+            gs->settings.movement_layout = MOVEMENT_TANK;
+            break;
+        }
+        settings_save(&gs->settings);
+        gs->phase = PHASE_MAIN_MENU;
+        gs->menu_cursor = 0;
+    }
+}
+
 static void update_main_menu(GameState *gs) {
     enum { MENU_PLAY, MENU_SETTINGS, MENU_QUIT, MENU_COUNT };
 
@@ -430,6 +450,46 @@ static void update_game_over(GameState *gs) {
 
 /* ── Phase-specific draw helpers ───────────────────────────────────────────── */
 
+static void draw_first_run(const GameState *gs) {
+    /* Title */
+    const char *title = "ASTRO BLITZ";
+    int title_size = 50;
+    int title_w = MeasureText(title, title_size);
+    DrawText(title, (SCREEN_WIDTH - title_w) / 2, 80, title_size, (Color){0, 220, 200, 255});
+
+    /* Prompt */
+    const char *prompt = "Choose your movement style:";
+    int prompt_size = 20;
+    int prompt_w = MeasureText(prompt, prompt_size);
+    DrawText(prompt, (SCREEN_WIDTH - prompt_w) / 2, 170, prompt_size, RAYWHITE);
+
+    /* Options */
+    const char *items[] = {"8-Directional", "Tank Controls"};
+    draw_menu_items(items, 2, gs->menu_cursor, 240, 24, 50);
+
+    /* Descriptions for the currently highlighted option */
+    const char *desc = NULL;
+    if (gs->menu_cursor == 0) {
+        desc = "W = up, S = down, A = left, D = right";
+    } else {
+        desc = "W/S = forward/back toward aim, A/D = strafe";
+    }
+    int desc_size = 16;
+    int desc_w = MeasureText(desc, desc_size);
+    DrawText(desc, (SCREEN_WIDTH - desc_w) / 2, 360, desc_size, GRAY);
+
+    const char *note = "(You can change this later in Settings)";
+    int note_size = 14;
+    int note_w = MeasureText(note, note_size);
+    DrawText(note, (SCREEN_WIDTH - note_w) / 2, 390, note_size, DARKGRAY);
+
+    /* Hint */
+    const char *hint = "W/S to select  |  Enter to confirm";
+    int hint_size = 14;
+    int hint_w = MeasureText(hint, hint_size);
+    DrawText(hint, (SCREEN_WIDTH - hint_w) / 2, SCREEN_HEIGHT - 50, hint_size, DARKGRAY);
+}
+
 static void draw_main_menu(const GameState *gs) {
     /* Title */
     const char *title = "ASTRO BLITZ";
@@ -543,6 +603,9 @@ void game_init(GameState *gs) {
 
 void game_update(GameState *gs) {
     switch (gs->phase) {
+    case PHASE_FIRST_RUN:
+        update_first_run(gs);
+        break;
     case PHASE_MAIN_MENU:
         update_main_menu(gs);
         break;
@@ -578,6 +641,10 @@ void game_draw(const GameState *gs) {
     ClearBackground(BLACK);
 
     switch (gs->phase) {
+    case PHASE_FIRST_RUN:
+        draw_first_run(gs);
+        break;
+
     case PHASE_MAIN_MENU:
         draw_main_menu(gs);
         break;

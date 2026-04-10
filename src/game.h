@@ -21,6 +21,7 @@
 
 /* Game phase -- controls which branch of update/draw runs */
 typedef enum {
+    PHASE_FIRST_RUN, /* first-launch movement picker */
     PHASE_MAIN_MENU,
     PHASE_PLAYING,
     PHASE_PAUSED,

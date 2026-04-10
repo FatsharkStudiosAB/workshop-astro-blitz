@@ -15,6 +15,7 @@ When it grows too long, summarize older entries and remove resolved items.
 
 | Date | Change |
 |------|--------|
+| 2026-04-10 | First-run movement picker: on first launch (no settings.ini), players choose between 8-Directional (default) and Tank Controls before seeing the main menu. Default movement changed from Tank to 8-Directional. `settings_init` now returns bool for first-run detection. 2 new settings tests. |
 | 2026-04-10 | Added main menu, pause menu, and settings menu. Settings persist to `settings.ini`. Players can switch between Tank Controls and 8-Directional movement. ESC pauses the game. New `settings` module with 14 tests; 8 new player tests for 8-dir movement; 4 new game tests for phases. Fixed winmm linker conflict on Windows. |
 | 2026-04-10 | Bullets now bounce off walls up to 3 times instead of being destroyed on impact. Enemy spawn waves reduced from 4-8 to 2-5 per wave. 3 new bullet bounce tests. |
 | 2026-04-10 | Added BFS flow field pathfinding for enemies: enemies navigate around obstacles via shortest path. Flow field computed each frame from player position. Enemies use flow field at long range, direct-seek at close range (<3 tiles). 8 new tilemap tests, 3 new enemy tests. |

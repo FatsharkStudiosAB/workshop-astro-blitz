@@ -32,18 +32,35 @@ void tearDown(void) {
 
 /* ── Default initialization tests ──────────────────────────────────────────── */
 
-void test_settings_init_defaults_to_tank(void) {
+void test_settings_init_defaults_to_8dir(void) {
+    /* Test the default value that settings_init applies before loading */
     Settings s;
-    /* No file exists, so init should use defaults */
-    s.movement_layout = MOVEMENT_8DIR; /* pre-set to non-default */
-    settings_init(&s);
-    /* settings_init tries to load from SETTINGS_FILE which may or may not
-     * exist. To test pure defaults, we test directly: */
-    Settings s2;
-    s2.movement_layout = MOVEMENT_8DIR;
+    s.movement_layout = MOVEMENT_TANK; /* pre-set to non-default */
     /* Manually apply defaults (same as what settings_init does before load) */
-    s2.movement_layout = MOVEMENT_TANK;
+    s.movement_layout = MOVEMENT_8DIR;
+    TEST_ASSERT_EQUAL_INT(MOVEMENT_8DIR, s.movement_layout);
+}
+
+void test_settings_init_returns_false_when_no_file(void) {
+    /* settings_init returns false when no settings file exists */
+    Settings s;
+    /* Remove any existing settings file first */
+    remove(SETTINGS_FILE);
+    bool loaded = settings_init(&s);
+    TEST_ASSERT_FALSE(loaded);
+    TEST_ASSERT_EQUAL_INT(MOVEMENT_8DIR, s.movement_layout);
+    /* Clean up in case it created a file */
+    remove(SETTINGS_FILE);
+}
+
+void test_settings_init_returns_true_when_file_exists(void) {
+    Settings s = {.movement_layout = MOVEMENT_TANK};
+    settings_save_to(&s, SETTINGS_FILE);
+    Settings s2;
+    bool loaded = settings_init(&s2);
+    TEST_ASSERT_TRUE(loaded);
     TEST_ASSERT_EQUAL_INT(MOVEMENT_TANK, s2.movement_layout);
+    remove(SETTINGS_FILE);
 }
 
 void test_movement_layout_enum_values(void) {
@@ -187,7 +204,9 @@ int main(void) {
     UNITY_BEGIN();
 
     /* Defaults */
-    RUN_TEST(test_settings_init_defaults_to_tank);
+    RUN_TEST(test_settings_init_defaults_to_8dir);
+    RUN_TEST(test_settings_init_returns_false_when_no_file);
+    RUN_TEST(test_settings_init_returns_true_when_file_exists);
     RUN_TEST(test_movement_layout_enum_values);
 
     /* Round-trip */

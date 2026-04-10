@@ -232,21 +232,22 @@ void test_game_check_death_negative_hp(void) {
 /* ── New phase enum tests ──────────────────────────────────────────────────── */
 
 void test_phase_enum_values_are_distinct(void) {
+    TEST_ASSERT_NOT_EQUAL(PHASE_FIRST_RUN, PHASE_MAIN_MENU);
     TEST_ASSERT_NOT_EQUAL(PHASE_MAIN_MENU, PHASE_PLAYING);
     TEST_ASSERT_NOT_EQUAL(PHASE_PLAYING, PHASE_PAUSED);
     TEST_ASSERT_NOT_EQUAL(PHASE_PAUSED, PHASE_SETTINGS);
     TEST_ASSERT_NOT_EQUAL(PHASE_SETTINGS, PHASE_GAME_OVER);
-    TEST_ASSERT_NOT_EQUAL(PHASE_MAIN_MENU, PHASE_GAME_OVER);
+    TEST_ASSERT_NOT_EQUAL(PHASE_FIRST_RUN, PHASE_GAME_OVER);
 }
 
 void test_game_init_preserves_settings(void) {
     GameState gs;
     memset(&gs, 0, sizeof(gs));
-    gs.settings.movement_layout = MOVEMENT_8DIR;
+    gs.settings.movement_layout = MOVEMENT_TANK;
     game_init(&gs);
 
     /* Settings should be preserved across game_init */
-    TEST_ASSERT_EQUAL_INT(MOVEMENT_8DIR, gs.settings.movement_layout);
+    TEST_ASSERT_EQUAL_INT(MOVEMENT_TANK, gs.settings.movement_layout);
 }
 
 void test_game_init_menu_cursor_zero(void) {

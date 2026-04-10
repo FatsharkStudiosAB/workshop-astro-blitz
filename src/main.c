@@ -22,12 +22,12 @@ int main(void) {
     memset(&gs, 0, sizeof(gs));
 
     /* Load persistent settings before game_init (which preserves them) */
-    settings_init(&gs.settings);
+    bool has_settings = settings_init(&gs.settings);
 
-    /* Initialize gameplay state but start at the main menu */
+    /* Initialize gameplay state but start at the main menu (or first-run picker) */
     audio_init(&gs.audio);
     game_init(&gs);
-    gs.phase = PHASE_MAIN_MENU;
+    gs.phase = has_settings ? PHASE_MAIN_MENU : PHASE_FIRST_RUN;
 
     while (!WindowShouldClose() && !game_should_quit(&gs)) {
         audio_update(&gs.audio);

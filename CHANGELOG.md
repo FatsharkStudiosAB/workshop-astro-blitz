@@ -7,6 +7,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- First-run movement picker: on first launch (no `settings.ini`), a dedicated screen lets the player choose between 8-Directional and Tank Controls before proceeding to the main menu
 - Main menu screen with Play, Settings, and Quit options
 - Pause menu (ESC during gameplay): Resume, Settings, Main Menu, Quit
 - Settings menu with movement layout toggle (Tank Controls vs 8-Directional)
@@ -40,6 +41,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Default movement layout changed from Tank Controls to 8-Directional (screen-relative WASD)
+- `settings_init` now returns `bool` (true if existing file loaded, false on first run)
 - ESC key now pauses the game instead of closing the window (Raylib's exit key disabled via `SetExitKey(0)`)
 - Game starts at a main menu instead of immediately entering gameplay
 - `GamePhase` enum expanded: `PHASE_MAIN_MENU`, `PHASE_PLAYING`, `PHASE_PAUSED`, `PHASE_SETTINGS`, `PHASE_GAME_OVER`
