@@ -10,6 +10,7 @@
 #include "particle.h"
 #include "player.h"
 #include "raylib.h"
+#include "screenshake.h"
 #include "settings.h"
 #include "tilemap.h"
 
@@ -48,6 +49,7 @@ typedef struct {
     Tilemap tilemap;
     GameAudio audio;
     Camera2D camera;
+    ScreenShake shake;
     Rectangle arena;   /* world bounds (derived from tilemap) */
     float spawn_timer; /* time until next enemy wave */
     GamePhase phase;

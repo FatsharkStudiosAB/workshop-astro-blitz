@@ -110,6 +110,7 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                 if (enemy->hp <= 0.0f) {
                     enemy->active = false;
                     gs->stats.kills++;
+                    screenshake_add_trauma(&gs->shake, 0.15f);
 
                     /* Death explosion */
                     particle_burst(&gs->particles, enemy->position, 15, 30.0f, 150.0f,
@@ -142,6 +143,7 @@ static void resolve_enemy_player_collisions(GameState *gs) {
             p->hp -= enemy->damage;
             enemy->active = false; /* swarmer dies on contact */
             audio_play_hit(&gs->audio);
+            screenshake_add_trauma(&gs->shake, 0.35f);
 
             /* Impact particles */
             particle_burst(&gs->particles, enemy->position, 10, 30.0f, 120.0f, 0.15f,
@@ -489,6 +491,7 @@ static void update_playing(GameState *gs) {
 
     /* ── Camera ───────────────────────────────────────────────────────── */
     update_camera(gs);
+    screenshake_update(&gs->shake, dt);
 }
 
 static void update_game_over(GameState *gs) {
@@ -651,6 +654,7 @@ void game_init(GameState *gs) {
     bullet_pool_init(&gs->bullets);
     enemy_pool_init(&gs->enemies);
     particle_pool_init(&gs->particles);
+    screenshake_init(&gs->shake);
     gs->spawn_timer = SPAWN_INTERVAL;
     gs->phase = PHASE_PLAYING;
     gs->settings_return_phase = PHASE_MAIN_MENU;
@@ -718,9 +722,12 @@ void game_draw(const GameState *gs) {
 
     case PHASE_PLAYING:
     case PHASE_PAUSED:
-    case PHASE_GAME_OVER:
+    case PHASE_GAME_OVER: {
+        /* Apply screen shake to camera for world rendering */
+        Camera2D draw_cam = screenshake_apply(&gs->shake, gs->camera);
+
         /* Draw the world behind any overlay */
-        BeginMode2D(gs->camera);
+        BeginMode2D(draw_cam);
         tilemap_draw(&gs->tilemap, gs->camera);
         bullet_pool_draw(&gs->bullets);
         enemy_pool_draw(&gs->enemies);
@@ -736,6 +743,7 @@ void game_draw(const GameState *gs) {
             draw_paused(gs);
         }
         break;
+    }
 
     case PHASE_SETTINGS:
         /* Draw world behind if returning to pause, black bg if from main menu */
