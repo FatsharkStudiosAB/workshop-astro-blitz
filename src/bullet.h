@@ -46,5 +46,7 @@ void bullet_pool_update(BulletPool *pool, float dt, Rectangle arena, const Tilem
 
 void bullet_pool_draw(const BulletPool *pool);
 
-/* Spawn a bullet from `origin` in `direction` (must be normalized). */
-void bullet_pool_fire(BulletPool *pool, Vector2 origin, Vector2 direction);
+/* Spawn a bullet from `origin` in `direction` (must be normalized).
+ * Returns true if a bullet was actually fired, false if rate-limited or
+ * the pool is full. */
+bool bullet_pool_fire(BulletPool *pool, Vector2 origin, Vector2 direction);

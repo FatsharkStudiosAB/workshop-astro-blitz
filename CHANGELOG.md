@@ -17,6 +17,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Enemy spawning is now camera-relative: swarmers appear just outside the visible viewport
 - 27 unit tests for tilemap module (`tests/test_tilemap.c`) covering generation, collision queries, coordinate conversion, and constants
 - Camera and tilemap tests added to `test_game.c`
+- Audio system with procedurally generated sounds -- no external asset files required
+- Bullet fire SFX: punchy descending square wave burst (880 Hz to 440 Hz, exponential decay)
+- Enemy-hit-player SFX: low-frequency impact thud with distortion and noise (120 Hz descending, rapid decay)
+- Bullet-hit-enemy SFX: metallic ping with inharmonic overtone (1200 Hz descending, sharp attack)
+- Death screen music: looping sci-fi synth -- detuned dual oscillators, low A1 drone bass, tritone/minor melody (Bb2-E3-Bb3-B3-F3 sequence), LFO amplitude wobble, saw-like filtered timbre
+- New module: `src/audio.c/h` with `GameAudio` struct and init/cleanup/update/play/stop API
+- Unit tests for audio module (`tests/test_audio.c`) -- 18 tests covering state guards, constants, and safe uninitialized behavior
+- `bullet_pool_fire` now returns `bool` (true if a bullet was actually fired) for SFX triggering
+- 2 new bullet tests: `test_fire_returns_true_on_success`, `test_fire_returns_false_when_rate_limited`
 
 ### Changed
 

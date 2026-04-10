@@ -5,17 +5,18 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Current State
 
-- **Phase:** Scrollable world prototype -- camera follows player over a procedurally generated tilemap with obstacles.
+- **Phase:** Scrollable world prototype with audio -- camera follows player over a procedurally generated tilemap with obstacles, procedural audio for SFX and death screen music.
 - **Engine/Framework:** Raylib 5.5 (C99), built via CMake FetchContent.
 - **Build:** `task build` (or `cmake -B build && cmake --build build --config Release`)
 - **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest.
-- **Playable:** Yes (player moves in a large world [4096x3072 px], camera follows, tilemap with scattered obstacles and border walls, enemies spawn offscreen relative to viewport). Game ends when HP reaches zero; game-over screen shows stats and pressing R restarts with a new map.
+- **Playable:** Yes (player moves in a large world [4096x3072 px], camera follows, tilemap with scattered obstacles and border walls, enemies spawn offscreen relative to viewport). Bullet fire plays a punchy SFX; enemy hits play a metallic ping; taking damage plays a low thud. Game ends when HP reaches zero; game-over screen shows stats, plays looping sci-fi synth music, and pressing R restarts with a new map.
 
 ## Recent Changes
 
 | Date | Change |
 |------|--------|
 | 2026-04-10 | Added BFS flow field pathfinding for enemies: enemies navigate around obstacles via shortest path. Flow field computed each frame from player position. Enemies use flow field at long range, direct-seek at close range (<3 tiles). 8 new tilemap tests, 3 new enemy tests. |
+| 2026-04-10 | Added audio system: procedural bullet SFX, enemy-hit SFX, bullet-hit-enemy SFX, and death screen music (sci-fi synth with detuned oscillators, drone bass, tritone melody) |
 | 2026-04-10 | PR #16 review fixes: spawn_wave() uses camera state for viewport calc, clamps to walkable interior (TILE_SIZE inset), retries on solid tiles; update_camera() accounts for zoom; tilemap PRNG replaced with local xorshift32 (no global srand/rand coupling); tests derive arena/screen constants from headers. |
 | 2026-04-10 | Added Camera2D, tilemap module, procedural generation, and scrollable world (128x96 tile grid, ~4096x3072 px). Player, enemies, and bullets now operate in world coordinates. Camera follows player with edge clamping. Obstacles block movement and bullets. Enemies spawn offscreen relative to camera. 27 new tilemap tests, updated game/bullet/enemy tests. |
 | 2026-04-10 | Upgraded player and swarmer visuals: layered neon sci-fi art with glow, outlines, facing indicators |

@@ -163,13 +163,35 @@ void test_fire_pool_full_silently_drops(void) {
     }
     pool.fire_cooldown = 0.0f;
 
-    /* Attempting to fire should not crash */
-    bullet_pool_fire(&pool, (Vector2){0, 0}, (Vector2){1, 0});
+    /* Attempting to fire should not crash and should return false */
+    bool fired = bullet_pool_fire(&pool, (Vector2){0, 0}, (Vector2){1, 0});
+    TEST_ASSERT_FALSE(fired);
 
     /* All bullets should still be the originals */
     for (int i = 0; i < MAX_BULLETS; i++) {
         TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 100.0f, pool.bullets[i].position.x);
     }
+}
+
+void test_fire_returns_true_on_success(void)
+{
+    BulletPool pool;
+    bullet_pool_init(&pool);
+
+    bool fired = bullet_pool_fire(&pool, (Vector2){100, 100}, (Vector2){1, 0});
+    TEST_ASSERT_TRUE(fired);
+}
+
+void test_fire_returns_false_when_rate_limited(void)
+{
+    BulletPool pool;
+    bullet_pool_init(&pool);
+
+    bullet_pool_fire(&pool, (Vector2){0, 0}, (Vector2){1, 0});
+
+    /* Second shot immediately should be blocked */
+    bool fired = bullet_pool_fire(&pool, (Vector2){0, 0}, (Vector2){1, 0});
+    TEST_ASSERT_FALSE(fired);
 }
 
 /* ── bullet_pool_update tests ──────────────────────────────────────────────── */
@@ -355,6 +377,8 @@ int main(void) {
     RUN_TEST(test_fire_rate_limited);
     RUN_TEST(test_fire_after_cooldown_expires);
     RUN_TEST(test_fire_pool_full_silently_drops);
+    RUN_TEST(test_fire_returns_true_on_success);
+    RUN_TEST(test_fire_returns_false_when_rate_limited);
 
     /* Update */
     RUN_TEST(test_update_moves_bullet);
