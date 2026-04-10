@@ -15,6 +15,8 @@ When it grows too long, summarize older entries and remove resolved items.
 
 | Date | Change |
 |------|--------|
+| 2026-04-10 | Added vec2 math module (src/vec2.h, src/vec2.c) with 28 tests; added to astro_blitz_lib |
+| 2026-04-10 | Added `task test` command; strengthened AGENTS.md with TDD lifecycle, test mandate, self-maintenance |
 | 2026-04-10 | Added unit tests for player, bullet, and game modules (49 tests across 4 suites, all passing) |
 | 2026-04-10 | First playable: player movement (WASD), mouse aiming, shooting (left-click), dash (spacebar), arena bounds, HUD |
 | 2026-04-10 | Added linting/formatting: `task fmt` with clang-format, yamllint, markdownlint-cli2 |
@@ -39,3 +41,4 @@ When it grows too long, summarize older entries and remove resolved items.
 - **Taskfile `run` task:** Uses platform-specific commands to find the executable in both `build/<Config>/` (multi-config) and `build/` (single-config) layouts.
 - **FetchContent + GIT_SHALLOW + commit hash does not work.** `GIT_SHALLOW TRUE` only supports branch/tag names, not commit hashes. Use `URL` + `URL_HASH` with a release tarball instead for pinned, reproducible builds.
 - **Raylib `option()` clears normal variables (CMP0077).** Set `BUILD_EXAMPLES` and `BUILD_GAMES` as `CACHE BOOL` (without `FORCE`) so raylib's `option()` doesn't override them.
+- **astro_blitz_lib pattern:** Game logic goes into `astro_blitz_lib` static library (links Raylib publicly). Tests link against `astro_blitz_lib` + Unity. The main executable links `astro_blitz_lib`. This shares game logic between exe and test suites.

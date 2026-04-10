@@ -42,6 +42,16 @@ tasks:
       - cmd: '{{.BUILD_DIR}}/{{.BUILD_CONFIG}}/astro_blitz || {{.BUILD_DIR}}/astro_blitz'
         platforms: [linux, darwin]
 
+  test:
+    desc: Build and run all tests
+    deps: [configure]
+    cmds:
+      # On multi-config generators (Visual Studio), --config Debug selects the config.
+      # On single-config generators, the build type was set at configure time (Release).
+      # Tests still compile and run correctly in Release on single-config platforms.
+      - cmake --build {{.BUILD_DIR}} --config Debug
+      - ctest --test-dir {{.BUILD_DIR}} -C Debug --output-on-failure
+
   clean:
     desc: Remove all build artifacts
     cmds:

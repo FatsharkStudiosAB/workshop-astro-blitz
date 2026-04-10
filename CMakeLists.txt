@@ -22,12 +22,18 @@ FetchContent_MakeAvailable(raylib)
 
 # ── Game logic library (shared between exe and tests) ────────────────────────
 add_library(astro_blitz_lib STATIC
+    src/vec2.c
     src/game.c
     src/player.c
     src/bullet.c
 )
 target_include_directories(astro_blitz_lib PUBLIC src)
 target_link_libraries(astro_blitz_lib PUBLIC raylib)
+
+# On non-MSVC platforms, link the math library for sqrtf etc.
+if(NOT MSVC)
+    target_link_libraries(astro_blitz_lib PUBLIC m)
+endif()
 
 # ── Game executable ──────────────────────────────────────────────────────────
 add_executable(astro_blitz src/main.c)
@@ -54,6 +60,11 @@ if(BUILD_TESTING)
     add_executable(test_sample tests/test_sample.c)
     target_link_libraries(test_sample PRIVATE unity)
     add_test(NAME test_sample COMMAND test_sample)
+
+    # Vec2 math tests
+    add_executable(test_vec2 tests/test_vec2.c)
+    target_link_libraries(test_vec2 PRIVATE unity astro_blitz_lib)
+    add_test(NAME test_vec2 COMMAND test_vec2)
 
     # Player module tests
     add_executable(test_player tests/test_player.c)

@@ -7,6 +7,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Vec2 2D vector math module (`src/vec2.h`, `src/vec2.c`) with add, subtract, scale, length, normalize, distance, dot product, lerp
+- 28 unit tests for vec2 (`tests/test_vec2.c`) covering all operations including edge cases
+- `task test` command in Taskfile.yml -- single command to build and run all tests
+- Development Lifecycle in AGENTS.md -- TDD workflow: plan, simplify, test, implement, green, simplify
+- Stronger test mandate: all code changes require tests, not just gameplay systems
+- Self-Maintenance section in AGENTS.md -- explicit triggers for keeping docs up to date
+- Documentation convention: all structs, public functions, and modules require header comments
 - First playable prototype: player movement (WASD, 8-directional), mouse aiming, shooting (left-click, Basic Pistol), dash (spacebar with cooldown)
 - Arena with boundary clamping -- player and bullets stay within the play area
 - HUD: health bar and dash cooldown indicator
