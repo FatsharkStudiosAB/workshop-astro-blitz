@@ -10,8 +10,9 @@ Top-down sci-fi roguelike shooter built during Fatshark's agentic coding worksho
 | Build the game | `task build` |
 | Run the game | `task run` (or just `task`) |
 | Clean build artifacts | `task clean` |
-| Build tests | `cmake --build build --target test_sample` |
-| Run tests | `ctest --test-dir build -C Debug --output-on-failure` |
+| Run tests | `task test` |
+| Build tests only | `cmake --build build --target test_sample` |
+| Run tests (ctest) | `ctest --test-dir build -C Debug --output-on-failure` |
 | List all tasks | `task --list-all` |
 
 ## Key Files
@@ -82,6 +83,18 @@ When the user asks to push, create a PR, or merge -- run these completion steps 
 - Use PowerShell heredoc syntax (`@' ... '@`) when formatting PR body via `gh pr create`.
 - Ask for confirmation before the initial push -- unless the user already explicitly asked you to push and/or create a PR.
 
+## Development Lifecycle
+
+Follow this lifecycle for non-trivial changes (skip for documentation-only or single-line fixes):
+
+1. **Plan** -- State the problem, constraints, and definition of done. If you can't restate the goal, the plan isn't ready.
+2. **Simplify** -- Step back: how could this be simpler and less clever while still achieving the goal? Revise the plan.
+3. **Write a failing test** -- Express expected behavior as a Unity test before implementation. For bug fixes, write a test that reproduces the bug first.
+4. **Implement** -- Minimum code to pass the test.
+5. **Green** -- Run `task test`, fix, repeat until green.
+6. **Simplify (second pass)** -- Could this be simpler? Refactor and re-run tests.
+7. **Self-maintain** -- Check whether `AGENTS.md`, `STATUS.md`, or `CHANGELOG.md` need updating. See `## Self-Maintenance` for the full trigger list.
+
 ## Conventions
 
 ### Writing rules in this file
@@ -98,8 +111,10 @@ When the user asks to push, create a PR, or merge -- run these completion steps 
 
 ### Code
 
-- All new gameplay systems need at least basic tests when the test infrastructure exists.
+- All code changes need tests -- new features, bug fixes, and refactors. When fixing a bug, write a test that reproduces the bug first, then fix it. When adding a feature, write tests covering the new behavior. Do not submit code changes without corresponding test coverage.
+- One logical change per commit. Commit after each logical unit of work is complete -- do not accumulate multiple unrelated changes in the working tree.
 - No unrelated refactors in the same commit.
+- Document all structs, public functions, and modules with comments in the header file. No excessive inline comments inside function bodies.
 - When adding dependencies, verify the latest version and API against current docs -- do not rely on training data.
 - When a bug's root cause is unclear, add logging first and reproduce -- do not guess at fixes.
 
@@ -124,6 +139,15 @@ When the user asks to push, create a PR, or merge -- run these completion steps 
 - `design/DESIGN.md` is the source of truth for game design decisions.
 - Reference images, concept art, and mockups go in `design/assets/`.
 - When a design decision is made during implementation, capture it in `design/DESIGN.md` -- do not leave design rationale only in commit messages or PR descriptions.
+
+## Self-Maintenance
+
+At the end of every work session, check whether changes made in this session affect conventions or patterns documented in `AGENTS.md`, `STATUS.md`, or `CHANGELOG.md`. If they do, update the relevant files. The triggers:
+
+- If the user corrected you or reminded you of something, add it to `AGENTS.md`.
+- If any command, API call, or approach failed before succeeding, document the working pattern in `AGENTS.md`.
+- If conventions, commands, or known issues changed, update `AGENTS.md` and `CHANGELOG.md`.
+- If the commit changes observable game behavior, project structure, or dependencies, update `STATUS.md`.
 
 ## Efficiency
 
