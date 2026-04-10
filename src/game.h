@@ -72,6 +72,18 @@ typedef struct {
     WeaponPickup pickups[MAX_WEAPON_PICKUPS];
 } WeaponPickupPool;
 
+/* ── Combo system ──────────────────────────────────────────────────────────── */
+
+#define COMBO_TIMEOUT 2.0f          /* seconds before combo resets */
+#define COMBO_DISPLAY_DURATION 1.5f /* how long combo text stays visible */
+
+typedef struct {
+    int count;           /* current combo count (0 = no combo) */
+    float timer;         /* time remaining before combo resets */
+    float display_timer; /* time remaining for combo text display */
+    int best;            /* best combo this run */
+} ComboState;
+
 /* Run statistics shown on the game-over screen */
 typedef struct {
     int kills;           /* total enemies killed this run */
@@ -97,6 +109,7 @@ typedef struct {
     GamePhase settings_return_phase; /* phase to return to after settings */
     int menu_cursor;                 /* currently highlighted menu item */
     GameStats stats;
+    ComboState combo;
     Settings settings;
     bool should_quit; /* set by menu "Quit" action */
 } GameState;

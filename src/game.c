@@ -286,7 +286,21 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                 if (enemy->hp <= 0.0f) {
                     enemy->active = false;
                     gs->stats.kills++;
-                    screenshake_add_trauma(&gs->shake, 0.15f);
+
+                    /* Combo system */
+                    gs->combo.count++;
+                    gs->combo.timer = COMBO_TIMEOUT;
+                    gs->combo.display_timer = COMBO_DISPLAY_DURATION;
+                    if (gs->combo.count > gs->combo.best) {
+                        gs->combo.best = gs->combo.count;
+                    }
+
+                    /* Escalating screen shake with combo */
+                    float shake_amount = 0.15f + 0.02f * (float)gs->combo.count;
+                    if (shake_amount > 0.5f) {
+                        shake_amount = 0.5f;
+                    }
+                    screenshake_add_trauma(&gs->shake, shake_amount);
 
                     /* Death explosion particles */
                     particle_burst(&gs->particles, enemy->position, 15, 30.0f, 150.0f, 0.2f, 0.6f,
@@ -483,6 +497,37 @@ static void draw_hud(const GameState *gs) {
     /* ── Weapon name (top-left) ────────────────────────────────────────── */
     const char *weapon_name = p->current_weapon.name ? p->current_weapon.name : "???";
     DrawText(weapon_name, 10, 10, 20, p->current_weapon.bullet_color);
+
+    /* ── Combo counter (top-center) ────────────────────────────────────── */
+    if (gs->combo.display_timer > 0.0f && gs->combo.count >= 2) {
+        float fade = gs->combo.display_timer / COMBO_DISPLAY_DURATION;
+        unsigned char alpha = (unsigned char)(255.0f * fade);
+
+        /* Scale font size with combo */
+        int font_size = 24 + gs->combo.count * 2;
+        if (font_size > 48) {
+            font_size = 48;
+        }
+
+        /* Color escalates from yellow to red */
+        unsigned char r = 255;
+        unsigned char g_val = (unsigned char)(255 - (gs->combo.count * 20));
+        if (g_val < 50) {
+            g_val = 50;
+        }
+        Color combo_color = {r, g_val, 50, alpha};
+
+        const char *combo_text = TextFormat("x%d COMBO!", gs->combo.count);
+        int w = MeasureText(combo_text, font_size);
+        int x = (SCREEN_WIDTH - w) / 2;
+        int y = 40;
+        DrawText(combo_text, x, y, font_size, combo_color);
+    }
+
+    /* ── Kill counter (top-right) ──────────────────────────────────────── */
+    const char *kills_text = TextFormat("Kills: %d", gs->stats.kills);
+    int kills_w = MeasureText(kills_text, 16);
+    DrawText(kills_text, SCREEN_WIDTH - kills_w - 10, 10, 16, RAYWHITE);
 }
 
 static void draw_game_over(const GameState *gs) {
@@ -522,11 +567,19 @@ static void draw_game_over(const GameState *gs) {
     DrawText(waves_text, stat_x_center - waves_w / 2, stat_y + 2 * line_spacing, stat_size,
              RAYWHITE);
 
+    /* Best combo */
+    if (gs->combo.best >= 2) {
+        const char *combo_text = TextFormat("Best Combo: x%d", gs->combo.best);
+        int combo_w = MeasureText(combo_text, stat_size);
+        DrawText(combo_text, stat_x_center - combo_w / 2, stat_y + 3 * line_spacing, stat_size,
+                 (Color){255, 200, 50, 255});
+    }
+
     /* Restart / menu prompts */
     const char *prompt = "Press R to restart  |  ESC for menu";
     int prompt_size = 16;
     int prompt_w = MeasureText(prompt, prompt_size);
-    DrawText(prompt, (SCREEN_WIDTH - prompt_w) / 2, stat_y + 3 * line_spacing + 20, prompt_size,
+    DrawText(prompt, (SCREEN_WIDTH - prompt_w) / 2, stat_y + 4 * line_spacing + 20, prompt_size,
              GRAY);
 }
 
@@ -766,6 +819,18 @@ static void update_playing(GameState *gs) {
     /* ── Weapon pickups ────────────────────────────────────────────────── */
     weapon_pickup_pool_update(&gs->weapon_pickups, dt);
 
+    /* ── Combo timer ──────────────────────────────────────────────────── */
+    if (gs->combo.timer > 0.0f) {
+        gs->combo.timer -= dt;
+        if (gs->combo.timer <= 0.0f) {
+            gs->combo.count = 0;
+            gs->combo.timer = 0.0f;
+        }
+    }
+    if (gs->combo.display_timer > 0.0f) {
+        gs->combo.display_timer -= dt;
+    }
+
     /* ── Collisions ───────────────────────────────────────────────────── */
     resolve_bullet_enemy_collisions(gs);
     resolve_enemy_player_collisions(gs);
@@ -950,6 +1015,7 @@ void game_init(GameState *gs) {
     gs->menu_cursor = 0;
     gs->should_quit = false;
     gs->stats = (GameStats){.kills = 0, .survival_time = 0.0f, .waves_spawned = 0};
+    gs->combo = (ComboState){.count = 0, .timer = 0.0f, .display_timer = 0.0f, .best = 0};
 
     /* Camera centered on player */
     gs->camera.target = center;
