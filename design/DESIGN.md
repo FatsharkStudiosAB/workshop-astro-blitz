@@ -151,9 +151,73 @@ Upgrades are designed to **stack and synergize**. Example: Incendiary Rounds + E
 - High-contrast visual language: player, enemies, projectiles, and pickups must read instantly
 - Screen shake, muzzle flash, and hit sparks for satisfying combat feedback
 - Dark backgrounds (space station interiors, alien hive corridors) with bright entity sprites
-- Minimal UI -- health bar, current weapons, dash cooldown indicator
+- Minimal UI -- see the **UI & Feedback** section for full details
 
 Reference images and concept art go in `design/assets/`.
+
+## UI & Feedback
+
+The UI follows the same "minimal but readable" philosophy as the visual style. Every element must justify its screen space -- if it doesn't help the player make a split-second decision, it doesn't belong on the HUD.
+
+### HUD
+
+Always visible during gameplay. Positioned at screen edges to keep the play area uncluttered.
+
+| Element | Position | Description |
+|---------|----------|-------------|
+| **Health bar** | Bottom-left | Horizontal bar. Color shifts green -> yellow -> red as HP drops. Flashes when critically low. |
+| **Dash cooldown** | Below health bar | Small circular or bar indicator. Fills up as cooldown recharges. Bright flash when ready. |
+| **Current weapons** | Bottom-right | Icons for ranged and melee slots. Active weapon highlighted. Ammo count (if applicable) next to ranged weapon. |
+| **Active upgrades** | Top-left | Small icon strip showing collected passive upgrades for the current run. Tooltip on pause. |
+| **Level / floor indicator** | Top-center | Current floor number and level name (e.g. "Floor 3 -- Reactor Core"). |
+
+### Minimap
+
+| Aspect | Design |
+|--------|--------|
+| **Position** | Top-right corner |
+| **Size** | Small (~15% of screen width), semi-transparent background |
+| **Content** | Explored rooms shown as filled shapes, unexplored rooms as outlines (if adjacent/detected). Player as a bright dot. Exit doors marked. |
+| **Toggle** | Press the map hotkey to expand to a full overlay map. Press again to dismiss. |
+| **Fog of war** | Rooms only appear on the minimap once the player enters them. Adjacent rooms show as dim outlines. |
+
+### Stats Legend
+
+Displayed as a persistent overlay in the top-right area (below the minimap), or optionally hidden/shown through a UI toggle if that behavior is enabled.
+
+| Stat | Description |
+|------|-------------|
+| **Kills** | Total enemies killed this run |
+| **Score** | Running score based on kills, speed, and style (e.g. multi-kills, no-damage clears) |
+| **Time** | Elapsed time for the current run |
+| **Floor** | Current floor / total floors |
+
+A full **run summary screen** appears on death or victory, showing final stats: kills, score, time, upgrades collected, weapons used, and cause of death (if applicable).
+
+### Gameplay Feedback
+
+Visual and audio cues that communicate game state changes to the player without requiring them to read UI elements.
+
+| Event | Feedback |
+|-------|----------|
+| **Player hit** | Screen flash (brief red vignette), screen shake, damage number, hurt SFX |
+| **Enemy hit** | Hit spark particle, damage number floats up from enemy, hit SFX |
+| **Enemy kill** | Death animation, XP/score pop-up, distinct kill SFX |
+| **Critical / multi-kill** | Larger damage numbers, intensified screen shake, combo text (e.g. "DOUBLE KILL") |
+| **Upgrade pickup** | Icon briefly enlarges on HUD, short chime, text flash naming the upgrade |
+| **Weapon swap** | New weapon icon slides into the HUD slot, equip SFX |
+| **Dash used** | Motion trail behind player, whoosh SFX, cooldown indicator starts draining |
+| **Dash ready** | Cooldown indicator flashes, subtle ready chime |
+| **Low HP** | Health bar pulses, heartbeat SFX, slight red tint on screen edges |
+| **Level clear** | Fanfare SFX, "CLEARED" text, brief stat summary before proceeding |
+| **Player death** | Slow-motion death frame, fade to run summary screen |
+
+### Design Principles
+
+- **Readability over decoration.** Every UI element uses high-contrast colors that stand out against any background.
+- **No menu-driven gameplay.** Upgrades activate on pickup, weapons swap on interact -- the HUD reflects state, it doesn't gate actions.
+- **Feedback layering.** Important events combine visual + audio + HUD cues. Less important events use only one channel.
+- **Scale with intensity.** Screen shake, particle density, and combo text scale with the action -- a single kill is subtle, a chain explosion is loud.
 
 ## Audio
 
