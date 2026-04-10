@@ -14,6 +14,7 @@
 #include "game.h"
 #include "player.h"
 #include "raylib_stubs.h"
+#include "weapon.h"
 
 #include <math.h>
 
@@ -281,6 +282,116 @@ void test_full_combat_loop(void) {
     TEST_ASSERT_GREATER_OR_EQUAL(1, gs.stats.kills);
 }
 
+/* ── Test: weapon system fires with weapon stats ──────────────────────────── */
+
+void test_weapon_system_fires_shotgun_pellets(void) {
+    gs.player.current_weapon = weapon_get_preset(WEAPON_SHOTGUN);
+
+    /* Aim right */
+    gs.player.aim_direction = (Vector2){1.0f, 0.0f};
+    stub_set_mouse_button_down(MOUSE_BUTTON_LEFT, true);
+
+    game_update(&gs);
+    stub_set_mouse_button_down(MOUSE_BUTTON_LEFT, false);
+
+    /* Shotgun fires 5 pellets per shot */
+    int active = 0;
+    for (int i = 0; i < MAX_BULLETS; i++) {
+        if (gs.bullets.bullets[i].active) {
+            active++;
+        }
+    }
+    TEST_ASSERT_EQUAL_INT(5, active);
+}
+
+/* ── Test: grunt enemy fires bullet at player ─────────────────────────────── */
+
+void test_grunt_enemy_fires_bullet(void) {
+    /* Place a grunt near the player */
+    float ex = gs.player.position.x + GRUNT_PREFERRED_RANGE;
+    float ey = gs.player.position.y;
+    enemy_pool_spawn(&gs.enemies, ENEMY_GRUNT, (Vector2){ex, ey});
+
+    /* Set its shoot cooldown to 0 so it fires immediately */
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (gs.enemies.enemies[i].active && gs.enemies.enemies[i].type == ENEMY_GRUNT) {
+            gs.enemies.enemies[i].shoot_cooldown = 0.0f;
+            break;
+        }
+    }
+
+    game_update(&gs);
+
+    /* Check that at least one enemy bullet exists */
+    int active = 0;
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
+        if (gs.enemy_bullets.bullets[i].active) {
+            active++;
+        }
+    }
+    TEST_ASSERT_GREATER_OR_EQUAL(1, active);
+}
+
+/* ── Test: combo increments on consecutive kills ──────────────────────────── */
+
+void test_combo_increments_on_kills(void) {
+    /* Place two 1-HP swarmers right next to each other in front of player */
+    float x = gs.player.position.x + 30.0f;
+    enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER, (Vector2){x, gs.player.position.y});
+    enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER, (Vector2){x + 5.0f, gs.player.position.y});
+
+    /* Fire a bullet at them */
+    gs.player.aim_direction = (Vector2){1.0f, 0.0f};
+    bullet_pool_fire(&gs.bullets, gs.player.position, (Vector2){1.0f, 0.0f});
+    bullet_pool_fire(&gs.bullets, gs.player.position, (Vector2){1.0f, 0.0f});
+
+    /* Advance frames until bullets reach enemies */
+    for (int i = 0; i < 30; i++) {
+        game_update(&gs);
+    }
+
+    /* Both should be dead, combo should be >= 2 */
+    TEST_ASSERT_EQUAL_INT(0, enemy_pool_active_count(&gs.enemies));
+    TEST_ASSERT_GREATER_OR_EQUAL(2, gs.combo.count + gs.stats.kills);
+}
+
+/* ── Test: elite enemy has modified stats ─────────────────────────────────── */
+
+void test_elite_armored_has_more_hp(void) {
+    float x = gs.player.position.x + 100.0f;
+    float y = gs.player.position.y;
+
+    /* Spawn normal swarmer */
+    enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER, (Vector2){x, y});
+    float normal_hp = gs.enemies.enemies[0].hp;
+    gs.enemies.enemies[0].active = false;
+
+    /* Spawn armored swarmer */
+    enemy_pool_spawn_elite(&gs.enemies, ENEMY_SWARMER, (Vector2){x, y}, ELITE_ARMORED);
+    float armored_hp = gs.enemies.enemies[0].hp;
+
+    TEST_ASSERT_TRUE(armored_hp > normal_hp);
+    TEST_ASSERT_EQUAL(ELITE_ARMORED, gs.enemies.enemies[0].elite);
+}
+
+/* ── Test: weapon pickup changes player weapon ────────────────────────────── */
+
+void test_weapon_pickup_swaps_weapon(void) {
+    TEST_ASSERT_EQUAL(WEAPON_PISTOL, gs.player.current_weapon.type);
+
+    /* Manually create a shotgun pickup at the player's position */
+    gs.weapon_pickups.pickups[0].position = gs.player.position;
+    gs.weapon_pickups.pickups[0].weapon = weapon_get_preset(WEAPON_SHOTGUN);
+    gs.weapon_pickups.pickups[0].lifetime = 10.0f;
+    gs.weapon_pickups.pickups[0].active = true;
+
+    /* Advance one frame to trigger collision */
+    game_update(&gs);
+
+    TEST_ASSERT_EQUAL(WEAPON_SHOTGUN, gs.player.current_weapon.type);
+    TEST_ASSERT_FALSE(gs.weapon_pickups.pickups[0].active);
+}
+
 /* ── Main ─────────────────────────────────────────────────────────────────── */
 
 int main(void) {
@@ -296,5 +407,10 @@ int main(void) {
     RUN_TEST(test_multiple_enemies_damage_player);
     RUN_TEST(test_shooting_via_game_update);
     RUN_TEST(test_full_combat_loop);
+    RUN_TEST(test_weapon_system_fires_shotgun_pellets);
+    RUN_TEST(test_grunt_enemy_fires_bullet);
+    RUN_TEST(test_combo_increments_on_kills);
+    RUN_TEST(test_elite_armored_has_more_hp);
+    RUN_TEST(test_weapon_pickup_swaps_weapon);
     return UNITY_END();
 }
