@@ -6,8 +6,7 @@
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
-static void spawn_wave(GameState *gs)
-{
+static void spawn_wave(GameState *gs) {
     int count = GetRandomValue(SPAWN_MIN_GROUP, SPAWN_MAX_GROUP);
 
     for (int i = 0; i < count; i++) {
@@ -37,10 +36,9 @@ static void spawn_wave(GameState *gs)
     }
 }
 
-static void resolve_bullet_enemy_collisions(GameState *gs)
-{
+static void resolve_bullet_enemy_collisions(GameState *gs) {
     BulletPool *bp = &gs->bullets;
-    EnemyPool  *ep = &gs->enemies;
+    EnemyPool *ep = &gs->enemies;
 
     for (int b = 0; b < MAX_BULLETS; b++) {
         Bullet *bullet = &bp->bullets[b];
@@ -54,12 +52,13 @@ static void resolve_bullet_enemy_collisions(GameState *gs)
                 continue;
             }
 
-            if (check_circle_collision(bullet->position, BULLET_RADIUS,
-                                       enemy->position, enemy->radius)) {
+            if (check_circle_collision(bullet->position, BULLET_RADIUS, enemy->position,
+                                       enemy->radius)) {
                 bullet->active = false;
                 enemy->hp -= 1.0f;
                 if (enemy->hp <= 0.0f) {
                     enemy->active = false;
+                    gs->stats.kills++;
                 }
                 break; /* bullet consumed -- stop checking enemies */
             }
@@ -67,9 +66,8 @@ static void resolve_bullet_enemy_collisions(GameState *gs)
     }
 }
 
-static void resolve_enemy_player_collisions(GameState *gs)
-{
-    Player    *p  = &gs->player;
+static void resolve_enemy_player_collisions(GameState *gs) {
+    Player *p = &gs->player;
     EnemyPool *ep = &gs->enemies;
 
     /* Skip damage if player is dashing and invincible */
@@ -83,8 +81,7 @@ static void resolve_enemy_player_collisions(GameState *gs)
             continue;
         }
 
-        if (check_circle_collision(p->position, PLAYER_RADIUS,
-                                   enemy->position, enemy->radius)) {
+        if (check_circle_collision(p->position, PLAYER_RADIUS, enemy->position, enemy->radius)) {
             p->hp -= enemy->damage;
             enemy->active = false; /* swarmer dies on contact */
             if (p->hp < 0.0f) {
@@ -94,8 +91,7 @@ static void resolve_enemy_player_collisions(GameState *gs)
     }
 }
 
-static void draw_hud(const GameState *gs)
-{
+static void draw_hud(const GameState *gs) {
     const Player *p = &gs->player;
 
     /* ── Health bar (bottom-left) ───────────────────────────────────────── */
@@ -127,45 +123,90 @@ static void draw_hud(const GameState *gs)
     DrawText("DASH", (int)dash_x + 4, (int)bar_y + 2, 12, RAYWHITE);
 }
 
-static void draw_arena(const GameState *gs)
-{
+static void draw_arena(const GameState *gs) {
     DrawRectangleLinesEx(gs->arena, 2.0f, DARKGRAY);
+}
+
+static void draw_game_over(const GameState *gs) {
+    /* Semi-transparent dark overlay */
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 180});
+
+    /* "GAME OVER" title */
+    const char *title = "GAME OVER";
+    int title_size = 60;
+    int title_w = MeasureText(title, title_size);
+    int title_x = (SCREEN_WIDTH - title_w) / 2;
+    int title_y = SCREEN_HEIGHT / 2 - 100;
+    DrawText(title, title_x, title_y, title_size, RED);
+
+    /* Stats */
+    int stat_size = 20;
+    int stat_x_center = SCREEN_WIDTH / 2;
+    int stat_y = title_y + title_size + 30;
+    int line_spacing = 28;
+
+    /* Kills */
+    const char *kills_text = TextFormat("Kills: %d", gs->stats.kills);
+    int kills_w = MeasureText(kills_text, stat_size);
+    DrawText(kills_text, stat_x_center - kills_w / 2, stat_y, stat_size, RAYWHITE);
+
+    /* Survival time (MM:SS) */
+    int total_seconds = (int)gs->stats.survival_time;
+    int minutes = total_seconds / 60;
+    int seconds = total_seconds % 60;
+    const char *time_text = TextFormat("Time: %02d:%02d", minutes, seconds);
+    int time_w = MeasureText(time_text, stat_size);
+    DrawText(time_text, stat_x_center - time_w / 2, stat_y + line_spacing, stat_size, RAYWHITE);
+
+    /* Waves spawned */
+    const char *waves_text = TextFormat("Waves: %d", gs->stats.waves_spawned);
+    int waves_w = MeasureText(waves_text, stat_size);
+    DrawText(waves_text, stat_x_center - waves_w / 2, stat_y + 2 * line_spacing, stat_size,
+             RAYWHITE);
+
+    /* Restart prompt */
+    const char *prompt = "Press R to restart";
+    int prompt_size = 16;
+    int prompt_w = MeasureText(prompt, prompt_size);
+    DrawText(prompt, (SCREEN_WIDTH - prompt_w) / 2, stat_y + 3 * line_spacing + 20, prompt_size,
+             GRAY);
 }
 
 /* ── Public ────────────────────────────────────────────────────────────────── */
 
-void game_init(GameState *gs)
-{
-    gs->arena = (Rectangle){
-        ARENA_MARGIN,
-        ARENA_MARGIN,
-        SCREEN_WIDTH - 2.0f * ARENA_MARGIN,
-        SCREEN_HEIGHT - 2.0f * ARENA_MARGIN
-    };
+void game_init(GameState *gs) {
+    gs->arena = (Rectangle){ARENA_MARGIN, ARENA_MARGIN, SCREEN_WIDTH - 2.0f * ARENA_MARGIN,
+                            SCREEN_HEIGHT - 2.0f * ARENA_MARGIN};
 
-    Vector2 center = {
-        gs->arena.x + gs->arena.width / 2.0f,
-        gs->arena.y + gs->arena.height / 2.0f
-    };
+    Vector2 center = {gs->arena.x + gs->arena.width / 2.0f, gs->arena.y + gs->arena.height / 2.0f};
 
     player_init(&gs->player, center);
     bullet_pool_init(&gs->bullets);
     enemy_pool_init(&gs->enemies);
     gs->spawn_timer = SPAWN_INTERVAL;
+    gs->phase = PHASE_PLAYING;
+    gs->stats = (GameStats){.kills = 0, .survival_time = 0.0f, .waves_spawned = 0};
 }
 
-void game_update(GameState *gs)
-{
+void game_update(GameState *gs) {
+    /* ── Game-over phase: wait for restart ────────────────────────────── */
+    if (gs->phase == PHASE_GAME_OVER) {
+        if (IsKeyPressed(KEY_R)) {
+            game_init(gs);
+        }
+        return;
+    }
+
+    /* ── Playing phase ────────────────────────────────────────────────── */
     float dt = GetFrameTime();
+    gs->stats.survival_time += dt;
 
     player_update(&gs->player, dt, gs->arena);
 
     /* ── Shooting ─────────────────────────────────────────────────────── */
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-        Vector2 muzzle = Vector2Add(
-            gs->player.position,
-            Vector2Scale(gs->player.aim_direction, PLAYER_RADIUS + 2.0f)
-        );
+        Vector2 muzzle = Vector2Add(gs->player.position,
+                                    Vector2Scale(gs->player.aim_direction, PLAYER_RADIUS + 2.0f));
         bullet_pool_fire(&gs->bullets, muzzle, gs->player.aim_direction);
     }
 
@@ -176,6 +217,7 @@ void game_update(GameState *gs)
     if (gs->spawn_timer <= 0.0f) {
         spawn_wave(gs);
         gs->spawn_timer = SPAWN_INTERVAL;
+        gs->stats.waves_spawned++;
     }
 
     /* ── Enemy update ─────────────────────────────────────────────────── */
@@ -184,16 +226,27 @@ void game_update(GameState *gs)
     /* ── Collisions ───────────────────────────────────────────────────── */
     resolve_bullet_enemy_collisions(gs);
     resolve_enemy_player_collisions(gs);
+
+    /* ── Death check ──────────────────────────────────────────────────── */
+    game_check_death(gs);
 }
 
-void game_draw(const GameState *gs)
-{
+void game_check_death(GameState *gs) {
+    if (gs->phase == PHASE_PLAYING && gs->player.hp <= 0.0f) {
+        gs->phase = PHASE_GAME_OVER;
+    }
+}
+
+void game_draw(const GameState *gs) {
     BeginDrawing();
-        ClearBackground(BLACK);
-        draw_arena(gs);
-        bullet_pool_draw(&gs->bullets);
-        enemy_pool_draw(&gs->enemies);
-        player_draw(&gs->player);
-        draw_hud(gs);
+    ClearBackground(BLACK);
+    draw_arena(gs);
+    bullet_pool_draw(&gs->bullets);
+    enemy_pool_draw(&gs->enemies);
+    player_draw(&gs->player);
+    draw_hud(gs);
+    if (gs->phase == PHASE_GAME_OVER) {
+        draw_game_over(gs);
+    }
     EndDrawing();
 }

@@ -7,14 +7,12 @@
 
 /* ── Public ────────────────────────────────────────────────────────────────── */
 
-void bullet_pool_init(BulletPool *pool)
-{
+void bullet_pool_init(BulletPool *pool) {
     memset(pool->bullets, 0, sizeof(pool->bullets));
     pool->fire_cooldown = 0.0f;
 }
 
-void bullet_pool_update(BulletPool *pool, float dt, Rectangle arena)
-{
+void bullet_pool_update(BulletPool *pool, float dt, Rectangle arena) {
     /* Tick fire cooldown */
     if (pool->fire_cooldown > 0.0f) {
         pool->fire_cooldown -= dt;
@@ -36,18 +34,15 @@ void bullet_pool_update(BulletPool *pool, float dt, Rectangle arena)
         b->lifetime -= dt;
 
         /* Deactivate if expired or out of arena */
-        if (b->lifetime <= 0.0f ||
-            b->position.x < arena.x ||
-            b->position.x > arena.x + arena.width ||
-            b->position.y < arena.y ||
+        if (b->lifetime <= 0.0f || b->position.x < arena.x ||
+            b->position.x > arena.x + arena.width || b->position.y < arena.y ||
             b->position.y > arena.y + arena.height) {
             b->active = false;
         }
     }
 }
 
-void bullet_pool_draw(const BulletPool *pool)
-{
+void bullet_pool_draw(const BulletPool *pool) {
     for (int i = 0; i < MAX_BULLETS; i++) {
         const Bullet *b = &pool->bullets[i];
         if (!b->active) {
@@ -57,10 +52,9 @@ void bullet_pool_draw(const BulletPool *pool)
     }
 }
 
-void bullet_pool_fire(BulletPool *pool, Vector2 origin, Vector2 direction)
-{
+void bullet_pool_fire(BulletPool *pool, Vector2 origin, Vector2 direction) {
     if (pool->fire_cooldown > 0.0f) {
-        return;  /* Rate limited */
+        return; /* Rate limited */
     }
 
     /* Find an inactive slot */
@@ -70,7 +64,7 @@ void bullet_pool_fire(BulletPool *pool, Vector2 origin, Vector2 direction)
             b->position = origin;
             b->velocity = Vector2Scale(direction, BULLET_SPEED);
             b->lifetime = BULLET_LIFETIME;
-            b->active   = true;
+            b->active = true;
             pool->fire_cooldown = PISTOL_FIRE_RATE;
             return;
         }

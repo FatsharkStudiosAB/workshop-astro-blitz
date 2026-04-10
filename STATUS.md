@@ -9,12 +9,15 @@ When it grows too long, summarize older entries and remove resolved items.
 - **Engine/Framework:** Raylib 5.5 (C99), built via CMake FetchContent.
 - **Build:** `task build` (or `cmake -B build && cmake --build build --config Release`)
 - **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest.
-- **Playable:** Yes (player moves with tank controls -- WASD relative to aim direction, aims with mouse, shoots with left-click, dashes with spacebar, enemies spawn in waves).
+- **Playable:** Yes (player moves with tank controls -- WASD relative to aim direction, aims with mouse, shoots with left-click, dashes with spacebar, enemies spawn in waves). Game ends when HP reaches zero; game-over screen shows stats (kills, time, waves) and pressing R restarts.
 
 ## Recent Changes
 
 | Date | Change |
 |------|--------|
+| 2026-04-10 | Upgraded player and swarmer visuals: layered neon sci-fi art with glow, outlines, facing indicators |
+| 2026-04-10 | Added game-over state: death screen with stats (kills, time, waves), restart with R key |
+| 2026-04-10 | Fixed .clang-format config (`Language: C` -> `Language: Cpp` for clang-format 18 compatibility) |
 | 2026-04-10 | Changed player movement from screen-relative 8-directional to tank controls (WASD relative to aim direction) |
 | 2026-04-10 | Added enemy swarmer system: enemy pool, swarmer AI (seek player), wave spawning, bullet-enemy and enemy-player collisions, 30 tests |
 | 2026-04-10 | Added vec2 math module (src/vec2.h, src/vec2.c) with 28 tests; added to astro_blitz_lib |
@@ -30,15 +33,17 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Known Issues / Next Steps
 
-- Implement basic enemy spawning (Swarmers first -- simplest behavior) ✅ done
-- Add bullet-enemy collision ✅ done
+- Implement basic enemy spawning (Swarmers first -- simplest behavior) -- done
+- Add bullet-enemy collision -- done
+- Add game-over state when HP reaches zero -- done
 - Add melee attack (right-click)
 - Decide on level structure (linear floors vs branching paths)
-- Source or create placeholder sprite assets
+- Source or create placeholder sprite assets -- partially addressed with layered geometric art
 
 ## Workarounds & Patterns
 
 - **go-task preconditions on Windows:** `preconditions` in Taskfile.yml use `sh:` which runs through a POSIX shell. On Windows, go-task uses Git Bash (`sh.exe`) if available. Ensure Git is installed so `test -f` works in preconditions.
+- **clang-format `Language` field:** clang-format 18 does not recognize `Language: C`. Use `Language: Cpp` instead -- clang-format treats C/C++/ObjC as the same language kind (`Cpp`).
 - **CMake multi-config vs single-config:** Pass `-DCMAKE_BUILD_TYPE` at configure time (for single-config generators like Ninja/Makefiles) AND `--config` at build time (for multi-config generators like Visual Studio). Both are harmless when the other generator type is used.
 - **Taskfile `run` task:** Uses platform-specific commands to find the executable in both `build/<Config>/` (multi-config) and `build/` (single-config) layouts.
 - **FetchContent + GIT_SHALLOW + commit hash does not work.** `GIT_SHALLOW TRUE` only supports branch/tag names, not commit hashes. Use `URL` + `URL_HASH` with a release tarball instead for pinned, reproducible builds.
