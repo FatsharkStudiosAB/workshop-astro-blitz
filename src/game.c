@@ -10,7 +10,7 @@ static void draw_hud(const GameState *gs)
 {
     const Player *p = &gs->player;
 
-    /* ── Health bar (top-left) ────────────────────────────────────────── */
+    /* ── Health bar (bottom-left) ───────────────────────────────────────── */
     float bar_x = 10.0f;
     float bar_y = SCREEN_HEIGHT - 30.0f;
     float bar_w = 150.0f;

@@ -13,7 +13,7 @@
 #define SCREEN_WIDTH    800
 #define SCREEN_HEIGHT   600
 
-/* Arena is inset from screen edges to leave room for HUD */
+/* Arena is inset slightly from the screen edges; the HUD overlays the play area */
 #define ARENA_MARGIN    10.0f
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */

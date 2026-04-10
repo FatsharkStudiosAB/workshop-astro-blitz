@@ -67,15 +67,22 @@ void player_update(Player *p, float dt, Rectangle arena)
 
     /* ── Active dash ──────────────────────────────────────────────────── */
     if (p->is_dashing) {
-        p->dash_timer -= dt;
-        if (p->dash_timer <= 0.0f) {
-            p->is_dashing = false;
-            p->dash_timer = 0.0f;
-        } else {
-            p->position = Vector2Add(p->position, Vector2Scale(p->dash_direction, DASH_SPEED * dt));
-            clamp_to_arena(p, arena);
-            return;  /* No normal movement during dash */
+        float dash_dt = dt;
+        if (dash_dt > p->dash_timer) {
+            dash_dt = p->dash_timer;
         }
+
+        p->position = Vector2Add(p->position, Vector2Scale(p->dash_direction, DASH_SPEED * dash_dt));
+        clamp_to_arena(p, arena);
+
+        p->dash_timer -= dash_dt;
+        if (p->dash_timer > 0.0f) {
+            return;  /* Still dashing -- no normal movement */
+        }
+
+        p->is_dashing = false;
+        p->dash_timer = 0.0f;
+        dt -= dash_dt;
     }
 
     /* ── Initiate dash ────────────────────────────────────────────────── */
