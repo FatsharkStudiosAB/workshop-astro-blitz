@@ -17,6 +17,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - 14 unit tests for settings module (`tests/test_settings.c`) covering defaults, save/load round-trips, missing files, malformed input, comments
 - 8 unit tests for 8-directional movement (`test_player.c`) covering all cardinal directions, diagonals, normalization, cancellation
 - 4 unit tests for new game phases (`test_game.c`) covering phase enum, settings preservation, menu cursor, and death-check phase guard
+- `.opencode/agents/` -- Lightweight Haiku subagents (lint-check, build-and-test, changelog-drafter) for delegating mechanical checks at lower cost
 - Bullet wall bouncing: bullets reflect off solid tiles up to 3 times before being destroyed (new `BULLET_MAX_BOUNCES` constant and `bounces` field on `Bullet`)
 - 3 new bullet tests: `test_bullet_bounces_off_wall`, `test_bullet_deactivates_after_max_bounces`, `test_fire_initializes_bounces_to_zero`
 - BFS flow field pathfinding for enemies: enemies now navigate around obstacles instead of getting stuck against walls
@@ -50,6 +51,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - `player_update` accepts a `MovementLayout` parameter to select between tank and 8-directional controls
 - `game_init` preserves settings and audio state across restarts
 - Fixed Windows linker error: removed explicit `winmm` link that conflicted with Raylib's `PlaySound` symbol
+- `AGENTS.md` -- Rewrite: tighten to under 200 lines, add gates from autobuilds-testify (After PR feedback, Before merging, cherry-pick rule, branch name regex), add delegation patterns and context hygiene, extract reference material to `docs/REFERENCE.md`
+- `.gitignore` -- Change `.opencode/` from blanket ignore to selective: session data stays ignored, `skills/`, `agents/`, and `commands/` subdirectories are now committed
+- `.markdownlint-cli2.yaml`, `.yamllint.yml` -- Exclude `build/` directory from linters to avoid noise from fetched dependencies (Raylib, Unity)
 - Enemy spawn waves reduced from 4-8 swarmers per wave to 2-5 for more balanced difficulty
 - Enemy swarmers now use BFS flow field for pathfinding when far from the player (>3 tiles); fall back to direct seek at close range for smooth final approach
 - Game world is now much larger than the screen (4096x3072 vs 800x600); player moves freely across the full area

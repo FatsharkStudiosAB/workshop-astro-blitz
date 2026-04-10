@@ -10,8 +10,11 @@ Desktop.ini
 *.swo
 *~
 
-# OpenCode
-.opencode/
+## OpenCode (session data is local-only; config subdirs are committed)
+.opencode/*
+!.opencode/skills/
+!.opencode/agents/
+!.opencode/commands/
 
 # Task runner
 .task

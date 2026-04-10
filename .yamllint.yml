@@ -15,3 +15,4 @@ rules:
 # Exclude Taskfile -- Go template syntax ({{.VAR}}) is not valid YAML
 ignore:
   - Taskfile.yml
+  - build/
