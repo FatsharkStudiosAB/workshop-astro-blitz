@@ -88,9 +88,51 @@ void enemy_pool_draw(const EnemyPool *pool) {
         }
 
         switch (e->type) {
-        case ENEMY_SWARMER:
-            DrawCircleV(e->position, e->radius, RED);
+        case ENEMY_SWARMER: {
+            Vector2 pos = e->position;
+            float r = e->radius;
+
+            /* Facing direction from velocity (fall back to down if stationary) */
+            Vector2 facing = {0.0f, 1.0f};
+            float spd = Vector2Length(e->velocity);
+            if (spd > 1.0f) {
+                facing = Vector2Scale(e->velocity, 1.0f / spd);
+            }
+            Vector2 perp = {-facing.y, facing.x};
+
+            /* Colors */
+            Color body_fill = (Color){80, 10, 10, 255};
+            Color body_outline = (Color){255, 60, 30, 255};
+            Color glow = (Color){255, 40, 20, 40};
+            Color eye_color = (Color){255, 220, 50, 255};
+
+            /* Outer glow */
+            DrawCircleV(pos, r + 3.0f, glow);
+
+            /* Body fill */
+            DrawCircleV(pos, r, body_fill);
+
+            /* Neon outline */
+            DrawCircleLinesV(pos, r, body_outline);
+
+            /* Mandible lines (V shape pointing in facing direction) */
+            Vector2 jaw_base_l = Vector2Add(
+                pos, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, r * 0.4f)));
+            Vector2 jaw_base_r = Vector2Add(
+                pos, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, -r * 0.4f)));
+            Vector2 jaw_tip = Vector2Add(pos, Vector2Scale(facing, r + 2.0f));
+            DrawLineEx(jaw_base_l, jaw_tip, 1.5f, body_outline);
+            DrawLineEx(jaw_base_r, jaw_tip, 1.5f, body_outline);
+
+            /* Eyes (two small bright dots) */
+            Vector2 eye_l = Vector2Add(
+                pos, Vector2Add(Vector2Scale(facing, r * 0.35f), Vector2Scale(perp, r * 0.35f)));
+            Vector2 eye_r = Vector2Add(
+                pos, Vector2Add(Vector2Scale(facing, r * 0.35f), Vector2Scale(perp, -r * 0.35f)));
+            DrawCircleV(eye_l, 1.5f, eye_color);
+            DrawCircleV(eye_r, 1.5f, eye_color);
             break;
+        }
         }
     }
 }

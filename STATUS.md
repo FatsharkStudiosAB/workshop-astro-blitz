@@ -15,6 +15,7 @@ When it grows too long, summarize older entries and remove resolved items.
 
 | Date | Change |
 |------|--------|
+| 2026-04-10 | Upgraded player and swarmer visuals: layered neon sci-fi art with glow, outlines, facing indicators |
 | 2026-04-10 | Added game-over state: death screen with stats (kills, time, waves), restart with R key |
 | 2026-04-10 | Fixed .clang-format config (`Language: C` -> `Language: Cpp` for clang-format 18 compatibility) |
 | 2026-04-10 | Changed player movement from screen-relative 8-directional to tank controls (WASD relative to aim direction) |
@@ -37,7 +38,7 @@ When it grows too long, summarize older entries and remove resolved items.
 - Add game-over state when HP reaches zero -- done
 - Add melee attack (right-click)
 - Decide on level structure (linear floors vs branching paths)
-- Source or create placeholder sprite assets
+- Source or create placeholder sprite assets -- partially addressed with layered geometric art
 
 ## Workarounds & Patterns
 

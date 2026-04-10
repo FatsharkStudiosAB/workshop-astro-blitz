@@ -130,12 +130,46 @@ void player_update(Player *p, float dt, Rectangle arena) {
 }
 
 void player_draw(const Player *p) {
-    /* Body */
-    Color body_color = p->is_dashing ? SKYBLUE : GREEN;
-    DrawCircleV(p->position, PLAYER_RADIUS, body_color);
+    Vector2 pos = p->position;
+    Vector2 aim = p->aim_direction;
+    float r = PLAYER_RADIUS;
 
-    /* Aim direction indicator (line from center outward) */
-    Vector2 aim_end =
-        Vector2Add(p->position, Vector2Scale(p->aim_direction, PLAYER_RADIUS + 10.0f));
-    DrawLineEx(p->position, aim_end, 2.0f, YELLOW);
+    /* Perpendicular to aim (for left/right offsets) */
+    Vector2 perp = {-aim.y, aim.x};
+
+    /* ── Color palette ────────────────────────────────────────────────── */
+    /* Normal: cyan/teal sci-fi.  Dashing: electric blue shift. */
+    Color body_fill = p->is_dashing ? (Color){20, 60, 160, 255} : (Color){10, 60, 80, 255};
+    Color body_outline = p->is_dashing ? (Color){80, 160, 255, 255} : (Color){0, 220, 200, 255};
+    Color glow = p->is_dashing ? (Color){80, 160, 255, 60} : (Color){0, 220, 200, 40};
+    Color core_color = p->is_dashing ? (Color){180, 220, 255, 255} : (Color){200, 255, 240, 255};
+    Color aim_color = (Color){255, 50, 120, 200};
+
+    /* ── Outer glow ───────────────────────────────────────────────────── */
+    DrawCircleV(pos, r + 4.0f, glow);
+
+    /* ── Body fill ────────────────────────────────────────────────────── */
+    DrawCircleV(pos, r, body_fill);
+
+    /* ── Directional nose (triangle pointing in aim direction) ─────── */
+    Vector2 nose_tip = Vector2Add(pos, Vector2Scale(aim, r + 3.0f));
+    Vector2 nose_l =
+        Vector2Add(pos, Vector2Add(Vector2Scale(aim, r * 0.3f), Vector2Scale(perp, r * 0.5f)));
+    Vector2 nose_r =
+        Vector2Add(pos, Vector2Add(Vector2Scale(aim, r * 0.3f), Vector2Scale(perp, -r * 0.5f)));
+    DrawTriangle(nose_tip, nose_l, nose_r, body_outline);
+
+    /* ── Body outline (neon ring) ─────────────────────────────────────── */
+    DrawCircleLinesV(pos, r, body_outline);
+
+    /* ── Reactor core (bright center dot) ─────────────────────────────── */
+    DrawCircleV(pos, 3.0f, core_color);
+
+    /* ── Aim line (hot magenta, extends past body) ────────────────────── */
+    Vector2 aim_start = Vector2Add(pos, Vector2Scale(aim, r + 4.0f));
+    Vector2 aim_end = Vector2Add(pos, Vector2Scale(aim, r + 18.0f));
+    DrawLineEx(aim_start, aim_end, 2.0f, aim_color);
+
+    /* Small crosshair dot at the tip */
+    DrawCircleV(aim_end, 2.0f, aim_color);
 }
