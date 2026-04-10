@@ -146,6 +146,121 @@ Vector2 tilemap_tile_to_world(const Tilemap *tm, int tile_x, int tile_y) {
     return (Vector2){(float)(tile_x * tm->tile_size), (float)(tile_y * tm->tile_size)};
 }
 
+/* ── Flow field (BFS) ─────────────────────────────────────────────────────── */
+
+/* BFS queue entry: tile coordinates packed into a single int for compactness */
+typedef struct {
+    short x;
+    short y;
+} TileCoord;
+
+/* 4-directional BFS neighbors */
+static const int dx4[4] = {1, -1, 0, 0};
+static const int dy4[4] = {0, 0, 1, -1};
+
+void tilemap_compute_flow_field(Tilemap *tm, float target_x, float target_y) {
+    /* Convert target world position to tile coordinates */
+    int goal_tx, goal_ty;
+    tilemap_world_to_tile(tm, target_x, target_y, &goal_tx, &goal_ty);
+
+    /* Clamp goal to valid range */
+    if (goal_tx < 0) {
+        goal_tx = 0;
+    }
+    if (goal_tx >= tm->cols) {
+        goal_tx = tm->cols - 1;
+    }
+    if (goal_ty < 0) {
+        goal_ty = 0;
+    }
+    if (goal_ty >= tm->rows) {
+        goal_ty = tm->rows - 1;
+    }
+
+    /* Initialize all distances to unreachable, all flow to zero */
+    for (int y = 0; y < tm->rows; y++) {
+        for (int x = 0; x < tm->cols; x++) {
+            tm->flow_dist[y][x] = FLOW_UNREACHABLE;
+            tm->flow[y][x] = (Vector2){0.0f, 0.0f};
+        }
+    }
+
+    /* BFS queue (static to avoid stack overflow -- 128*96 * 4 bytes = ~48 KB) */
+    static TileCoord queue[WORLD_ROWS * WORLD_COLS];
+    int head = 0;
+    int tail = 0;
+
+    /* Seed BFS from the goal tile (even if it's solid -- enemies near the
+     * player's wall tile should still try to approach) */
+    tm->flow_dist[goal_ty][goal_tx] = 0;
+    queue[tail++] = (TileCoord){(short)goal_tx, (short)goal_ty};
+
+    /* BFS expansion */
+    while (head < tail) {
+        TileCoord cur = queue[head++];
+        int cur_dist = tm->flow_dist[cur.y][cur.x];
+
+        for (int d = 0; d < 4; d++) {
+            int nx = cur.x + dx4[d];
+            int ny = cur.y + dy4[d];
+
+            /* Skip out-of-bounds */
+            if (nx < 0 || nx >= tm->cols || ny < 0 || ny >= tm->rows) {
+                continue;
+            }
+
+            /* Skip already visited */
+            if (tm->flow_dist[ny][nx] != FLOW_UNREACHABLE) {
+                continue;
+            }
+
+            /* Skip walls */
+            if (tm->tiles[ny][nx] == TILE_WALL) {
+                continue;
+            }
+
+            tm->flow_dist[ny][nx] = cur_dist + 1;
+            queue[tail++] = (TileCoord){(short)nx, (short)ny};
+        }
+    }
+
+    /* Compute flow directions: each tile points toward its lowest-distance
+     * walkable neighbor (i.e., one step closer to the goal). */
+    for (int y = 0; y < tm->rows; y++) {
+        for (int x = 0; x < tm->cols; x++) {
+            if (tm->flow_dist[y][x] == FLOW_UNREACHABLE || tm->flow_dist[y][x] == 0) {
+                /* Walls/unreachable tiles and the goal tile get zero flow */
+                continue;
+            }
+
+            int best_dist = tm->flow_dist[y][x];
+            int best_dx = 0;
+            int best_dy = 0;
+
+            for (int d = 0; d < 4; d++) {
+                int nx = x + dx4[d];
+                int ny = y + dy4[d];
+
+                if (nx < 0 || nx >= tm->cols || ny < 0 || ny >= tm->rows) {
+                    continue;
+                }
+
+                int nd = tm->flow_dist[ny][nx];
+                if (nd != FLOW_UNREACHABLE && nd < best_dist) {
+                    best_dist = nd;
+                    best_dx = dx4[d];
+                    best_dy = dy4[d];
+                }
+            }
+
+            /* Store unit direction toward the best neighbor */
+            if (best_dx != 0 || best_dy != 0) {
+                tm->flow[y][x] = (Vector2){(float)best_dx, (float)best_dy};
+            }
+        }
+    }
+}
+
 void tilemap_draw(const Tilemap *tm, Camera2D camera) {
     /* Determine visible tile range from camera viewport */
     float screen_w = (float)GetScreenWidth();

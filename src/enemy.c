@@ -97,12 +97,36 @@ void enemy_pool_update(EnemyPool *pool, float dt, Vector2 target, Rectangle aren
             continue;
         }
 
-        /* Seek toward target */
+        /* Compute direction toward target */
         Vector2 diff = Vector2Subtract(target, e->position);
         float dist = Vector2Length(diff);
 
+        Vector2 dir = {0.0f, 0.0f};
+
         if (dist > 1.0f) {
-            Vector2 dir = Vector2Scale(diff, 1.0f / dist);
+            bool use_flow = false;
+
+            /* Use flow field when tilemap is available and enemy is far
+             * enough from the target that direct-seek may hit obstacles. */
+            if (tm != NULL && dist > TILE_SIZE * 3.0f) {
+                int tx, ty;
+                tilemap_world_to_tile(tm, e->position.x, e->position.y, &tx, &ty);
+
+                if (tx >= 0 && tx < tm->cols && ty >= 0 && ty < tm->rows &&
+                    tm->flow_dist[ty][tx] != FLOW_UNREACHABLE) {
+                    Vector2 flow_dir = tm->flow[ty][tx];
+                    if (flow_dir.x != 0.0f || flow_dir.y != 0.0f) {
+                        dir = flow_dir; /* Already unit length (axis-aligned) */
+                        use_flow = true;
+                    }
+                }
+            }
+
+            /* Fallback: direct seek (close range or no flow data) */
+            if (!use_flow) {
+                dir = Vector2Scale(diff, 1.0f / dist);
+            }
+
             e->velocity = Vector2Scale(dir, e->speed);
         } else {
             e->velocity = (Vector2){0.0f, 0.0f};

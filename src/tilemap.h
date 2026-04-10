@@ -33,6 +33,9 @@
 /* Obstacle density: probability (0-100) that an interior tile becomes a wall */
 #define OBSTACLE_DENSITY 8
 
+/* Flow field: distance value meaning "unreachable" (no path to target) */
+#define FLOW_UNREACHABLE (-1)
+
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
 typedef enum {
@@ -42,6 +45,8 @@ typedef enum {
 
 typedef struct Tilemap {
     TileType tiles[WORLD_ROWS][WORLD_COLS];
+    Vector2 flow[WORLD_ROWS][WORLD_COLS];  /* BFS flow field: direction toward target */
+    int flow_dist[WORLD_ROWS][WORLD_COLS]; /* BFS distance (-1 = unreachable/wall) */
     int cols;
     int rows;
     int tile_size;
@@ -112,3 +117,17 @@ void tilemap_world_to_tile(const Tilemap *tm, float world_x, float world_y, int 
  * Returns the top-left corner of the tile in world space.
  */
 Vector2 tilemap_tile_to_world(const Tilemap *tm, int tile_x, int tile_y);
+
+/*
+ * tilemap_compute_flow_field -- Compute a BFS flow field toward a target.
+ *
+ * Runs a breadth-first search from the tile containing (target_x, target_y)
+ * outward through all walkable tiles. After this call:
+ *   - tm->flow[y][x] contains a unit direction vector pointing toward the
+ *     next tile on the shortest path to the target.
+ *   - tm->flow_dist[y][x] contains the BFS distance (in tiles) from that
+ *     tile to the target, or FLOW_UNREACHABLE for walls/unreachable tiles.
+ *
+ * Call once per frame (before enemy update) with the player's world position.
+ */
+void tilemap_compute_flow_field(Tilemap *tm, float target_x, float target_y);

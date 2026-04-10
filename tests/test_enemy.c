@@ -317,6 +317,112 @@ void test_spawn_group_range_valid(void) {
     TEST_ASSERT_TRUE(SPAWN_MAX_GROUP >= SPAWN_MIN_GROUP);
 }
 
+/* ── Flow field movement tests ─────────────────────────────────────────────── */
+
+void test_update_enemy_uses_flow_field_around_wall(void) {
+    /* Place a vertical wall between enemy and target. The enemy should
+     * follow the flow field around the wall instead of getting stuck. */
+    EnemyPool pool;
+    enemy_pool_init(&pool);
+
+    static Tilemap tm;
+    tilemap_init(&tm);
+
+    /* Vertical wall at column 10, rows 3-17 (leaves gaps at rows 0-2 and 18+) */
+    for (int y = 3; y <= 17; y++) {
+        tm.tiles[y][10] = TILE_WALL;
+    }
+
+    /* Enemy at tile (12, 10) -- right of the wall, center of tile */
+    float ex = 12.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    float ey = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    enemy_pool_spawn(&pool, ENEMY_SWARMER, (Vector2){ex, ey});
+
+    /* Target at tile (8, 10) -- left of the wall */
+    float tx = 8.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    float ty = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    Vector2 target = {tx, ty};
+
+    /* Compute flow field and update */
+    tilemap_compute_flow_field(&tm, tx, ty);
+
+    /* Verify flow field was computed correctly at enemy tile */
+    TEST_ASSERT_TRUE_MESSAGE(tm.flow_dist[10][12] != FLOW_UNREACHABLE,
+                             "Enemy tile should be reachable via flow field");
+    TEST_ASSERT_TRUE_MESSAGE(tm.flow[10][12].x != 0.0f || tm.flow[10][12].y != 0.0f,
+                             "Enemy tile should have a non-zero flow direction");
+
+    enemy_pool_update(&pool, 0.1f, target, TEST_ARENA, &tm);
+
+    /* The enemy should have moved along the flow field. The flow direction
+     * at tile (12, 10) may be left (-1, 0) or up (0, -1) depending on BFS
+     * tie-breaking. Either direction represents progress along the shortest
+     * path around the wall. Verify the enemy moved and didn't get stuck. */
+    float new_x = pool.enemies[0].position.x;
+    float new_y = pool.enemies[0].position.y;
+    float moved = sqrtf((new_x - ex) * (new_x - ex) + (new_y - ey) * (new_y - ey));
+
+    TEST_ASSERT_TRUE_MESSAGE(moved > 1.0f, "Enemy should have moved from its starting position");
+
+    /* Verify the enemy didn't cross through the wall */
+    TEST_ASSERT_FALSE_MESSAGE(tilemap_is_solid(&tm, new_x, new_y),
+                              "Enemy should not be inside a wall");
+
+    /* Run several more updates to verify the enemy eventually crosses tile
+     * boundaries and makes progress (BFS distance decreases). */
+    for (int step = 0; step < 20; step++) {
+        tilemap_compute_flow_field(&tm, tx, ty);
+        enemy_pool_update(&pool, 0.1f, target, TEST_ARENA, &tm);
+    }
+
+    float final_x = pool.enemies[0].position.x;
+    float final_y = pool.enemies[0].position.y;
+    int final_tx, final_ty;
+    tilemap_world_to_tile(&tm, final_x, final_y, &final_tx, &final_ty);
+
+    TEST_ASSERT_TRUE_MESSAGE(tm.flow_dist[final_ty][final_tx] < tm.flow_dist[10][12],
+                             "After multiple steps, enemy should be closer (BFS) to target");
+}
+
+void test_update_enemy_direct_seek_when_close(void) {
+    /* When enemy is close to target (within 3 tiles), should use direct seek
+     * even with a tilemap present. */
+    EnemyPool pool;
+    enemy_pool_init(&pool);
+
+    Tilemap tm;
+    tilemap_init(&tm);
+
+    /* Enemy 2 tiles away from target -- within the 3-tile direct-seek range */
+    float ex = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    float ey = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    enemy_pool_spawn(&pool, ENEMY_SWARMER, (Vector2){ex, ey});
+
+    float tx = 12.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    float ty = 10.0f * TILE_SIZE + TILE_SIZE / 2.0f;
+    Vector2 target = {tx, ty};
+
+    tilemap_compute_flow_field(&tm, tx, ty);
+    enemy_pool_update(&pool, 0.1f, target, TEST_ARENA, &tm);
+
+    /* Should have moved right toward target (direct seek) */
+    TEST_ASSERT_TRUE(pool.enemies[0].position.x > ex);
+}
+
+void test_update_enemy_direct_seek_when_no_tilemap(void) {
+    /* With NULL tilemap, enemy should fall back to direct seek */
+    EnemyPool pool;
+    enemy_pool_init(&pool);
+
+    enemy_pool_spawn(&pool, ENEMY_SWARMER, (Vector2){100.0f, 300.0f});
+    Vector2 target = {500.0f, 300.0f};
+
+    enemy_pool_update(&pool, 0.1f, target, TEST_ARENA, NULL);
+
+    /* Should have moved right toward target */
+    TEST_ASSERT_TRUE(pool.enemies[0].position.x > 100.0f);
+}
+
 /* ── Runner ────────────────────────────────────────────────────────────────── */
 
 int main(void) {
@@ -365,6 +471,11 @@ int main(void) {
     RUN_TEST(test_swarmer_damage_is_positive);
     RUN_TEST(test_spawn_interval_is_positive);
     RUN_TEST(test_spawn_group_range_valid);
+
+    /* Flow field movement */
+    RUN_TEST(test_update_enemy_uses_flow_field_around_wall);
+    RUN_TEST(test_update_enemy_direct_seek_when_close);
+    RUN_TEST(test_update_enemy_direct_seek_when_no_tilemap);
 
     return UNITY_END();
 }
