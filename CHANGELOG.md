@@ -7,10 +7,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- CMake build system with FetchContent for Raylib 5.5 and Unity test framework v2.6.1
-- Placeholder game window (`src/main.c`) -- 800x600, "Astro Blitz - Coming Soon"
-- Sample unit test (`tests/test_sample.c`) verifying the framework works
-- CTest integration: `ctest --test-dir build -C Debug --output-on-failure`
+- Unity test framework v2.6.1 with CTest integration and sample test (`tests/test_sample.c`)
+- Task runner configuration (`Taskfile.yml`) with `task configure`, `task build`, `task run`, and `task clean`
+- Raylib 5.5 build tooling via CMake FetchContent -- `cmake -B build` fetches and builds Raylib automatically
+- Hello window: `src/main.c` opens an 800x600 window with "ASTRO BLITZ" title text
 - Initial project structure: `AGENTS.md`, `STATUS.md`, `CHANGELOG.md`
 - Game design document: `design/DESIGN.md`
 - Design assets directory: `design/assets/`

@@ -23,5 +23,9 @@ Desktop.ini
 
 # Build output
 build/
-# dist/
-# export/
+dist/
+export/
+*.exe
+*.obj
+*.pdb
+*.ilk

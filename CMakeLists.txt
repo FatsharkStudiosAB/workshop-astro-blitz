@@ -4,19 +4,19 @@ project(astro_blitz C)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-# ── Dependencies via FetchContent ────────────────────────────────────────────
+# ── Raylib via FetchContent ──────────────────────────────────────────────────
 include(FetchContent)
 
 FetchContent_Declare(
     raylib
-    GIT_REPOSITORY https://github.com/raysan5/raylib.git
-    GIT_TAG        5.5
-    GIT_SHALLOW    TRUE
+    URL                    https://github.com/raysan5/raylib/archive/refs/tags/5.5.tar.gz
+    URL_HASH               SHA256=aea98ecf5bc5c5e0b789a76de0083a21a70457050ea4cc2aec7566935f5e258e
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
-# Disable raylib examples and extras
-set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
+# Disable raylib examples and extras (CACHE so raylib's option() doesn't override)
+set(BUILD_EXAMPLES OFF CACHE BOOL "Build raylib examples")
+set(BUILD_GAMES    OFF CACHE BOOL "Build raylib example games")
 
 FetchContent_MakeAvailable(raylib)
 
@@ -29,8 +29,8 @@ if(WIN32)
     target_link_libraries(astro_blitz PRIVATE winmm)
 endif()
 
-# ── Testing ──────────────────────────────────────────────────────────────────
-option(BUILD_TESTING "Build unit tests" ON)
+# ── Testing (Unity + CTest) ─────────────────────────────────────────────────
+include(CTest)
 
 if(BUILD_TESTING)
     FetchContent_Declare(
@@ -40,8 +40,6 @@ if(BUILD_TESTING)
         GIT_SHALLOW    TRUE
     )
     FetchContent_MakeAvailable(unity)
-
-    enable_testing()
 
     # Sample test to verify the framework works
     add_executable(test_sample tests/test_sample.c)
