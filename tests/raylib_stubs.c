@@ -104,6 +104,14 @@ bool IsMouseButtonDown(int button) {
     return false;
 }
 
+bool IsMouseButtonPressed(int button) {
+    /* In test stubs, treat pressed same as down */
+    if (button >= 0 && button < MAX_MOUSE_BUTTONS) {
+        return s_mouse_buttons[button];
+    }
+    return false;
+}
+
 Vector2 GetMousePosition(void) {
     return s_mouse_position;
 }

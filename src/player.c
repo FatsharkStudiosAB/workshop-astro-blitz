@@ -134,6 +134,10 @@ void player_init(Player *p, Vector2 start_pos) {
     p->dash_direction = (Vector2){0};
     p->dash_timer = 0.0f;
     p->dash_cooldown = 0.0f;
+
+    p->melee_cooldown = 0.0f;
+    p->melee_timer = 0.0f;
+    p->melee_direction = (Vector2){0};
 }
 
 void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Camera2D camera,

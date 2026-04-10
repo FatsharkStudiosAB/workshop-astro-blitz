@@ -3,6 +3,7 @@
  */
 
 #include "game.h"
+#include <math.h>
 #include <string.h>
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
@@ -429,6 +430,79 @@ static void resolve_enemy_bullet_player_collisions(GameState *gs) {
     }
 }
 
+static void resolve_melee_enemy_collisions(GameState *gs) {
+    Player *p = &gs->player;
+    EnemyPool *ep = &gs->enemies;
+
+    /* Only check during active swing */
+    if (p->melee_timer <= 0.0f) {
+        return;
+    }
+
+    float half_arc = (MELEE_ARC_DEGREES * 0.5f) * DEG2RAD;
+    float melee_range = MELEE_RANGE + PLAYER_RADIUS;
+
+    for (int e = 0; e < MAX_ENEMIES; e++) {
+        Enemy *enemy = &ep->enemies[e];
+        if (!enemy->active) {
+            continue;
+        }
+
+        /* Distance check */
+        Vector2 diff = Vector2Subtract(enemy->position, p->position);
+        float dist = Vector2Length(diff);
+        if (dist > melee_range + enemy->radius || dist < 0.01f) {
+            continue;
+        }
+
+        /* Arc angle check */
+        Vector2 to_enemy = Vector2Scale(diff, 1.0f / dist);
+        float dot = p->melee_direction.x * to_enemy.x + p->melee_direction.y * to_enemy.y;
+        float angle = acosf(dot < -1.0f ? -1.0f : (dot > 1.0f ? 1.0f : dot));
+        if (angle > half_arc) {
+            continue;
+        }
+
+        /* Hit! */
+        enemy->hp -= MELEE_DAMAGE;
+        enemy->hit_flash = 0.1f;
+        audio_play_enemy_hit(&gs->audio);
+
+        /* Knockback */
+        Vector2 knockback_dir = Vector2Scale(to_enemy, MELEE_KNOCKBACK);
+        enemy->velocity = knockback_dir;
+
+        /* Damage number */
+        damage_number_spawn(&gs->damage_numbers, enemy->position, (int)MELEE_DAMAGE,
+                            (Color){200, 200, 255, 255});
+
+        /* Hit sparks */
+        particle_burst(&gs->particles, enemy->position, 8, 40.0f, 120.0f, 0.1f, 0.3f, 2.5f,
+                       (Color){200, 200, 255, 255});
+
+        if (enemy->hp <= 0.0f) {
+            enemy->active = false;
+            gs->stats.kills++;
+            gs->combo.count++;
+            gs->combo.timer = COMBO_TIMEOUT;
+            gs->combo.display_timer = COMBO_DISPLAY_DURATION;
+            if (gs->combo.count > gs->combo.best) {
+                gs->combo.best = gs->combo.count;
+            }
+            screenshake_add_trauma(&gs->shake, 0.2f);
+
+            /* Death explosion */
+            particle_burst(&gs->particles, enemy->position, 15, 30.0f, 150.0f, 0.2f, 0.6f, 3.5f,
+                           (Color){255, 60, 30, 255});
+        }
+
+        /* Melee hits all enemies in arc (no single-target limit) */
+    }
+
+    /* Melee only hits once per swing -- zero timer after resolving */
+    p->melee_timer = 0.0f;
+}
+
 static void resolve_weapon_pickup_collisions(GameState *gs) {
     Player *p = &gs->player;
     WeaponPickupPool *wpp = &gs->weapon_pickups;
@@ -506,6 +580,19 @@ static void draw_hud(const GameState *gs) {
     DrawRectangle((int)dash_x, (int)bar_y, (int)(dash_w * cd_ratio), (int)bar_h, SKYBLUE);
     DrawRectangleLines((int)dash_x, (int)bar_y, (int)dash_w, (int)bar_h, RAYWHITE);
     DrawText("DASH", (int)dash_x + 4, (int)bar_y + 2, 12, RAYWHITE);
+
+    /* ── Melee cooldown indicator (next to dash) ─────────────────────── */
+    float melee_x = dash_x + dash_w + 20.0f;
+    float melee_w = 60.0f;
+    float melee_ratio = 1.0f;
+    if (p->melee_cooldown > 0.0f) {
+        melee_ratio = 1.0f - (p->melee_cooldown / MELEE_COOLDOWN);
+    }
+    DrawRectangle((int)melee_x, (int)bar_y, (int)melee_w, (int)bar_h, DARKGRAY);
+    DrawRectangle((int)melee_x, (int)bar_y, (int)(melee_w * melee_ratio), (int)bar_h,
+                  (Color){200, 200, 255, 255});
+    DrawRectangleLines((int)melee_x, (int)bar_y, (int)melee_w, (int)bar_h, RAYWHITE);
+    DrawText("MELEE", (int)melee_x + 2, (int)bar_y + 2, 10, RAYWHITE);
 
     /* ── Weapon name (top-left) ────────────────────────────────────────── */
     const char *weapon_name = p->current_weapon.name ? p->current_weapon.name : "???";
@@ -804,6 +891,23 @@ static void update_playing(GameState *gs) {
         }
     }
 
+    /* ── Melee attack (right-click) ──────────────────────────────────── */
+    if (gs->player.melee_cooldown > 0.0f) {
+        gs->player.melee_cooldown -= dt;
+    }
+    if (gs->player.melee_timer > 0.0f) {
+        gs->player.melee_timer -= dt;
+    }
+    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && gs->player.melee_cooldown <= 0.0f) {
+        gs->player.melee_timer = MELEE_DURATION;
+        gs->player.melee_cooldown = MELEE_COOLDOWN;
+        gs->player.melee_direction = gs->player.aim_direction;
+
+        /* Swing particles */
+        particle_burst(&gs->particles, gs->player.position, 6, 40.0f, 100.0f, 0.05f, 0.2f, 3.0f,
+                       (Color){200, 200, 255, 200});
+    }
+
     /* ── Dash trail ───────────────────────────────────────────────────── */
     if (gs->player.is_dashing) {
         particle_emit(&gs->particles, gs->player.position,
@@ -846,6 +950,7 @@ static void update_playing(GameState *gs) {
 
     /* ── Collisions ───────────────────────────────────────────────────── */
     resolve_bullet_enemy_collisions(gs);
+    resolve_melee_enemy_collisions(gs);
     resolve_enemy_player_collisions(gs);
     resolve_enemy_bullet_player_collisions(gs);
     resolve_weapon_pickup_collisions(gs);
@@ -1104,6 +1209,31 @@ void game_draw(const GameState *gs) {
         particle_pool_draw(&gs->particles);
         damage_number_pool_draw(&gs->damage_numbers);
         player_draw(&gs->player);
+
+        /* Melee swing arc visual */
+        if (gs->player.melee_cooldown > MELEE_COOLDOWN - MELEE_DURATION * 2.0f) {
+            float fade = gs->player.melee_cooldown / MELEE_COOLDOWN;
+            unsigned char alpha = (unsigned char)(200.0f * fade);
+            Color arc_color = {200, 200, 255, alpha};
+            float half_arc = MELEE_ARC_DEGREES * 0.5f * DEG2RAD;
+            float range = MELEE_RANGE + PLAYER_RADIUS;
+            Vector2 dir = gs->player.melee_direction;
+            int segments = 8;
+            for (int s = 0; s < segments; s++) {
+                float t0 = -half_arc + (float)s / (float)segments * 2.0f * half_arc;
+                float t1 = -half_arc + (float)(s + 1) / (float)segments * 2.0f * half_arc;
+                float cos0 = cosf(t0);
+                float sin0 = sinf(t0);
+                float cos1 = cosf(t1);
+                float sin1 = sinf(t1);
+                Vector2 d0 = {dir.x * cos0 - dir.y * sin0, dir.x * sin0 + dir.y * cos0};
+                Vector2 d1 = {dir.x * cos1 - dir.y * sin1, dir.x * sin1 + dir.y * cos1};
+                Vector2 p0 = Vector2Add(gs->player.position, Vector2Scale(d0, range));
+                Vector2 p1 = Vector2Add(gs->player.position, Vector2Scale(d1, range));
+                DrawLineEx(p0, p1, 2.0f, arc_color);
+            }
+        }
+
         EndMode2D();
 
         draw_hud(gs);
