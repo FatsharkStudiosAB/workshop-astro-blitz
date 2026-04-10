@@ -7,6 +7,34 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Weapon system (`src/weapon.h/c`): 4 weapon presets -- Pistol (default), SMG (fast/inaccurate), Shotgun (5 pellets/wide spread), Plasma (slow/high damage). Each weapon defines fire rate, damage, bullet speed, spread angle, projectile count, lifetime, and color. Bullets now carry per-weapon damage and color.
+- 3 new enemy types extending the `EnemyType` enum: Grunt (ranged AI that maintains distance and fires enemy bullets), Stalker (fast flanker that circles then dashes at player), Bomber (charges when close, AoE explosion on death damages nearby player)
+- Enemy bullet pool (`EnemyBulletPool`) for Grunt projectiles with collision detection against player
+- Progressive wave spawning: enemy types introduced gradually (Swarmers only -> Grunts at wave 3 -> Stalkers at wave 6 -> Bombers at wave 10)
+- Weapon pickup drops: non-swarmer enemies have 30% chance to drop a random weapon on death. Walk-over pickup swaps player weapon. Pulsing glow visual with weapon initial letter, 15s lifetime with fade-out.
+- Bullet trails: fading afterimage lines behind both player and enemy projectiles proportional to speed
+- Combo/killstreak system: consecutive kills within 2s build a combo counter. HUD displays escalating combo text (yellow->red, growing font). Screen shake intensity scales with combo. Best combo shown on game-over screen.
+- Elite enemy modifiers: Armored (2.5x HP, 0.7x speed), Swift (1.6x speed, 0.75x radius), Burning (+5 contact damage). 20% chance per enemy after wave 5. Colored ring visual indicator per modifier type.
+- Right-click melee attack: 120-degree arc slash in aim direction, 3 damage, knockback (300 speed), 0.5s cooldown. Hits all enemies in arc simultaneously. Visual arc slash effect with fade-out. Melee cooldown bar in bottom HUD.
+- Floor progression: exit portal spawns after 5 waves on current floor. Walking into portal regenerates map, keeps player stats/weapon/HP. Floor counter in top-right HUD and game-over screen. Pulsing green portal visual.
+- Kill counter and floor number in HUD (top-right)
+- 12 weapon unit tests (`tests/test_weapon.c`)
+- 5 new integration tests: shotgun multi-pellet firing, grunt enemy shooting, combo increments, elite stat modification, weapon pickup swap
+- `IsMouseButtonPressed` added to Raylib stubs for melee integration tests
+- Linting infrastructure fixes: LLVM/clang-format installed, Taskfile `fmt:c` fixed for Windows (PowerShell script), yamllint CRLF issues resolved, markdownlint MD060/MD036 rules suppressed
+
+### Changed
+
+- `Bullet` struct gains `damage` and `color` fields (from weapon system)
+- `Enemy` struct gains `shoot_cooldown`, `ai_timer`, `is_charging`, and `elite` fields for new enemy types and modifiers
+- `Player` struct gains `current_weapon` (Weapon), `melee_cooldown`, `melee_timer`, `melee_direction` fields
+- `GameState` gains `enemy_bullets`, `weapon_pickups`, `combo`, `floor`, `floor_waves`, `exit_position`, `exit_active` fields
+- `enemy_pool_update()` signature expanded to accept `EnemyBulletPool*` parameter
+- `bullet_pool_draw()` uses per-bullet color instead of hardcoded ORANGE
+- Collision resolution uses per-bullet damage instead of hardcoded 1.0f
+- Taskfile `fmt:c` now uses `scripts/clang-format-all.ps1` to avoid Go template escaping issues with `$_`
+- `.markdownlint-cli2.yaml` gains `---` document start, MD036 and MD060 rules disabled
+
 - Integration test infrastructure: headless `game_update()` testing via Raylib stubs (`tests/raylib_stubs.c/h`) with controllable input, time, and audio fakes
 - 11 integration tests (`tests/test_integration.c`): bullet kills enemy, enemy damages player, dash invincibility, game-over transition, restart from game-over, player movement via input, enemy wave spawning, survival time accumulation, multiple enemy damage, shooting via game_update, full combat loop
 - CMake object library (`astro_blitz_objs`) for scalable dual-linking: game sources compiled once, linked with real Raylib (exe + unit tests) or stubs (integration tests). Adding new source files requires updating only the object library.
