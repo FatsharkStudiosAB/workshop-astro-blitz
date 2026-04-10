@@ -143,6 +143,9 @@ Everything below this line is lookup material. Behavioral rules are all above.
 | `Taskfile.yml` | Task runner configuration (go-task) |
 | `src/` | Game source code |
 | `src/main.c` | Entry point -- window init, main loop |
+| `src/game.c/h` | Top-level game state, update/draw orchestration |
+| `src/player.c/h` | Player struct, WASD movement, mouse aiming, dash |
+| `src/bullet.c/h` | Bullet pool, spawn/update/draw projectiles |
 | `CMakeLists.txt` | Build configuration -- fetches Raylib 5.5 via FetchContent |
 | `build/` | Build output (gitignored) |
 | `design/` | Game design documents and reference assets |

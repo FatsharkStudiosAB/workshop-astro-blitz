@@ -21,7 +21,13 @@ set(BUILD_GAMES    OFF CACHE BOOL "Build raylib example games")
 FetchContent_MakeAvailable(raylib)
 
 # ── Game executable ──────────────────────────────────────────────────────────
-add_executable(astro_blitz src/main.c)
+add_executable(astro_blitz
+    src/main.c
+    src/game.c
+    src/player.c
+    src/bullet.c
+)
+target_include_directories(astro_blitz PRIVATE src)
 target_link_libraries(astro_blitz PRIVATE raylib)
 
 # On Windows, link required system libraries
