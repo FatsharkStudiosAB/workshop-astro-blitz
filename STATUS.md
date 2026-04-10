@@ -41,19 +41,10 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Known Issues / Next Steps
 
-<<<<<<< HEAD
-- ~~Implement basic enemy spawning~~ -- done
-- ~~Add bullet-enemy collision~~ -- done
-- ~~Add game-over state when HP reaches zero~~ -- done
-- ~~Add Camera2D and scrollable world~~ -- done
-- ~~Add procedural tilemap with obstacles~~ -- done
-- ~~Decide on level structure~~ -- resolved: hybrid arena-dungeon (combat rooms lock, corridors open)
 - Design doc rewritten with all major design decisions resolved (see design/DESIGN.md)
 - **Redundant include path in CMakeLists.txt:** `astro_blitz_objs` has both `$<TARGET_PROPERTY:raylib,INTERFACE_INCLUDE_DIRECTORIES>` and `${raylib_SOURCE_DIR}/src` which resolve to the same directory. Harmless (CMake deduplicates) but could be cleaned up.
-- **Next sprint:** Melee attack (right-click) + game feel (screen shake, damage numbers)
-- Followed by: Grunt enemy (ranged AI), weapon system + prefix/suffix modifiers
+- **Next sprint:** Visual juice (particles, screen shake, shaders) + gameplay depth (melee, new enemies, weapons, upgrades, floors)
 - Room-based level generation (BSP or room-placement) to replace scattered obstacles
-- Minimap overlay (design doc calls for top-right corner)
 - Source or create placeholder sprite assets -- partially addressed with layered geometric art
 
 ## Workarounds & Patterns
