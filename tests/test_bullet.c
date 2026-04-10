@@ -347,16 +347,22 @@ void test_bullet_bounces_off_wall(void) {
     BulletPool pool;
     bullet_pool_init(&pool);
 
-    /* Create a tilemap with a wall column at tile x=5 (world x=160) */
+    const int wall_tile_x = 5;
+    const int wall_tile_y = 4;
+    const float wall_world_x = (float)(wall_tile_x * TILE_SIZE);
+    const float bullet_start_x = wall_world_x - BULLET_RADIUS - 1.0f;
+    const float bullet_start_y = (float)(wall_tile_y * TILE_SIZE) + (TILE_SIZE * 0.375f);
+
+    /* Create a tilemap with a wall tile at (5,4) */
     Tilemap tm;
     tilemap_init(&tm);
-    tm.tiles[4][5] = TILE_WALL; /* wall at tile (5,4) -> world (160,128) */
+    tm.tiles[wall_tile_y][wall_tile_x] = TILE_WALL;
 
-    /* Place bullet heading right, about to enter tile (5,4) */
+    /* Place bullet heading right, about to enter the wall tile */
     pool.bullets[0].active = true;
-    pool.bullets[0].position = (Vector2){159.0f, 140.0f};
+    pool.bullets[0].position = (Vector2){bullet_start_x, bullet_start_y};
     pool.bullets[0].velocity = (Vector2){BULLET_SPEED, 0.0f};
-    pool.bullets[0].lifetime = 2.0f;
+    pool.bullets[0].lifetime = BULLET_LIFETIME;
     pool.bullets[0].bounces = 0;
 
     /* Large enough dt to move into the wall tile */
@@ -374,15 +380,21 @@ void test_bullet_deactivates_after_max_bounces(void) {
     BulletPool pool;
     bullet_pool_init(&pool);
 
+    const int wall_tile_x = 5;
+    const int wall_tile_y = 4;
+    const float wall_world_x = (float)(wall_tile_x * TILE_SIZE);
+    const float bullet_start_x = wall_world_x - BULLET_RADIUS - 1.0f;
+    const float bullet_start_y = (float)(wall_tile_y * TILE_SIZE) + (TILE_SIZE * 0.375f);
+
     Tilemap tm;
     tilemap_init(&tm);
-    tm.tiles[4][5] = TILE_WALL;
+    tm.tiles[wall_tile_y][wall_tile_x] = TILE_WALL;
 
     /* Place bullet already at max bounces, heading into wall */
     pool.bullets[0].active = true;
-    pool.bullets[0].position = (Vector2){159.0f, 140.0f};
+    pool.bullets[0].position = (Vector2){bullet_start_x, bullet_start_y};
     pool.bullets[0].velocity = (Vector2){BULLET_SPEED, 0.0f};
-    pool.bullets[0].lifetime = 2.0f;
+    pool.bullets[0].lifetime = BULLET_LIFETIME;
     pool.bullets[0].bounces = BULLET_MAX_BOUNCES;
 
     bullet_pool_update(&pool, 0.01f, TEST_ARENA, &tm);

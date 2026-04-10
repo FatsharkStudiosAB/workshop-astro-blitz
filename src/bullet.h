@@ -43,8 +43,9 @@ void bullet_pool_init(BulletPool *pool);
  * bullet_pool_update -- Move bullets, expire old ones, bounce off walls.
  *
  * Bullets reflect off solid tiles up to BULLET_MAX_BOUNCES times before
- * being deactivated. Pass NULL for tm to skip wall collision checks
- * (e.g. in tests).
+ * being deactivated. Wall collision uses BULLET_RADIUS so the circle
+ * never visually overlaps a wall. Pass NULL for tm to skip wall
+ * collision checks (e.g. in tests).
  */
 void bullet_pool_update(BulletPool *pool, float dt, Rectangle arena, const Tilemap *tm);
 

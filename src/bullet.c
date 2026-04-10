@@ -42,35 +42,49 @@ void bullet_pool_update(BulletPool *pool, float dt, Rectangle arena, const Tilem
             continue;
         }
 
-        /* Bounce off walls (or deactivate if max bounces reached) */
-        if (tm && tilemap_is_solid(tm, b->position.x, b->position.y)) {
-            if (b->bounces >= BULLET_MAX_BOUNCES) {
-                b->active = false;
-                continue;
-            }
+        /* Bounce off walls (or deactivate if max bounces reached).
+         * Check using BULLET_RADIUS so the circle never visually overlaps a wall. */
+        if (tm) {
+            float r = BULLET_RADIUS;
+            bool hit_right = tilemap_is_solid(tm, b->position.x + r, b->position.y);
+            bool hit_left = tilemap_is_solid(tm, b->position.x - r, b->position.y);
+            bool hit_bottom = tilemap_is_solid(tm, b->position.x, b->position.y + r);
+            bool hit_top = tilemap_is_solid(tm, b->position.x, b->position.y - r);
 
-            /* Rewind to previous position */
-            Vector2 prev = Vector2Subtract(b->position, Vector2Scale(b->velocity, dt));
+            if (hit_right || hit_left || hit_bottom || hit_top) {
+                if (b->bounces >= BULLET_MAX_BOUNCES) {
+                    b->active = false;
+                    continue;
+                }
 
-            /* Determine which axes crossed into a solid tile */
-            bool solid_h = tilemap_is_solid(tm, b->position.x, prev.y);
-            bool solid_v = tilemap_is_solid(tm, prev.x, b->position.y);
+                /* Reflect velocity on the axis that hit a wall */
+                if (hit_right || hit_left) {
+                    b->velocity.x = -b->velocity.x;
+                }
+                if (hit_bottom || hit_top) {
+                    b->velocity.y = -b->velocity.y;
+                }
 
-            if (solid_h) {
-                b->velocity.x = -b->velocity.x;
-            }
-            if (solid_v) {
-                b->velocity.y = -b->velocity.y;
-            }
-            /* Corner case: both axes free individually but diagonal is solid */
-            if (!solid_h && !solid_v) {
-                b->velocity.x = -b->velocity.x;
-                b->velocity.y = -b->velocity.y;
-            }
+                /* Snap the bullet edge out of the wall */
+                if (hit_right) {
+                    int tx = (int)(b->position.x + r) / tm->tile_size;
+                    b->position.x = (float)(tx * tm->tile_size) - r - 0.01f;
+                }
+                if (hit_left) {
+                    int tx = (int)(b->position.x - r) / tm->tile_size;
+                    b->position.x = (float)((tx + 1) * tm->tile_size) + r + 0.01f;
+                }
+                if (hit_bottom) {
+                    int ty = (int)(b->position.y + r) / tm->tile_size;
+                    b->position.y = (float)(ty * tm->tile_size) - r - 0.01f;
+                }
+                if (hit_top) {
+                    int ty = (int)(b->position.y - r) / tm->tile_size;
+                    b->position.y = (float)((ty + 1) * tm->tile_size) + r + 0.01f;
+                }
 
-            /* Snap back to pre-collision position */
-            b->position = prev;
-            b->bounces++;
+                b->bounces++;
+            }
         }
     }
 }
