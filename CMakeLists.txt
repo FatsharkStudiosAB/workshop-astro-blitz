@@ -26,6 +26,7 @@ add_library(astro_blitz_lib STATIC
     src/game.c
     src/player.c
     src/bullet.c
+    src/enemy.c
 )
 target_include_directories(astro_blitz_lib PUBLIC src)
 target_link_libraries(astro_blitz_lib PUBLIC raylib)
@@ -80,4 +81,9 @@ if(BUILD_TESTING)
     add_executable(test_game tests/test_game.c)
     target_link_libraries(test_game PRIVATE unity astro_blitz_lib)
     add_test(NAME test_game COMMAND test_game)
+
+    # Enemy module tests
+    add_executable(test_enemy tests/test_enemy.c)
+    target_link_libraries(test_enemy PRIVATE unity astro_blitz_lib)
+    add_test(NAME test_enemy COMMAND test_enemy)
 endif()

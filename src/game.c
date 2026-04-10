@@ -6,6 +6,94 @@
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
+static void spawn_wave(GameState *gs)
+{
+    int count = GetRandomValue(SPAWN_MIN_GROUP, SPAWN_MAX_GROUP);
+
+    for (int i = 0; i < count; i++) {
+        Vector2 pos;
+        int edge = GetRandomValue(0, 3);
+
+        switch (edge) {
+        case 0: /* top */
+            pos.x = gs->arena.x + (float)GetRandomValue(0, (int)gs->arena.width);
+            pos.y = gs->arena.y;
+            break;
+        case 1: /* bottom */
+            pos.x = gs->arena.x + (float)GetRandomValue(0, (int)gs->arena.width);
+            pos.y = gs->arena.y + gs->arena.height;
+            break;
+        case 2: /* left */
+            pos.x = gs->arena.x;
+            pos.y = gs->arena.y + (float)GetRandomValue(0, (int)gs->arena.height);
+            break;
+        default: /* right */
+            pos.x = gs->arena.x + gs->arena.width;
+            pos.y = gs->arena.y + (float)GetRandomValue(0, (int)gs->arena.height);
+            break;
+        }
+
+        enemy_pool_spawn(&gs->enemies, ENEMY_SWARMER, pos);
+    }
+}
+
+static void resolve_bullet_enemy_collisions(GameState *gs)
+{
+    BulletPool *bp = &gs->bullets;
+    EnemyPool  *ep = &gs->enemies;
+
+    for (int b = 0; b < MAX_BULLETS; b++) {
+        Bullet *bullet = &bp->bullets[b];
+        if (!bullet->active) {
+            continue;
+        }
+
+        for (int e = 0; e < MAX_ENEMIES; e++) {
+            Enemy *enemy = &ep->enemies[e];
+            if (!enemy->active) {
+                continue;
+            }
+
+            if (check_circle_collision(bullet->position, BULLET_RADIUS,
+                                       enemy->position, enemy->radius)) {
+                bullet->active = false;
+                enemy->hp -= 1.0f;
+                if (enemy->hp <= 0.0f) {
+                    enemy->active = false;
+                }
+                break; /* bullet consumed -- stop checking enemies */
+            }
+        }
+    }
+}
+
+static void resolve_enemy_player_collisions(GameState *gs)
+{
+    Player    *p  = &gs->player;
+    EnemyPool *ep = &gs->enemies;
+
+    /* Skip damage if player is dashing and invincible */
+    if (DASH_INVINCIBLE && p->is_dashing) {
+        return;
+    }
+
+    for (int e = 0; e < MAX_ENEMIES; e++) {
+        Enemy *enemy = &ep->enemies[e];
+        if (!enemy->active) {
+            continue;
+        }
+
+        if (check_circle_collision(p->position, PLAYER_RADIUS,
+                                   enemy->position, enemy->radius)) {
+            p->hp -= enemy->damage;
+            enemy->active = false; /* swarmer dies on contact */
+            if (p->hp < 0.0f) {
+                p->hp = 0.0f;
+            }
+        }
+    }
+}
+
 static void draw_hud(const GameState *gs)
 {
     const Player *p = &gs->player;
@@ -62,6 +150,8 @@ void game_init(GameState *gs)
 
     player_init(&gs->player, center);
     bullet_pool_init(&gs->bullets);
+    enemy_pool_init(&gs->enemies);
+    gs->spawn_timer = SPAWN_INTERVAL;
 }
 
 void game_update(GameState *gs)
@@ -80,6 +170,20 @@ void game_update(GameState *gs)
     }
 
     bullet_pool_update(&gs->bullets, dt, gs->arena);
+
+    /* ── Enemy spawning ───────────────────────────────────────────────── */
+    gs->spawn_timer -= dt;
+    if (gs->spawn_timer <= 0.0f) {
+        spawn_wave(gs);
+        gs->spawn_timer = SPAWN_INTERVAL;
+    }
+
+    /* ── Enemy update ─────────────────────────────────────────────────── */
+    enemy_pool_update(&gs->enemies, dt, gs->player.position, gs->arena);
+
+    /* ── Collisions ───────────────────────────────────────────────────── */
+    resolve_bullet_enemy_collisions(gs);
+    resolve_enemy_player_collisions(gs);
 }
 
 void game_draw(const GameState *gs)
@@ -88,6 +192,7 @@ void game_draw(const GameState *gs)
         ClearBackground(BLACK);
         draw_arena(gs);
         bullet_pool_draw(&gs->bullets);
+        enemy_pool_draw(&gs->enemies);
         player_draw(&gs->player);
         draw_hud(gs);
     EndDrawing();

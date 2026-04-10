@@ -7,6 +7,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Enemy swarmer system: `src/enemy.c/h` with fixed-size enemy pool, swarmer AI (seek toward player), wave spawning from arena edges
+- Bullet-enemy and enemy-player collision detection with circle-circle overlap
+- Player takes damage on enemy contact (swarmers die on contact); dash invincibility respected
+- Enemy spawn waves every 3 seconds, groups of 4-8 swarmers from random arena edges
+- Unit tests for enemy module (`tests/test_enemy.c`) -- 30 tests covering pool, spawning, movement, collision, constants
 - Vec2 2D vector math module (`src/vec2.h`, `src/vec2.c`) with add, subtract, scale, length, normalize, distance, dot product, lerp
 - 28 unit tests for vec2 (`tests/test_vec2.c`) covering all operations including edge cases
 - `task test` command in Taskfile.yml -- single command to build and run all tests

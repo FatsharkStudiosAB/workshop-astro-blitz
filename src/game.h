@@ -7,6 +7,7 @@
 #include "raylib.h"
 #include "player.h"
 #include "bullet.h"
+#include "enemy.h"
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
@@ -21,7 +22,9 @@
 typedef struct {
     Player     player;
     BulletPool bullets;
+    EnemyPool  enemies;
     Rectangle  arena;
+    float      spawn_timer;     /* time until next enemy wave */
 } GameState;
 
 /* ── Public API ────────────────────────────────────────────────────────────── */
