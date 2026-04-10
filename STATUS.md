@@ -8,6 +8,7 @@ When it grows too long, summarize older entries and remove resolved items.
 - **Phase:** First playable prototype -- player movement, shooting, and dash in an empty arena.
 - **Engine/Framework:** Raylib 5.5 (C99), built via CMake FetchContent.
 - **Build:** `task build` (or `cmake -B build && cmake --build build --config Release`)
+- **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest.
 - **Playable:** Yes (player moves with WASD, aims with mouse, shoots with left-click, dashes with spacebar).
 
 ## Recent Changes
@@ -15,6 +16,7 @@ When it grows too long, summarize older entries and remove resolved items.
 | Date | Change |
 |------|--------|
 | 2026-04-10 | First playable: player movement (WASD), mouse aiming, shooting (left-click), dash (spacebar), arena bounds, HUD |
+| 2026-04-10 | Added Unity test framework v2.6.1 via FetchContent, sample test, CTest integration |
 | 2026-04-10 | Added Taskfile.yml with configure, build, run, and clean tasks (go-task) |
 | 2026-04-10 | Set up Raylib 5.5 build tooling: CMakeLists.txt with FetchContent, hello window compiles and runs |
 | 2026-04-10 | Completed game design document: core loop, weapons, enemies, upgrades, visual style, tech choice (Raylib) |
