@@ -5,16 +5,17 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Current State
 
-- **Phase:** Scrollable world prototype with audio -- camera follows player over a procedurally generated tilemap with obstacles, procedural audio for SFX and death screen music.
+- **Phase:** Scrollable world prototype with menus and settings -- main menu, pause menu, settings menu with persistent movement layout preference.
 - **Engine/Framework:** Raylib 5.5 (C99), built via CMake FetchContent.
 - **Build:** `task build` (or `cmake -B build && cmake --build build --config Release`)
 - **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest.
-- **Playable:** Yes (player moves in a large world [4096x3072 px], camera follows, tilemap with scattered obstacles and border walls, enemies spawn offscreen relative to viewport). Bullet fire plays a punchy SFX; enemy hits play a metallic ping; taking damage plays a low thud. Game ends when HP reaches zero; game-over screen shows stats, plays looping sci-fi synth music, and pressing R restarts with a new map.
+- **Playable:** Yes. Game launches to a main menu (Play / Settings / Quit). ESC pauses with Resume / Settings / Main Menu / Quit. Settings menu lets player switch between Tank Controls and 8-Directional movement; preference persists to `settings.ini`. Player moves in a large world [4096x3072 px], camera follows, tilemap with scattered obstacles and border walls, enemies spawn offscreen. Bullet fire plays a punchy SFX; enemy hits play a metallic ping; taking damage plays a low thud. Game ends when HP reaches zero; game-over screen shows stats, plays looping sci-fi synth music, and pressing R restarts with a new map.
 
 ## Recent Changes
 
 | Date | Change |
 |------|--------|
+| 2026-04-10 | Added main menu, pause menu, and settings menu. Settings persist to `settings.ini`. Players can switch between Tank Controls and 8-Directional movement. ESC pauses the game. New `settings` module with 14 tests; 8 new player tests for 8-dir movement; 4 new game tests for phases. Fixed winmm linker conflict on Windows. |
 | 2026-04-10 | Bullets now bounce off walls up to 3 times instead of being destroyed on impact. Enemy spawn waves reduced from 4-8 to 2-5 per wave. 3 new bullet bounce tests. |
 | 2026-04-10 | Added BFS flow field pathfinding for enemies: enemies navigate around obstacles via shortest path. Flow field computed each frame from player position. Enemies use flow field at long range, direct-seek at close range (<3 tiles). 8 new tilemap tests, 3 new enemy tests. |
 | 2026-04-10 | Added audio system: procedural bullet SFX, enemy-hit SFX, bullet-hit-enemy SFX, and death screen music (sci-fi synth with detuned oscillators, drone bass, tritone melody) |

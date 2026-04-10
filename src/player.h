@@ -6,6 +6,7 @@
 
 #include "raylib.h"
 #include "raymath.h"
+#include "settings.h"
 #include <stdbool.h>
 
 /* Forward declaration to avoid circular include */
@@ -46,9 +47,10 @@ void player_init(Player *p, Vector2 start_pos);
  *
  * Uses the camera to convert screen-space mouse position to world coordinates
  * for aiming. Uses the tilemap for wall collision (NULL tilemap skips wall
- * checks).
+ * checks). The movement_layout controls how WASD maps to directions.
  */
-void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Camera2D camera);
+void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Camera2D camera,
+                   MovementLayout movement_layout);
 
 void player_draw(const Player *p);
 
@@ -69,3 +71,20 @@ void player_draw(const Player *p);
  * Returns a normalized Vector2 (or zero vector if no input).
  */
 Vector2 player_calc_move_dir(Vector2 aim_dir, bool forward, bool back, bool left, bool right);
+
+/*
+ * player_calc_move_dir_8dir -- Compute world-space movement from screen-relative input.
+ *
+ * 8-directional movement: WASD maps to fixed world directions regardless of
+ * where the player is aiming (twin-stick style). W = up (-Y), S = down (+Y),
+ * A = left (-X), D = right (+X). Diagonals are normalized.
+ *
+ * Parameters:
+ *   up    -- True if W or Up is held.
+ *   down  -- True if S or Down is held.
+ *   left  -- True if A or Left is held.
+ *   right -- True if D or Right is held.
+ *
+ * Returns a normalized Vector2 (or zero vector if no input).
+ */
+Vector2 player_calc_move_dir_8dir(bool up, bool down, bool left, bool right);

@@ -7,17 +7,29 @@
 #include "audio.h"
 #include "game.h"
 #include "raylib.h"
+#include "settings.h"
+#include <string.h>
 
 int main(void) {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Astro Blitz");
     InitAudioDevice();
     SetTargetFPS(60);
 
-    GameState gs;
-    game_init(&gs);
-    audio_init(&gs.audio);
+    /* Disable Raylib's default ESC-to-close so we can use ESC for menus */
+    SetExitKey(0);
 
-    while (!WindowShouldClose()) {
+    GameState gs;
+    memset(&gs, 0, sizeof(gs));
+
+    /* Load persistent settings before game_init (which preserves them) */
+    settings_init(&gs.settings);
+
+    /* Initialize gameplay state but start at the main menu */
+    audio_init(&gs.audio);
+    game_init(&gs);
+    gs.phase = PHASE_MAIN_MENU;
+
+    while (!WindowShouldClose() && !game_should_quit(&gs)) {
         audio_update(&gs.audio);
         game_update(&gs);
         game_draw(&gs);

@@ -7,6 +7,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Main menu screen with Play, Settings, and Quit options
+- Pause menu (ESC during gameplay): Resume, Settings, Main Menu, Quit
+- Settings menu with movement layout toggle (Tank Controls vs 8-Directional)
+- Persistent settings saved to `settings.ini` (text-based key=value format, survives game restarts)
+- 8-directional movement mode: WASD maps to fixed screen directions (up/down/left/right) independent of aim direction
+- New `settings` module (`src/settings.h`, `src/settings.c`) with init, save, load API and path-parameterized variants for testing
+- 14 unit tests for settings module (`tests/test_settings.c`) covering defaults, save/load round-trips, missing files, malformed input, comments
+- 8 unit tests for 8-directional movement (`test_player.c`) covering all cardinal directions, diagonals, normalization, cancellation
+- 4 unit tests for new game phases (`test_game.c`) covering phase enum, settings preservation, menu cursor, and death-check phase guard
 - Bullet wall bouncing: bullets reflect off solid tiles up to 3 times before being destroyed (new `BULLET_MAX_BOUNCES` constant and `bounces` field on `Bullet`)
 - 3 new bullet tests: `test_bullet_bounces_off_wall`, `test_bullet_deactivates_after_max_bounces`, `test_fire_initializes_bounces_to_zero`
 - BFS flow field pathfinding for enemies: enemies now navigate around obstacles instead of getting stuck against walls
@@ -31,6 +40,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- ESC key now pauses the game instead of closing the window (Raylib's exit key disabled via `SetExitKey(0)`)
+- Game starts at a main menu instead of immediately entering gameplay
+- `GamePhase` enum expanded: `PHASE_MAIN_MENU`, `PHASE_PLAYING`, `PHASE_PAUSED`, `PHASE_SETTINGS`, `PHASE_GAME_OVER`
+- `GameState` now holds a `Settings` struct (persisted across game restarts)
+- `player_update` accepts a `MovementLayout` parameter to select between tank and 8-directional controls
+- `game_init` preserves settings and audio state across restarts
+- Fixed Windows linker error: removed explicit `winmm` link that conflicted with Raylib's `PlaySound` symbol
 - Enemy spawn waves reduced from 4-8 swarmers per wave to 2-5 for more balanced difficulty
 - Enemy swarmers now use BFS flow field for pathfinding when far from the player (>3 tiles); fall back to direct seek at close range for smooth final approach
 - Game world is now much larger than the screen (4096x3072 vs 800x600); player moves freely across the full area

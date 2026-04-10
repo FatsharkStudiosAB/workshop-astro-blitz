@@ -3,6 +3,7 @@
  */
 
 #include "game.h"
+#include <string.h>
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
@@ -239,49 +240,143 @@ static void draw_game_over(const GameState *gs) {
              GRAY);
 }
 
-/* ── Public ────────────────────────────────────────────────────────────────── */
+/* ── Menu helpers ──────────────────────────────────────────────────────────── */
 
-void game_init(GameState *gs) {
-    /* Generate world */
-    int spawn_tx = WORLD_COLS / 2;
-    int spawn_ty = WORLD_ROWS / 2;
-    tilemap_generate(&gs->tilemap, spawn_tx, spawn_ty, 0);
-    gs->arena = tilemap_get_world_bounds(&gs->tilemap);
-
-    /* Place player at center of spawn tile */
-    Vector2 center = tilemap_tile_to_world(&gs->tilemap, spawn_tx, spawn_ty);
-    center.x += TILE_SIZE / 2.0f;
-    center.y += TILE_SIZE / 2.0f;
-
-    player_init(&gs->player, center);
-    bullet_pool_init(&gs->bullets);
-    enemy_pool_init(&gs->enemies);
-    gs->spawn_timer = SPAWN_INTERVAL;
-    gs->phase = PHASE_PLAYING;
-    gs->stats = (GameStats){.kills = 0, .survival_time = 0.0f, .waves_spawned = 0};
-
-    /* Camera centered on player */
-    gs->camera.target = center;
-    gs->camera.offset = (Vector2){SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f};
-    gs->camera.rotation = 0.0f;
-    gs->camera.zoom = 1.0f;
+/* Navigate a menu cursor with W/S/Up/Down. Returns new cursor value. */
+static int menu_navigate(int cursor, int item_count) {
+    if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) {
+        cursor--;
+        if (cursor < 0) {
+            cursor = item_count - 1;
+        }
+    }
+    if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) {
+        cursor++;
+        if (cursor >= item_count) {
+            cursor = 0;
+        }
+    }
+    return cursor;
 }
 
-void game_update(GameState *gs) {
-    /* ── Game-over phase: wait for restart ────────────────────────────── */
-    if (gs->phase == PHASE_GAME_OVER) {
-        if (IsKeyPressed(KEY_R)) {
-            audio_stop_death_music(&gs->audio);
-            game_init(gs);
+/* Returns true if the user confirmed the current menu selection */
+static bool menu_confirm(void) {
+    return IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER);
+}
+
+/* Draw a centered menu list. Selected item is highlighted. */
+static void draw_menu_items(const char *items[], int count, int selected, int start_y,
+                            int font_size, int spacing) {
+    for (int i = 0; i < count; i++) {
+        int w = MeasureText(items[i], font_size);
+        int x = (SCREEN_WIDTH - w) / 2;
+        int y = start_y + i * spacing;
+        Color c = (i == selected) ? (Color){0, 220, 200, 255} : GRAY;
+        DrawText(items[i], x, y, font_size, c);
+
+        /* Draw selection arrow */
+        if (i == selected) {
+            DrawText(">", x - 20, y, font_size, c);
         }
+    }
+}
+
+/* ── Phase-specific update helpers ─────────────────────────────────────────── */
+
+static bool quit_requested = false;
+
+static void update_main_menu(GameState *gs) {
+    enum { MENU_PLAY, MENU_SETTINGS, MENU_QUIT, MENU_COUNT };
+
+    gs->menu_cursor = menu_navigate(gs->menu_cursor, MENU_COUNT);
+
+    if (menu_confirm()) {
+        switch (gs->menu_cursor) {
+        case MENU_PLAY:
+            game_init(gs);
+            gs->phase = PHASE_PLAYING;
+            gs->menu_cursor = 0;
+            break;
+        case MENU_SETTINGS:
+            gs->settings_return_phase = PHASE_MAIN_MENU;
+            gs->phase = PHASE_SETTINGS;
+            gs->menu_cursor = 0;
+            break;
+        case MENU_QUIT:
+            quit_requested = true;
+            break;
+        }
+    }
+}
+
+static void update_paused(GameState *gs) {
+    enum { PAUSE_RESUME, PAUSE_SETTINGS, PAUSE_MAIN_MENU, PAUSE_QUIT, PAUSE_COUNT };
+
+    /* ESC to resume */
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        gs->phase = PHASE_PLAYING;
+        gs->menu_cursor = 0;
         return;
     }
 
-    /* ── Playing phase ────────────────────────────────────────────────── */
+    gs->menu_cursor = menu_navigate(gs->menu_cursor, PAUSE_COUNT);
+
+    if (menu_confirm()) {
+        switch (gs->menu_cursor) {
+        case PAUSE_RESUME:
+            gs->phase = PHASE_PLAYING;
+            gs->menu_cursor = 0;
+            break;
+        case PAUSE_SETTINGS:
+            gs->settings_return_phase = PHASE_PAUSED;
+            gs->phase = PHASE_SETTINGS;
+            gs->menu_cursor = 0;
+            break;
+        case PAUSE_MAIN_MENU:
+            audio_stop_death_music(&gs->audio);
+            gs->phase = PHASE_MAIN_MENU;
+            gs->menu_cursor = 0;
+            break;
+        case PAUSE_QUIT:
+            quit_requested = true;
+            break;
+        }
+    }
+}
+
+static void update_settings(GameState *gs) {
+    /* ESC to go back */
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        gs->phase = gs->settings_return_phase;
+        gs->menu_cursor = 0;
+        return;
+    }
+
+    /* Left/Right or Enter to toggle movement layout */
+    if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_A) ||
+        IsKeyPressed(KEY_D) || menu_confirm()) {
+        if (gs->settings.movement_layout == MOVEMENT_TANK) {
+            gs->settings.movement_layout = MOVEMENT_8DIR;
+        } else {
+            gs->settings.movement_layout = MOVEMENT_TANK;
+        }
+        settings_save(&gs->settings);
+    }
+}
+
+static void update_playing(GameState *gs) {
+    /* ESC to pause */
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        gs->phase = PHASE_PAUSED;
+        gs->menu_cursor = 0;
+        return;
+    }
+
     float dt = GetFrameTime();
     gs->stats.survival_time += dt;
 
-    player_update(&gs->player, dt, gs->arena, &gs->tilemap, gs->camera);
+    player_update(&gs->player, dt, gs->arena, &gs->tilemap, gs->camera,
+                  gs->settings.movement_layout);
 
     /* ── Shooting ─────────────────────────────────────────────────────── */
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
@@ -317,6 +412,155 @@ void game_update(GameState *gs) {
     update_camera(gs);
 }
 
+static void update_game_over(GameState *gs) {
+    /* ESC opens pause menu (with main menu / quit options) */
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        gs->phase = PHASE_PAUSED;
+        gs->menu_cursor = 0;
+        return;
+    }
+
+    /* R to restart */
+    if (IsKeyPressed(KEY_R)) {
+        audio_stop_death_music(&gs->audio);
+        game_init(gs);
+        gs->phase = PHASE_PLAYING;
+    }
+}
+
+/* ── Phase-specific draw helpers ───────────────────────────────────────────── */
+
+static void draw_main_menu(const GameState *gs) {
+    /* Title */
+    const char *title = "ASTRO BLITZ";
+    int title_size = 50;
+    int title_w = MeasureText(title, title_size);
+    DrawText(title, (SCREEN_WIDTH - title_w) / 2, 120, title_size, (Color){0, 220, 200, 255});
+
+    /* Subtitle */
+    const char *sub = "Top-down sci-fi roguelike shooter";
+    int sub_size = 16;
+    int sub_w = MeasureText(sub, sub_size);
+    DrawText(sub, (SCREEN_WIDTH - sub_w) / 2, 180, sub_size, GRAY);
+
+    /* Menu items */
+    const char *items[] = {"Play", "Settings", "Quit"};
+    draw_menu_items(items, 3, gs->menu_cursor, 280, 24, 40);
+}
+
+static void draw_paused(const GameState *gs) {
+    /* Dark overlay */
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 180});
+
+    const char *title = "PAUSED";
+    int title_size = 40;
+    int title_w = MeasureText(title, title_size);
+    DrawText(title, (SCREEN_WIDTH - title_w) / 2, 150, title_size, RAYWHITE);
+
+    const char *items[] = {"Resume", "Settings", "Main Menu", "Quit"};
+    draw_menu_items(items, 4, gs->menu_cursor, 240, 22, 36);
+}
+
+static void draw_settings(const GameState *gs) {
+    /* Dark overlay if coming from pause (game is behind) */
+    if (gs->settings_return_phase != PHASE_MAIN_MENU) {
+        DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 200});
+    }
+
+    const char *title = "SETTINGS";
+    int title_size = 40;
+    int title_w = MeasureText(title, title_size);
+    DrawText(title, (SCREEN_WIDTH - title_w) / 2, 120, title_size, (Color){0, 220, 200, 255});
+
+    /* Movement layout option */
+    const char *label = "Movement:";
+    int label_size = 22;
+    int label_w = MeasureText(label, label_size);
+    int label_x = SCREEN_WIDTH / 2 - label_w - 10;
+    int y = 240;
+    DrawText(label, label_x, y, label_size, RAYWHITE);
+
+    const char *value =
+        (gs->settings.movement_layout == MOVEMENT_TANK) ? "< Tank Controls >" : "< 8-Directional >";
+    int value_size = 22;
+    DrawText(value, SCREEN_WIDTH / 2 + 10, y, value_size, (Color){0, 220, 200, 255});
+
+    /* Description */
+    const char *desc = NULL;
+    if (gs->settings.movement_layout == MOVEMENT_TANK) {
+        desc = "W/S = forward/back relative to aim, A/D = strafe";
+    } else {
+        desc = "W = up, S = down, A = left, D = right (screen-relative)";
+    }
+    int desc_size = 14;
+    int desc_w = MeasureText(desc, desc_size);
+    DrawText(desc, (SCREEN_WIDTH - desc_w) / 2, y + 40, desc_size, GRAY);
+
+    /* Instructions */
+    const char *hint = "Left/Right to change  |  ESC to go back";
+    int hint_size = 14;
+    int hint_w = MeasureText(hint, hint_size);
+    DrawText(hint, (SCREEN_WIDTH - hint_w) / 2, SCREEN_HEIGHT - 60, hint_size, DARKGRAY);
+}
+
+/* ── Public ────────────────────────────────────────────────────────────────── */
+
+void game_init(GameState *gs) {
+    /* Preserve settings and audio across restarts */
+    Settings saved_settings = gs->settings;
+    GameAudio saved_audio = gs->audio;
+
+    /* Generate world */
+    int spawn_tx = WORLD_COLS / 2;
+    int spawn_ty = WORLD_ROWS / 2;
+    tilemap_generate(&gs->tilemap, spawn_tx, spawn_ty, 0);
+    gs->arena = tilemap_get_world_bounds(&gs->tilemap);
+
+    /* Place player at center of spawn tile */
+    Vector2 center = tilemap_tile_to_world(&gs->tilemap, spawn_tx, spawn_ty);
+    center.x += TILE_SIZE / 2.0f;
+    center.y += TILE_SIZE / 2.0f;
+
+    player_init(&gs->player, center);
+    bullet_pool_init(&gs->bullets);
+    enemy_pool_init(&gs->enemies);
+    gs->spawn_timer = SPAWN_INTERVAL;
+    gs->phase = PHASE_PLAYING;
+    gs->settings_return_phase = PHASE_MAIN_MENU;
+    gs->menu_cursor = 0;
+    gs->stats = (GameStats){.kills = 0, .survival_time = 0.0f, .waves_spawned = 0};
+
+    /* Camera centered on player */
+    gs->camera.target = center;
+    gs->camera.offset = (Vector2){SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f};
+    gs->camera.rotation = 0.0f;
+    gs->camera.zoom = 1.0f;
+
+    /* Restore preserved state */
+    gs->settings = saved_settings;
+    gs->audio = saved_audio;
+}
+
+void game_update(GameState *gs) {
+    switch (gs->phase) {
+    case PHASE_MAIN_MENU:
+        update_main_menu(gs);
+        break;
+    case PHASE_PLAYING:
+        update_playing(gs);
+        break;
+    case PHASE_PAUSED:
+        update_paused(gs);
+        break;
+    case PHASE_SETTINGS:
+        update_settings(gs);
+        break;
+    case PHASE_GAME_OVER:
+        update_game_over(gs);
+        break;
+    }
+}
+
 void game_check_death(GameState *gs) {
     if (gs->phase == PHASE_PLAYING && gs->player.hp <= 0.0f) {
         gs->phase = PHASE_GAME_OVER;
@@ -324,24 +568,53 @@ void game_check_death(GameState *gs) {
     }
 }
 
+bool game_should_quit(const GameState *gs) {
+    (void)gs;
+    return quit_requested;
+}
+
 void game_draw(const GameState *gs) {
     BeginDrawing();
     ClearBackground(BLACK);
 
-    /* ── World-space drawing (camera-relative) ────────────────────────── */
-    BeginMode2D(gs->camera);
+    switch (gs->phase) {
+    case PHASE_MAIN_MENU:
+        draw_main_menu(gs);
+        break;
 
-    tilemap_draw(&gs->tilemap, gs->camera);
-    bullet_pool_draw(&gs->bullets);
-    enemy_pool_draw(&gs->enemies);
-    player_draw(&gs->player);
+    case PHASE_PLAYING:
+    case PHASE_PAUSED:
+    case PHASE_GAME_OVER:
+        /* Draw the world behind any overlay */
+        BeginMode2D(gs->camera);
+        tilemap_draw(&gs->tilemap, gs->camera);
+        bullet_pool_draw(&gs->bullets);
+        enemy_pool_draw(&gs->enemies);
+        player_draw(&gs->player);
+        EndMode2D();
 
-    EndMode2D();
+        draw_hud(gs);
 
-    /* ── Screen-space drawing (HUD, overlays) ─────────────────────────── */
-    draw_hud(gs);
-    if (gs->phase == PHASE_GAME_OVER) {
-        draw_game_over(gs);
+        if (gs->phase == PHASE_GAME_OVER) {
+            draw_game_over(gs);
+        } else if (gs->phase == PHASE_PAUSED) {
+            draw_paused(gs);
+        }
+        break;
+
+    case PHASE_SETTINGS:
+        /* Draw world behind if returning to pause, black bg if from main menu */
+        if (gs->settings_return_phase != PHASE_MAIN_MENU) {
+            BeginMode2D(gs->camera);
+            tilemap_draw(&gs->tilemap, gs->camera);
+            bullet_pool_draw(&gs->bullets);
+            enemy_pool_draw(&gs->enemies);
+            player_draw(&gs->player);
+            EndMode2D();
+            draw_hud(gs);
+        }
+        draw_settings(gs);
+        break;
     }
 
     EndDrawing();

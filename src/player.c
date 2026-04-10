@@ -38,12 +38,39 @@ Vector2 player_calc_move_dir(Vector2 aim_dir, bool forward, bool back, bool left
     return dir;
 }
 
-static Vector2 get_movement_input(Vector2 aim_dir) {
-    bool fwd = IsKeyDown(KEY_W) || IsKeyDown(KEY_UP);
-    bool back = IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN);
+Vector2 player_calc_move_dir_8dir(bool up, bool down, bool left, bool right) {
+    Vector2 dir = {0};
+    if (up) {
+        dir.y -= 1.0f;
+    }
+    if (down) {
+        dir.y += 1.0f;
+    }
+    if (left) {
+        dir.x -= 1.0f;
+    }
+    if (right) {
+        dir.x += 1.0f;
+    }
+
+    /* Normalize so diagonals aren't faster */
+    float len = Vector2Length(dir);
+    if (len > 0.0f) {
+        dir = Vector2Scale(dir, 1.0f / len);
+    }
+    return dir;
+}
+
+static Vector2 get_movement_input(Vector2 aim_dir, MovementLayout layout) {
+    bool fwd_or_up = IsKeyDown(KEY_W) || IsKeyDown(KEY_UP);
+    bool back_or_down = IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN);
     bool left = IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT);
     bool right = IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT);
-    return player_calc_move_dir(aim_dir, fwd, back, left, right);
+
+    if (layout == MOVEMENT_8DIR) {
+        return player_calc_move_dir_8dir(fwd_or_up, back_or_down, left, right);
+    }
+    return player_calc_move_dir(aim_dir, fwd_or_up, back_or_down, left, right);
 }
 
 static void clamp_to_arena(Player *p, Rectangle arena) {
@@ -112,7 +139,8 @@ void player_init(Player *p, Vector2 start_pos) {
     p->dash_cooldown = 0.0f;
 }
 
-void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Camera2D camera) {
+void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Camera2D camera,
+                   MovementLayout movement_layout) {
     /* ── Aim toward mouse cursor (world space) ───────────────────────── */
     Vector2 screen_mouse = GetMousePosition();
     Vector2 world_mouse = GetScreenToWorld2D(screen_mouse, camera);
@@ -154,7 +182,7 @@ void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Came
 
     /* ── Initiate dash ────────────────────────────────────────────────── */
     if (IsKeyPressed(KEY_SPACE) && p->dash_cooldown <= 0.0f) {
-        Vector2 move_dir = get_movement_input(p->aim_direction);
+        Vector2 move_dir = get_movement_input(p->aim_direction, movement_layout);
         /* If no movement keys held, dash toward aim direction */
         if (Vector2Length(move_dir) < 0.01f) {
             move_dir = p->aim_direction;
@@ -167,7 +195,7 @@ void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Came
     }
 
     /* ── Normal movement ──────────────────────────────────────────────── */
-    Vector2 move_dir = get_movement_input(p->aim_direction);
+    Vector2 move_dir = get_movement_input(p->aim_direction, movement_layout);
     p->position = Vector2Add(p->position, Vector2Scale(move_dir, PLAYER_SPEED * dt));
     clamp_to_arena(p, arena);
     resolve_tile_collision(p, tm);
