@@ -7,6 +7,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- `.opencode/agents/` -- Lightweight Haiku subagents (lint-check, build-and-test, changelog-drafter) for delegating mechanical checks at lower cost
 - Bullet wall bouncing: bullets reflect off solid tiles up to 3 times before being destroyed (new `BULLET_MAX_BOUNCES` constant and `bounces` field on `Bullet`)
 - 3 new bullet tests: `test_bullet_bounces_off_wall`, `test_bullet_deactivates_after_max_bounces`, `test_fire_initializes_bounces_to_zero`
 - BFS flow field pathfinding for enemies: enemies now navigate around obstacles instead of getting stuck against walls
@@ -32,6 +33,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 
 - Complete rewrite of `design/DESIGN.md` with all major design decisions resolved: hybrid arena-dungeon level model, steep difficulty curve, 5--7 floor run structure, medium damage scale (10--100 HP range), prefix/suffix weapon modifier system, elite enemy modifiers, talent-based meta-progression, Risk of Rain-style loot (all items available from floor 1, rarer drops weighted toward later floors), and full development roadmap with short/medium/long-term sprint goals
+- `AGENTS.md` -- Rewrite: tighten to under 200 lines, add gates from autobuilds-testify (After PR feedback, Before merging, cherry-pick rule, branch name regex), add delegation patterns and context hygiene, extract reference material to `docs/REFERENCE.md`
+- `.gitignore` -- Change `.opencode/` from blanket ignore to selective: session data stays ignored, `skills/`, `agents/`, and `commands/` subdirectories are now committed
+- `.markdownlint-cli2.yaml`, `.yamllint.yml` -- Exclude `build/` directory from linters to avoid noise from fetched dependencies (Raylib, Unity)
 - Enemy spawn waves reduced from 4-8 swarmers per wave to 2-5 for more balanced difficulty
 - Enemy swarmers now use BFS flow field for pathfinding when far from the player (>3 tiles); fall back to direct seek at close range for smooth final approach
 - Game world is now much larger than the screen (4096x3072 vs 800x600); player moves freely across the full area
