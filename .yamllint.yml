@@ -1,0 +1,17 @@
+---
+extends: default
+
+rules:
+  line-length:
+    max: 120
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+  truthy:
+    # Restrict truthy values to explicit booleans (avoid bare 'on'/'off' ambiguity)
+    allowed-values: ['true', 'false', 'yes', 'no']
+  comments:
+    min-spaces-from-content: 1
+
+# Exclude Taskfile -- Go template syntax ({{.VAR}}) is not valid YAML
+ignore:
+  - Taskfile.yml
