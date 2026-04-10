@@ -1,0 +1,38 @@
+version: "3"
+
+vars:
+  BUILD_DIR: build
+  BUILD_CONFIG: Release
+  EXE: "{{.BUILD_DIR}}/{{.BUILD_CONFIG}}/astro_blitz.exe"
+
+tasks:
+  default:
+    desc: Build and run the game
+    cmds:
+      - task: run
+
+  configure:
+    desc: Generate the CMake build system
+    cmds:
+      - cmake -B {{.BUILD_DIR}}
+    sources:
+      - CMakeLists.txt
+    generates:
+      - "{{.BUILD_DIR}}/CMakeCache.txt"
+
+  build:
+    desc: Compile the game
+    deps: [configure]
+    cmds:
+      - cmake --build {{.BUILD_DIR}} --config {{.BUILD_CONFIG}}
+
+  run:
+    desc: Build and run the game
+    deps: [build]
+    cmds:
+      - "{{.EXE}}"
+
+  clean:
+    desc: Remove all build artifacts
+    cmds:
+      - cmd: powershell -Command "if (Test-Path '{{.BUILD_DIR}}') { Remove-Item -Recurse -Force '{{.BUILD_DIR}}' }"

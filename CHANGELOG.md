@@ -7,6 +7,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Task runner configuration (`Taskfile.yml`) with `task configure`, `task build`, `task run`, and `task clean`
 - Initial project structure: `AGENTS.md`, `STATUS.md`, `CHANGELOG.md`
 - Game design document: `design/DESIGN.md`
 - Design assets directory: `design/assets/`

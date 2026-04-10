@@ -6,7 +6,10 @@ Top-down sci-fi roguelike shooter built during Fatshark's agentic coding worksho
 
 | Task | Command |
 |------|---------|
-| Run the game | *(TBD -- depends on chosen engine/framework)* |
+| Configure build | `task configure` |
+| Build the game | `task build` |
+| Run the game | `task run` (or just `task`) |
+| Clean build artifacts | `task clean` |
 | Run tests | *(TBD)* |
 | List all tasks | `task --list-all` |
 
@@ -127,6 +130,7 @@ Everything below this line is lookup material. Behavioral rules are all above.
 
 | Path | What |
 |------|------|
+| `Taskfile.yml` | Task runner configuration (go-task) |
 | `design/` | Game design documents and reference assets |
 | `design/DESIGN.md` | Game design document |
 | `design/assets/` | Reference images, mockups, sprites |
