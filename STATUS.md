@@ -40,15 +40,17 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Known Issues / Next Steps
 
-- Implement basic enemy spawning (Swarmers first -- simplest behavior) -- done
-- Add bullet-enemy collision -- done
-- Add game-over state when HP reaches zero -- done
-- Add Camera2D and scrollable world -- done
-- Add procedural tilemap with obstacles -- done
-- Add melee attack (right-click)
-- Room-based level generation (corridors, doors) -- currently open-world with scattered obstacles
+- ~~Implement basic enemy spawning~~ -- done
+- ~~Add bullet-enemy collision~~ -- done
+- ~~Add game-over state when HP reaches zero~~ -- done
+- ~~Add Camera2D and scrollable world~~ -- done
+- ~~Add procedural tilemap with obstacles~~ -- done
+- ~~Decide on level structure~~ -- resolved: hybrid arena-dungeon (combat rooms lock, corridors open)
+- Design doc rewritten with all major design decisions resolved (see design/DESIGN.md)
+- **Next sprint:** Melee attack (right-click) + game feel (screen shake, damage numbers)
+- Followed by: Grunt enemy (ranged AI), weapon system + prefix/suffix modifiers
+- Room-based level generation (BSP or room-placement) to replace scattered obstacles
 - Minimap overlay (design doc calls for top-right corner)
-- Decide on level structure (linear floors vs branching paths)
 - Source or create placeholder sprite assets -- partially addressed with layered geometric art
 
 ## Workarounds & Patterns

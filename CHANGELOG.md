@@ -42,6 +42,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Rewrote `design/DESIGN.md` to resolve the project's major design decisions
+- `design/DESIGN.md` now defines run structure: hybrid arena-dungeon model, steep difficulty curve, 5--7 floor runs with find-the-exit completion
+- `design/DESIGN.md` now documents combat and progression: medium damage scale (10--100 HP), prefix/suffix weapon modifiers, elite enemy modifiers, talent-based meta-progression, Risk of Rain-style loot weighting
+- `design/DESIGN.md` now includes a full development roadmap with short-, medium-, and long-term sprint goals
 - Default movement layout changed from Tank Controls to 8-Directional (screen-relative WASD)
 - `settings_init` now returns `bool` (true if existing file loaded, false on first run)
 - ESC key now pauses the game instead of closing the window (Raylib's exit key disabled via `SetExitKey(0)`)
@@ -69,16 +73,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Wave counter increments each time a new enemy wave spawns
 - 6 new unit tests for game-over phase transitions, stats initialization, and death check
 - Enemy swarmer system: `src/enemy.c/h` with fixed-size enemy pool, swarmer AI (seek toward player), wave spawning from arena edges
-
-### Changed
-
 - Player visual upgraded from plain green circle to layered sci-fi mech: dark teal body with neon cyan outline, directional nose triangle for clear facing, bright reactor core, hot magenta aim line with crosshair dot, and semi-transparent glow aura; electric blue palette shift when dashing
 - Swarmer visual upgraded from plain red circle to layered alien bug: dark maroon body with neon red-orange outline, mandible "V" lines and bright yellow eye dots that face movement direction, and semi-transparent red glow aura
 - Player movement now uses tank controls: W moves toward mouse cursor, S moves away, A/D strafe left/right relative to aim direction
 - Dash direction also follows the new tank controls when WASD keys are held
 - Bullet-enemy and enemy-player collision detection with circle-circle overlap
 - Player takes damage on enemy contact (swarmers die on contact); dash invincibility respected
-- Enemy spawn waves every 3 seconds, groups of 4-8 swarmers from random arena edges
+- Enemy spawn waves every 3 seconds, groups of 2-5 swarmers from random arena edges
 - Unit tests for enemy module (`tests/test_enemy.c`) -- 30 tests covering pool, spawning, movement, collision, constants
 - Vec2 2D vector math module (`src/vec2.h`, `src/vec2.c`) with add, subtract, scale, length, normalize, distance, dot product, lerp
 - 28 unit tests for vec2 (`tests/test_vec2.c`) covering all operations including edge cases
