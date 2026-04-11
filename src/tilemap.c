@@ -262,9 +262,11 @@ void tilemap_compute_flow_field(Tilemap *tm, float target_x, float target_y) {
 }
 
 void tilemap_draw(const Tilemap *tm, Camera2D camera, float time) {
-    /* Determine visible tile range from camera viewport */
-    float screen_w = (float)GetScreenWidth();
-    float screen_h = (float)GetScreenHeight();
+    /* Determine visible tile range from camera viewport.
+     * Use camera.offset * 2 as the effective viewport size (works with
+     * pixel-perfect rendering where offset = RENDER_WIDTH/2). */
+    float screen_w = camera.offset.x * 2.0f;
+    float screen_h = camera.offset.y * 2.0f;
 
     /* Top-left world coordinate visible on screen */
     float view_x = camera.target.x - camera.offset.x / camera.zoom;

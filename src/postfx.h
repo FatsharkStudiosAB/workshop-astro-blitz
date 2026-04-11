@@ -14,7 +14,8 @@
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
 typedef struct {
-    RenderTexture2D target;     /* scene rendered here first */
+    RenderTexture2D target;     /* scene rendered here first (render resolution) */
+    RenderTexture2D output;     /* post-processed result (render resolution) */
     Shader shader;              /* combined post-processing shader */
     int time_loc;               /* uniform: elapsed time */
     int resolution_loc;         /* uniform: screen resolution */
@@ -36,8 +37,14 @@ void postfx_cleanup(PostFX *pfx);
 /* Begin rendering the scene (redirects to off-screen texture). */
 void postfx_begin(PostFX *pfx);
 
-/* End scene rendering and draw to screen through the shader. */
+/* End scene rendering and apply the shader to the output texture.
+ * Does NOT call BeginDrawing/EndDrawing -- caller handles that.
+ * After this call, use postfx_get_texture() to access the result. */
 void postfx_end(PostFX *pfx, float time);
+
+/* Get the post-processed output texture (Y-flipped RenderTexture).
+ * Use this to draw the result to the screen at any scale. */
+Texture2D postfx_get_texture(const PostFX *pfx);
 
 /* Toggle post-processing on/off. */
 void postfx_toggle(PostFX *pfx);

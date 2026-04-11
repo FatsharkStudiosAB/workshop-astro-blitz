@@ -7,6 +7,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Pixel-perfect rendering pipeline**: World renders at 400x300 (half resolution) with postfx and lightmap, then upscaled 2x to 800x600 with nearest-neighbor filtering for crisp pixel art. UI renders at native 800x600 for readable text. New constants `RENDER_WIDTH`, `RENDER_HEIGHT`, `RENDER_SCALE` in `game.h`.
 - **Visual effects settings UI**: Full settings screen with 8 adjustable options: Movement layout (toggle), Screen Shake, Hitstop, Bloom, Scanlines, Chromatic Aberration, Vignette, and Lighting (all 0-100% sliders). Navigate with W/S, adjust with Left/Right. Settings persist to `settings.ini`.
 - **HUD readability fix**: `game_draw` split into `game_draw_world()` and `game_draw_ui()`. UI renders after lightmap composite so HUD text is not darkened. Menu-only phases (first run, main menu, settings from main menu) skip post-processing entirely for clean text rendering.
 - **Multiplicative light map** (`src/lightmap.h/c`): Children of Morta-style 2D point lighting with radial gradient additive lights and multiplicative scene composite. Player=warm white, bullets=weapon color, enemies=type color, exit=green, bomber charges=bright.
@@ -46,6 +47,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Camera offset now uses `RENDER_WIDTH/2 x RENDER_HEIGHT/2` (200x150) instead of window half-size. Mouse input scaled by `RENDER_SCALE` for correct aiming.
+- PostFX restructured: `postfx_end()` no longer calls BeginDrawing/EndDrawing. Output stored in `postfx_get_texture()` for caller to upscale. PostFX and lightmap operate at render resolution.
+- Viewport calculations in `spawn_wave()` and `tilemap_draw()` now use `camera.offset * 2` instead of `GetScreenWidth()/GetScreenHeight()` for render-resolution correctness.
 - `game_draw()` replaced by `game_draw_world()` and `game_draw_ui()` for layered rendering (world -> lightmap -> UI)
 - PostFX shader now accepts per-frame intensity uniforms for bloom, scanlines, chromatic aberration, and vignette (driven by settings)
 - Screenshake and hitstop scaled by their respective settings (0 = disabled, 1 = full)

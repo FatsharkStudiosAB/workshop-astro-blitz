@@ -1,9 +1,12 @@
 /*
  * Astro Blitz -- main entry point
  *
- * Initializes the window and audio device, runs the game loop, and cleans up.
- * Post-processing effects (bloom, CRT, vignette) wrap the entire render.
- * Multiplicative light map adds atmospheric 2D point lighting.
+ * Pixel-perfect rendering pipeline:
+ *   1. World renders at RENDER_WIDTH x RENDER_HEIGHT (400x300) into postfx target
+ *   2. Lightmap composited at render resolution
+ *   3. PostFX shader applied at render resolution
+ *   4. Result upscaled 2x to SCREEN_WIDTH x SCREEN_HEIGHT (800x600) with nearest-neighbor
+ *   5. UI drawn at full window resolution for crisp text
  */
 
 #include "audio.h"
@@ -94,11 +97,11 @@ int main(void) {
     /* Disable Raylib's default ESC-to-close so we can use ESC for menus */
     SetExitKey(0);
 
-    /* Initialize rendering systems */
+    /* Initialize rendering systems at internal render resolution */
     PostFX pfx;
-    postfx_init(&pfx, SCREEN_WIDTH, SCREEN_HEIGHT);
+    postfx_init(&pfx, RENDER_WIDTH, RENDER_HEIGHT);
     LightMap lm;
-    lightmap_init(&lm, SCREEN_WIDTH, SCREEN_HEIGHT);
+    lightmap_init(&lm, RENDER_WIDTH, RENDER_HEIGHT);
 
     GameState gs;
     memset(&gs, 0, sizeof(gs));
@@ -135,7 +138,7 @@ int main(void) {
             postfx_set_params(&pfx, gs.settings.bloom, gs.settings.scanlines,
                               gs.settings.chromatic_aberration, gs.settings.vignette);
 
-            /* Full pipeline: postfx -> world -> lightmap -> UI -> postfx end */
+            /* ── Render world at internal resolution (400x300) ────────── */
             postfx_begin(&pfx);
             game_draw_world(&gs);
 
@@ -146,11 +149,27 @@ int main(void) {
             populate_lights(&lm, &gs);
             lightmap_render_scaled(&lm, draw_cam, gs.settings.lighting);
 
-            /* UI drawn after lightmap so it's not darkened */
-            game_draw_ui(&gs);
+            /* Apply postfx shader (result stored in output texture) */
             postfx_end(&pfx, elapsed);
+
+            /* ── Upscale to window resolution + draw UI ───────────────── */
+            BeginDrawing();
+            ClearBackground(BLACK);
+
+            /* Draw the post-processed world texture at 2x with nearest-neighbor.
+             * The output RenderTexture is Y-flipped, so draw with negative height. */
+            Texture2D world_tex = postfx_get_texture(&pfx);
+            SetTextureFilter(world_tex, TEXTURE_FILTER_POINT); /* nearest-neighbor */
+            DrawTexturePro(world_tex,
+                           (Rectangle){0, 0, (float)world_tex.width, -(float)world_tex.height},
+                           (Rectangle){0, 0, (float)SCREEN_WIDTH, (float)SCREEN_HEIGHT},
+                           (Vector2){0, 0}, 0.0f, WHITE);
+
+            /* UI drawn at full 800x600 resolution for crisp text */
+            game_draw_ui(&gs);
+            EndDrawing();
         } else {
-            /* Menu-only: no postfx, no lightmap -- clean text */
+            /* Menu-only: no postfx, no lightmap -- clean text at full resolution */
             BeginDrawing();
             ClearBackground(BLACK);
             game_draw_ui(&gs);

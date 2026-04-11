@@ -10,7 +10,7 @@ When it grows too long, summarize older entries and remove resolved items.
 - **Build:** `task build` (or `cmake -B build && cmake --build build --config Release`)
 - **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest. 14 test suites, all passing (19 settings tests).
 - **Branch:** `feature/visual-juice-and-gameplay-depth` -- 18+ commits ahead of main.
-- **Playable:** Yes. All visual effects configurable via Settings UI with slider controls: bloom, CRT scanlines, chromatic aberration, vignette, lighting, screen shake, hitstop. game_draw split into world + UI layers so HUD is not darkened by lightmap. Menu screens skip postfx entirely.
+- **Playable:** Yes. Pixel-perfect rendering at 400x300 with 2x nearest-neighbor upscale to 800x600. All visual effects configurable via Settings UI. game_draw split into world + UI layers (UI at full 800x600, world at 400x300 with postfx + lightmap).
 
 ## Recent Changes
 
@@ -32,7 +32,7 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Known Issues / Next Steps
 
-- **Next up:** Pixel-perfect rendering pipeline (400x300 -> 800x600 integer scale), pixel art sprites (player 24x24, enemies 16-24px).
+- **Next up:** Pixel art sprites (player 24x24 8-directional, enemies 16-24px).
 - **Remaining features:** minimap (B11), gameplay music (B12).
 - **Redundant include path in CMakeLists.txt:** Harmless but could be cleaned up.
 - Room-based level generation would improve map variety.

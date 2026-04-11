@@ -365,9 +365,10 @@ static EnemyType pick_enemy_type(int waves_spawned) {
 static void spawn_wave(GameState *gs) {
     int count = GetRandomValue(SPAWN_MIN_GROUP, SPAWN_MAX_GROUP);
 
-    /* Calculate viewport edges in world space from the active camera */
-    float screen_w = (float)GetScreenWidth();
-    float screen_h = (float)GetScreenHeight();
+    /* Calculate viewport edges in world space from the active camera.
+     * Use camera.offset * 2 as the effective viewport size. */
+    float screen_w = gs->camera.offset.x * 2.0f;
+    float screen_h = gs->camera.offset.y * 2.0f;
     float zoom = (gs->camera.zoom != 0.0f) ? gs->camera.zoom : 1.0f;
     float cam_x = gs->camera.target.x;
     float cam_y = gs->camera.target.y;
@@ -1690,7 +1691,7 @@ void game_init(GameState *gs) {
 
     /* Camera centered on player */
     gs->camera.target = center;
-    gs->camera.offset = (Vector2){SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f};
+    gs->camera.offset = (Vector2){RENDER_WIDTH / 2.0f, RENDER_HEIGHT / 2.0f};
     gs->camera.rotation = 0.0f;
     gs->camera.zoom = 1.0f;
 

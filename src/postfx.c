@@ -3,6 +3,11 @@
  *
  * Combined single-pass shader: bloom glow, CRT scanlines,
  * chromatic aberration, and vignette.
+ *
+ * The pipeline renders to an off-screen texture at the internal render
+ * resolution, applies the shader, and stores the result in an output
+ * texture.  The caller is responsible for drawing the output to the
+ * screen (with upscaling if pixel-perfect rendering is used).
  */
 
 #include "postfx.h"
@@ -75,6 +80,7 @@ static const char *postfx_fs =
 
 void postfx_init(PostFX *pfx, int width, int height) {
     pfx->target = LoadRenderTexture(width, height);
+    pfx->output = LoadRenderTexture(width, height);
     pfx->shader = LoadShaderFromMemory(NULL, postfx_fs);
     pfx->time_loc = GetShaderLocation(pfx->shader, "time");
     pfx->resolution_loc = GetShaderLocation(pfx->shader, "resolution");
@@ -99,37 +105,45 @@ void postfx_init(PostFX *pfx, int width, int height) {
 void postfx_cleanup(PostFX *pfx) {
     UnloadShader(pfx->shader);
     UnloadRenderTexture(pfx->target);
+    UnloadRenderTexture(pfx->output);
 }
 
 void postfx_begin(PostFX *pfx) {
-    if (pfx->enabled) {
-        BeginTextureMode(pfx->target);
-    } else {
-        BeginDrawing();
-    }
+    BeginTextureMode(pfx->target);
     ClearBackground(BLACK);
 }
 
 void postfx_end(PostFX *pfx, float time) {
-    if (pfx->enabled) {
-        EndTextureMode();
+    EndTextureMode();
 
-        /* Update time uniform */
+    if (pfx->enabled) {
+        /* Apply shader: render target -> output through shader */
         SetShaderValue(pfx->shader, pfx->time_loc, &time, SHADER_UNIFORM_FLOAT);
 
-        BeginDrawing();
+        BeginTextureMode(pfx->output);
         ClearBackground(BLACK);
         BeginShaderMode(pfx->shader);
-        /* RenderTexture is Y-flipped, so draw with negative height */
+        /* RenderTexture is Y-flipped, draw with negative height */
         DrawTextureRec(
             pfx->target.texture,
             (Rectangle){0, 0, (float)pfx->target.texture.width, -(float)pfx->target.texture.height},
             (Vector2){0, 0}, WHITE);
         EndShaderMode();
-        EndDrawing();
+        EndTextureMode();
     } else {
-        EndDrawing();
+        /* No shader: copy target directly to output (blit) */
+        BeginTextureMode(pfx->output);
+        ClearBackground(BLACK);
+        DrawTextureRec(
+            pfx->target.texture,
+            (Rectangle){0, 0, (float)pfx->target.texture.width, -(float)pfx->target.texture.height},
+            (Vector2){0, 0}, WHITE);
+        EndTextureMode();
     }
+}
+
+Texture2D postfx_get_texture(const PostFX *pfx) {
+    return pfx->output.texture;
 }
 
 void postfx_toggle(PostFX *pfx) {

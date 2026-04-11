@@ -3,6 +3,7 @@
  */
 
 #include "player.h"
+#include "game.h"
 #include "tilemap.h"
 #include <math.h>
 
@@ -146,7 +147,10 @@ void player_init(Player *p, Vector2 start_pos) {
 void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Camera2D camera,
                    MovementLayout movement_layout) {
     /* ── Aim toward mouse cursor (world space) ───────────────────────── */
+    /* Mouse position is in window coords; scale to render resolution for camera math */
     Vector2 screen_mouse = GetMousePosition();
+    screen_mouse.x /= (float)RENDER_SCALE;
+    screen_mouse.y /= (float)RENDER_SCALE;
     Vector2 world_mouse = GetScreenToWorld2D(screen_mouse, camera);
     Vector2 to_mouse = Vector2Subtract(world_mouse, p->position);
     float dist = Vector2Length(to_mouse);

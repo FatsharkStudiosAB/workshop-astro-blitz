@@ -18,8 +18,11 @@
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 600
+#define SCREEN_WIDTH 800  /* window size (physical pixels) */
+#define SCREEN_HEIGHT 600 /* window size (physical pixels) */
+#define RENDER_WIDTH 400  /* internal render resolution */
+#define RENDER_HEIGHT 300 /* internal render resolution */
+#define RENDER_SCALE 2    /* SCREEN / RENDER ratio (integer upscale) */
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
