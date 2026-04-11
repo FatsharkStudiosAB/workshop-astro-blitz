@@ -66,6 +66,84 @@ static void damage_number_pool_draw(const DamageNumberPool *pool) {
     }
 }
 
+/* ── Corpse helpers ─────────────────────────────────────────────────────────── */
+
+static void corpse_pool_init(CorpsePool *pool) {
+    for (int i = 0; i < MAX_CORPSES; i++) {
+        pool->corpses[i].active = false;
+    }
+}
+
+static void corpse_spawn(CorpsePool *pool, Vector2 position, float radius, Color color) {
+    /* Find an inactive slot (overwrite oldest if full) */
+    int slot = -1;
+    float oldest = CORPSE_LIFETIME + 1.0f;
+    for (int i = 0; i < MAX_CORPSES; i++) {
+        if (!pool->corpses[i].active) {
+            slot = i;
+            break;
+        }
+        if (pool->corpses[i].lifetime < oldest) {
+            oldest = pool->corpses[i].lifetime;
+            slot = i;
+        }
+    }
+    if (slot < 0) {
+        slot = 0;
+    }
+    Corpse *c = &pool->corpses[slot];
+    c->position = position;
+    c->radius = radius;
+    c->lifetime = CORPSE_LIFETIME;
+    c->color = color;
+    c->active = true;
+}
+
+static void corpse_pool_update(CorpsePool *pool, float dt) {
+    for (int i = 0; i < MAX_CORPSES; i++) {
+        Corpse *c = &pool->corpses[i];
+        if (!c->active) {
+            continue;
+        }
+        c->lifetime -= dt;
+        if (c->lifetime <= 0.0f) {
+            c->active = false;
+        }
+    }
+}
+
+static void corpse_pool_draw(const CorpsePool *pool) {
+    for (int i = 0; i < MAX_CORPSES; i++) {
+        const Corpse *c = &pool->corpses[i];
+        if (!c->active) {
+            continue;
+        }
+        float ratio = c->lifetime / CORPSE_LIFETIME;
+        unsigned char alpha = (unsigned char)(ratio * 120.0f); /* max 120 alpha, faded */
+        Color col = c->color;
+        col.a = alpha;
+        DrawCircleV(c->position, c->radius, col);
+        /* Faint outline */
+        col.a = (unsigned char)(alpha * 0.5f);
+        DrawCircleLinesV(c->position, c->radius, col);
+    }
+}
+
+static Color enemy_type_color(EnemyType type) {
+    switch (type) {
+    case ENEMY_SWARMER:
+        return (Color){255, 60, 30, 255};
+    case ENEMY_GRUNT:
+        return (Color){100, 100, 255, 255};
+    case ENEMY_STALKER:
+        return (Color){50, 255, 50, 255};
+    case ENEMY_BOMBER:
+        return (Color){255, 150, 30, 255};
+    default:
+        return (Color){200, 200, 200, 255};
+    }
+}
+
 /* ── Weapon pickup helpers ──────────────────────────────────────────────────── */
 
 static void weapon_pickup_pool_init(WeaponPickupPool *pool) {
@@ -415,6 +493,9 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                                     (Color){255, 255, 100, 255});
 
                 if (enemy->hp <= 0.0f) {
+                    /* Spawn corpse before deactivating */
+                    corpse_spawn(&gs->corpses, enemy->position, enemy->radius,
+                                 enemy_type_color(enemy->type));
                     enemy->active = false;
                     gs->stats.kills++;
 
@@ -506,6 +587,8 @@ static void resolve_enemy_player_collisions(GameState *gs) {
 
         if (check_circle_collision(p->position, PLAYER_RADIUS, enemy->position, enemy->radius)) {
             p->hp -= enemy->damage;
+            corpse_spawn(&gs->corpses, enemy->position, enemy->radius,
+                         enemy_type_color(enemy->type));
             enemy->active = false; /* swarmer dies on contact */
             audio_play_hit(&gs->audio);
             screenshake_add_trauma(&gs->shake, 0.35f);
@@ -613,6 +696,8 @@ static void resolve_melee_enemy_collisions(GameState *gs) {
                        (Color){200, 200, 255, 255});
 
         if (enemy->hp <= 0.0f) {
+            corpse_spawn(&gs->corpses, enemy->position, enemy->radius,
+                         enemy_type_color(enemy->type));
             enemy->active = false;
             gs->stats.kills++;
 
@@ -1051,6 +1136,7 @@ static void advance_floor(GameState *gs) {
     enemy_pool_init(&gs->enemies);
     enemy_bullet_pool_init(&gs->enemy_bullets);
     particle_pool_init(&gs->particles);
+    corpse_pool_init(&gs->corpses);
     damage_number_pool_init(&gs->damage_numbers);
     weapon_pickup_pool_init(&gs->weapon_pickups);
     upgrade_pickup_pool_init(&gs->upgrade_pickups);
@@ -1155,6 +1241,7 @@ static void update_playing(GameState *gs) {
 
     bullet_pool_update(&gs->bullets, dt, gs->arena, &gs->tilemap);
     particle_pool_update(&gs->particles, dt);
+    corpse_pool_update(&gs->corpses, dt);
     damage_number_pool_update(&gs->damage_numbers, dt);
 
     /* ── Ambient particles (cosmetic dust motes) ─────────────────────── */
@@ -1437,6 +1524,7 @@ void game_init(GameState *gs) {
     enemy_pool_init(&gs->enemies);
     enemy_bullet_pool_init(&gs->enemy_bullets);
     particle_pool_init(&gs->particles);
+    corpse_pool_init(&gs->corpses);
     damage_number_pool_init(&gs->damage_numbers);
     weapon_pickup_pool_init(&gs->weapon_pickups);
     upgrade_pickup_pool_init(&gs->upgrade_pickups);
@@ -1526,6 +1614,7 @@ void game_draw(const GameState *gs) {
         /* Draw the world behind any overlay */
         BeginMode2D(draw_cam);
         tilemap_draw(&gs->tilemap, gs->camera, gs->stats.survival_time);
+        corpse_pool_draw(&gs->corpses);
         /* Exit portal */
         if (gs->exit_active) {
             float pulse = 0.5f + 0.5f * sinf((float)gs->stats.survival_time * 3.0f);

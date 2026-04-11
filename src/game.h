@@ -128,6 +128,23 @@ typedef struct {
     int waves_spawned;   /* number of enemy waves spawned */
 } GameStats;
 
+/* ── Enemy corpses (permanence -- dead enemies fade slowly) ────────────────── */
+
+#define MAX_CORPSES 32
+#define CORPSE_LIFETIME 3.0f /* seconds to fully fade out */
+
+typedef struct {
+    Vector2 position;
+    float radius;
+    float lifetime; /* remaining lifetime (fades alpha as it decreases) */
+    Color color;    /* base color of the dead enemy */
+    bool active;
+} Corpse;
+
+typedef struct {
+    Corpse corpses[MAX_CORPSES];
+} CorpsePool;
+
 /* ── Ambient particles (cosmetic dust motes) ───────────────────────────────── */
 
 #define MAX_AMBIENT_PARTICLES 64
@@ -147,6 +164,7 @@ typedef struct {
     EnemyPool enemies;
     EnemyBulletPool enemy_bullets;
     ParticlePool particles;
+    CorpsePool corpses;
     DamageNumberPool damage_numbers;
     WeaponPickupPool weapon_pickups;
     UpgradePickupPool upgrade_pickups;
