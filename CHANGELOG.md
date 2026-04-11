@@ -7,6 +7,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Pixel art sprites** (`src/sprites.h/c`): New sprite module with hardcoded palette-indexed pixel art for all entity types. Player: 16x16 angular humanoid with visor, armor, and reactor core (normal + dash palettes). Swarmer: 10x10 insect blob. Grunt: 12x12 blocky soldier with barrel. Stalker: 10x10 sleek diamond. Bomber: 14x14 round with glowing core (normal + charging palettes). All sprites rotate to face movement/aim direction. Hit flash swaps to all-white palette.
 - **Pixel-perfect rendering pipeline**: World renders at 400x300 (half resolution) with postfx and lightmap, then upscaled 2x to 800x600 with nearest-neighbor filtering for crisp pixel art. UI renders at native 800x600 for readable text. New constants `RENDER_WIDTH`, `RENDER_HEIGHT`, `RENDER_SCALE` in `game.h`.
 - **Visual effects settings UI**: Full settings screen with 8 adjustable options: Movement layout (toggle), Screen Shake, Hitstop, Bloom, Scanlines, Chromatic Aberration, Vignette, and Lighting (all 0-100% sliders). Navigate with W/S, adjust with Left/Right. Settings persist to `settings.ini`.
 - **HUD readability fix**: `game_draw` split into `game_draw_world()` and `game_draw_ui()`. UI renders after lightmap composite so HUD text is not darkened. Menu-only phases (first run, main menu, settings from main menu) skip post-processing entirely for clean text rendering.

@@ -3,6 +3,7 @@
  */
 
 #include "enemy.h"
+#include "sprites.h"
 #include "tilemap.h"
 #include <math.h>
 #include <string.h>
@@ -347,153 +348,35 @@ static void get_facing(const Enemy *e, Vector2 *facing, Vector2 *perp) {
 }
 
 static void draw_swarmer(const Enemy *e) {
-    Vector2 pos = e->position;
-    float r = e->radius;
     Vector2 facing, perp;
     get_facing(e, &facing, &perp);
-    Vector2 back = {-facing.x, -facing.y};
-
-    bool flashing = e->hit_flash > 0.0f;
-    Color fill = flashing ? (Color){255, 255, 255, 255} : (Color){90, 8, 8, 255};
-    Color neon = flashing ? (Color){255, 255, 255, 255} : (Color){255, 50, 25, 255};
-    Color neon_dim = flashing ? (Color){255, 255, 255, 180} : (Color){200, 40, 20, 180};
-    Color glow = flashing ? (Color){255, 255, 255, 80} : (Color){255, 30, 10, 45};
-    Color eye_color = (Color){255, 230, 50, 255};
-    Color abdomen_color = flashing ? (Color){255, 255, 255, 255} : (Color){120, 15, 15, 255};
-
-    /* Outer glow */
-    DrawCircleV(pos, r + 4.0f, glow);
-
-    /* Abdomen (rear segment) */
-    Vector2 abd_center = Vector2Add(pos, Vector2Scale(back, r * 0.4f));
-    DrawCircleV(abd_center, r * 0.65f, abdomen_color);
-    DrawCircleLinesV(abd_center, r * 0.65f, neon_dim);
-
-    /* Main body (head segment) */
-    Vector2 head_center = Vector2Add(pos, Vector2Scale(facing, r * 0.15f));
-    DrawCircleV(head_center, r * 0.75f, fill);
-    DrawCircleLinesV(head_center, r * 0.75f, neon);
-
-    /* Spiny legs (3 pairs, angled outward from body) */
-    for (int s = -1; s <= 1; s++) {
-        float leg_angle = (float)s * 0.5f; /* spread factor */
-        Vector2 leg_dir_l = {facing.x * leg_angle + perp.x, facing.y * leg_angle + perp.y};
-        Vector2 leg_dir_r = {facing.x * leg_angle - perp.x, facing.y * leg_angle - perp.y};
-        float leg_len_inv;
-        leg_len_inv = Vector2Length(leg_dir_l);
-        if (leg_len_inv > 0.01f) {
-            leg_dir_l = Vector2Scale(leg_dir_l, 1.0f / leg_len_inv);
-        }
-        leg_len_inv = Vector2Length(leg_dir_r);
-        if (leg_len_inv > 0.01f) {
-            leg_dir_r = Vector2Scale(leg_dir_r, 1.0f / leg_len_inv);
-        }
-        Vector2 seg_base = Vector2Add(pos, Vector2Scale(facing, (float)s * r * 0.3f));
-        Vector2 leg_tip_l = Vector2Add(seg_base, Vector2Scale(leg_dir_l, r + 2.0f));
-        Vector2 leg_tip_r = Vector2Add(seg_base, Vector2Scale(leg_dir_r, r + 2.0f));
-        DrawLineEx(seg_base, leg_tip_l, 1.0f, neon_dim);
-        DrawLineEx(seg_base, leg_tip_r, 1.0f, neon_dim);
-    }
-
-    /* Mandible pincers (V shape at front) */
-    Vector2 jaw_l =
-        Vector2Add(pos, Vector2Add(Vector2Scale(facing, r * 0.5f), Vector2Scale(perp, r * 0.35f)));
-    Vector2 jaw_r =
-        Vector2Add(pos, Vector2Add(Vector2Scale(facing, r * 0.5f), Vector2Scale(perp, -r * 0.35f)));
-    Vector2 jaw_tip = Vector2Add(pos, Vector2Scale(facing, r + 3.0f));
-    DrawLineEx(jaw_l, jaw_tip, 2.0f, neon);
-    DrawLineEx(jaw_r, jaw_tip, 2.0f, neon);
-
-    /* Eyes (bright dots) */
-    Vector2 eye_l = Vector2Add(
-        head_center, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, r * 0.3f)));
-    Vector2 eye_r = Vector2Add(
-        head_center, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, -r * 0.3f)));
-    DrawCircleV(eye_l, 1.5f, eye_color);
-    DrawCircleV(eye_r, 1.5f, eye_color);
+    Color glow = (e->hit_flash > 0.0f) ? (Color){255, 255, 255, 80} : (Color){255, 30, 10, 45};
+    DrawCircleV(e->position, e->radius + 2.0f, glow);
+    sprite_draw_swarmer(e->position, facing, e->hit_flash);
 }
 
 static void draw_grunt(const Enemy *e) {
-    Vector2 pos = e->position;
-    float r = e->radius;
     Vector2 facing, perp;
     get_facing(e, &facing, &perp);
-
-    bool flashing = e->hit_flash > 0.0f;
-    Color body_fill = flashing ? (Color){255, 255, 255, 255} : (Color){40, 40, 80, 255};
-    Color body_outline = flashing ? (Color){255, 255, 255, 255} : (Color){100, 100, 255, 255};
-    Color glow = flashing ? (Color){255, 255, 255, 80} : (Color){60, 60, 255, 40};
-    Color eye_color = (Color){255, 100, 100, 255};
-
-    DrawCircleV(pos, r + 3.0f, glow);
-    DrawCircleV(pos, r, body_fill);
-    DrawCircleLinesV(pos, r, body_outline);
-
-    /* Gun barrel line */
-    Vector2 barrel_start = Vector2Add(pos, Vector2Scale(facing, r * 0.5f));
-    Vector2 barrel_end = Vector2Add(pos, Vector2Scale(facing, r + 4.0f));
-    DrawLineEx(barrel_start, barrel_end, 2.0f, body_outline);
-
-    /* Single eye */
-    Vector2 eye = Vector2Add(pos, Vector2Scale(facing, r * 0.2f));
-    DrawCircleV(eye, 2.5f, eye_color);
+    Color glow = (e->hit_flash > 0.0f) ? (Color){255, 255, 255, 80} : (Color){60, 60, 255, 40};
+    DrawCircleV(e->position, e->radius + 2.0f, glow);
+    sprite_draw_grunt(e->position, facing, e->hit_flash);
 }
 
 static void draw_stalker(const Enemy *e) {
-    Vector2 pos = e->position;
-    float r = e->radius;
     Vector2 facing, perp;
     get_facing(e, &facing, &perp);
-
-    bool flashing = e->hit_flash > 0.0f;
-    Color body_fill = flashing ? (Color){255, 255, 255, 255} : (Color){30, 60, 30, 255};
-    Color body_outline = flashing ? (Color){255, 255, 255, 255} : (Color){50, 255, 50, 255};
-    Color glow = flashing ? (Color){255, 255, 255, 80} : (Color){50, 255, 50, 40};
-    Color eye_color = (Color){200, 255, 50, 255};
-
-    /* Stalker is drawn as a diamond/triangle shape for speed feel */
-    DrawCircleV(pos, r + 2.0f, glow);
-    DrawCircleV(pos, r, body_fill);
-    DrawCircleLinesV(pos, r, body_outline);
-
-    /* Speed lines when dashing */
-    if (e->is_charging) {
-        Vector2 trail1 = Vector2Add(pos, Vector2Scale(facing, -(r + 3.0f)));
-        Vector2 trail2 = Vector2Add(pos, Vector2Scale(facing, -(r + 8.0f)));
-        DrawLineEx(trail1, trail2, 1.5f, (Color){50, 255, 50, 100});
-    }
-
-    /* Two narrow eyes */
-    Vector2 eye_l =
-        Vector2Add(pos, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, r * 0.25f)));
-    Vector2 eye_r =
-        Vector2Add(pos, Vector2Add(Vector2Scale(facing, r * 0.3f), Vector2Scale(perp, -r * 0.25f)));
-    DrawCircleV(eye_l, 1.5f, eye_color);
-    DrawCircleV(eye_r, 1.5f, eye_color);
+    Color glow = (e->hit_flash > 0.0f) ? (Color){255, 255, 255, 80} : (Color){50, 255, 50, 40};
+    DrawCircleV(e->position, e->radius + 2.0f, glow);
+    sprite_draw_stalker(e->position, facing, e->hit_flash);
 }
 
 static void draw_bomber(const Enemy *e) {
-    Vector2 pos = e->position;
-    float r = e->radius;
-
-    bool flashing = e->hit_flash > 0.0f;
-    Color body_fill = flashing ? (Color){255, 255, 255, 255} : (Color){80, 40, 10, 255};
-    Color body_outline = flashing ? (Color){255, 255, 255, 255} : (Color){255, 150, 30, 255};
-    Color glow = flashing ? (Color){255, 255, 255, 80} : (Color){255, 100, 20, 50};
-    Color core_color = e->is_charging ? (Color){255, 60, 30, 255} : (Color){255, 200, 50, 255};
-
-    DrawCircleV(pos, r + 4.0f, glow);
-    DrawCircleV(pos, r, body_fill);
-    DrawCircleLinesV(pos, r, body_outline);
-
-    /* Pulsing core (brighter when charging) */
-    float core_r = e->is_charging ? 5.0f : 3.0f;
-    DrawCircleV(pos, core_r, core_color);
-
-    /* Warning lines when charging */
-    if (e->is_charging) {
-        DrawCircleLinesV(pos, r + 6.0f, (Color){255, 60, 30, 120});
-    }
+    Vector2 facing, perp;
+    get_facing(e, &facing, &perp);
+    Color glow = (e->hit_flash > 0.0f) ? (Color){255, 255, 255, 80} : (Color){255, 100, 20, 50};
+    DrawCircleV(e->position, e->radius + 2.0f, glow);
+    sprite_draw_bomber(e->position, facing, e->hit_flash, e->is_charging);
 }
 
 void enemy_pool_draw(const EnemyPool *pool) {

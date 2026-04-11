@@ -34,6 +34,7 @@ add_library(astro_blitz_objs OBJECT
     src/screenshake.c
     src/weapon.c
     src/upgrade.c
+    src/sprites.c
 )
 target_include_directories(astro_blitz_objs PUBLIC src)
 # Objects need Raylib headers (types, raymath inlines) at compile time, but

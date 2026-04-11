@@ -32,7 +32,7 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Known Issues / Next Steps
 
-- **Next up:** Pixel art sprites (player 24x24 8-directional, enemies 16-24px).
+- **Next up:** Minimap, gameplay music, room-based level generation, meta-progression.
 - **Remaining features:** minimap (B11), gameplay music (B12).
 - **Redundant include path in CMakeLists.txt:** Harmless but could be cleaned up.
 - Room-based level generation would improve map variety.
