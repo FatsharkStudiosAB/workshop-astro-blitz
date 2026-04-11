@@ -90,3 +90,22 @@ Color upgrade_get_color(UpgradeType type) {
         return (Color){200, 200, 200, 255};
     }
 }
+
+const char *upgrade_get_description(UpgradeType type) {
+    switch (type) {
+    case UPGRADE_SPEED:
+        return "+30 movement speed per stack";
+    case UPGRADE_DAMAGE:
+        return "+0.5 bullet damage per stack";
+    case UPGRADE_FIRE_RATE:
+        return "Fire 15% faster per stack";
+    case UPGRADE_MAX_HP:
+        return "+20 max HP per stack (heals too)";
+    case UPGRADE_BULLET_SPEED:
+        return "+15% bullet speed per stack";
+    case UPGRADE_DASH_CD:
+        return "Dash recharges 15% faster per stack";
+    default:
+        return "Unknown upgrade.";
+    }
+}

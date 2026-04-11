@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Pickup menu system**: Walking over a weapon or upgrade pauses the game and shows a comparison UI. Weapon pickups display two side-by-side cards (current vs new) with full stat breakdown and "Keep Current" / "Replace" buttons. Upgrade pickups show a single card with upgrade name, description, current stacks, and "Keep" / "Discard" buttons. Players decide whether to take each item instead of auto-collecting.
+- **Weapon and upgrade descriptions**: `weapon_get_description()` returns a flavor sentence per weapon type. `upgrade_get_description()` returns per-stack bonus text. Upgrade full names (Speed Boost, Damage Up, Rapid Fire, Vitality, Velocity, Swift Dash) displayed in pickup UI.
+- **Card-based first-run movement picker**: The first-launch movement selection now uses two side-by-side cards with detailed control descriptions and A/D navigation instead of a simple text list.
 - **Pixel art sprites** (`src/sprites.h/c`): New sprite module with hardcoded palette-indexed pixel art for all entity types. Player: 16x16 angular humanoid with visor, armor, and reactor core (normal + dash palettes). Swarmer: 10x10 insect blob. Grunt: 12x12 blocky soldier with barrel. Stalker: 10x10 sleek diamond. Bomber: 14x14 round with glowing core (normal + charging palettes). All sprites rotate to face movement/aim direction. Hit flash swaps to all-white palette.
 - **Pixel-perfect rendering pipeline**: World renders at 400x300 (half resolution) with postfx and lightmap, then upscaled 2x to 800x600 with nearest-neighbor filtering for crisp pixel art. UI renders at native 800x600 for readable text. New constants `RENDER_WIDTH`, `RENDER_HEIGHT`, `RENDER_SCALE` in `game.h`.
 - **Visual effects settings UI**: Full settings screen with 8 adjustable options: Movement layout (toggle), Screen Shake, Hitstop, Bloom, Scanlines, Chromatic Aberration, Vignette, and Lighting (all 0-100% sliders). Navigate with W/S, adjust with Left/Right. Settings persist to `settings.ini`.
@@ -49,6 +52,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 
 - Camera offset now uses `RENDER_WIDTH/2 x RENDER_HEIGHT/2` (200x150) instead of window half-size. Mouse input scaled by `RENDER_SCALE` for correct aiming.
+- Weapon and upgrade pickups no longer auto-collect on contact -- they pause gameplay and show a comparison menu. `GamePhase` gains `PHASE_PICKUP_WEAPON` and `PHASE_PICKUP_UPGRADE`.
+- `GameState` gains `pending_weapon`, `pending_weapon_index`, `pending_upgrade`, `pending_upgrade_index` for pickup menu state.
+- Bomber charge now expires after `BOMBER_CHARGE_DURATION` (1s) to prevent infinite charging on miss.
+- First-run movement picker redesigned from text list to side-by-side card layout with A/D navigation.
 - PostFX restructured: `postfx_end()` no longer calls BeginDrawing/EndDrawing. Output stored in `postfx_get_texture()` for caller to upscale. PostFX and lightmap operate at render resolution.
 - Viewport calculations in `spawn_wave()` and `tilemap_draw()` now use `camera.offset * 2` instead of `GetScreenWidth()/GetScreenHeight()` for render-resolution correctness.
 - `game_draw()` replaced by `game_draw_world()` and `game_draw_ui()` for layered rendering (world -> lightmap -> UI)

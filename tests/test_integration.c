@@ -388,11 +388,21 @@ void test_weapon_pickup_swaps_weapon(void) {
     gs.weapon_pickups.pickups[0].lifetime = 10.0f;
     gs.weapon_pickups.pickups[0].active = true;
 
-    /* Advance one frame to trigger collision */
+    /* Advance one frame -- should enter PHASE_PICKUP_WEAPON (not auto-swap) */
+    game_update(&gs);
+    TEST_ASSERT_EQUAL(PHASE_PICKUP_WEAPON, gs.phase);
+    /* Weapon not swapped yet */
+    TEST_ASSERT_EQUAL(WEAPON_PISTOL, gs.player.current_weapon.type);
+
+    /* Simulate selecting "Replace" (menu_cursor = 1) and pressing Enter */
+    gs.menu_cursor = 1;
+    stub_set_key_pressed(KEY_ENTER, true);
     game_update(&gs);
 
+    /* Now weapon should be swapped and pickup consumed */
     TEST_ASSERT_EQUAL(WEAPON_SHOTGUN, gs.player.current_weapon.type);
     TEST_ASSERT_FALSE(gs.weapon_pickups.pickups[0].active);
+    TEST_ASSERT_EQUAL(PHASE_PLAYING, gs.phase);
 }
 
 /* ── Test: floor scaling increases enemy HP ───────────────────────────────── */

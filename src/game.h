@@ -33,7 +33,9 @@ typedef enum {
     PHASE_PLAYING,
     PHASE_PAUSED,
     PHASE_SETTINGS,
-    PHASE_GAME_OVER
+    PHASE_GAME_OVER,
+    PHASE_PICKUP_WEAPON,  /* weapon pickup comparison menu */
+    PHASE_PICKUP_UPGRADE, /* upgrade pickup accept/discard menu */
 } GamePhase;
 
 /* Maximum number of entries in a menu list */
@@ -194,6 +196,12 @@ typedef struct {
     float slowmo_timer;  /* seconds remaining of slow-motion after kills */
     float slowmo_scale;  /* time scale during slowmo (e.g. 0.3) */
     Vector2 camera_kick; /* directional camera offset from shooting, decays */
+
+    /* ── Pending pickup (set when player walks over an item) ──────────── */
+    Weapon pending_weapon;       /* weapon offered in PHASE_PICKUP_WEAPON */
+    int pending_weapon_index;    /* index into weapon_pickups.pickups[] */
+    UpgradeType pending_upgrade; /* upgrade offered in PHASE_PICKUP_UPGRADE */
+    int pending_upgrade_index;   /* index into upgrade_pickups.pickups[] */
 
     Settings settings;
     bool should_quit; /* set by menu "Quit" action */

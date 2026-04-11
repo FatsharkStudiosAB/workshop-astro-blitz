@@ -70,3 +70,6 @@ const char *upgrade_get_name(UpgradeType type);
 
 /* Get a display color for an upgrade type. */
 Color upgrade_get_color(UpgradeType type);
+
+/* Get a human-readable description of what this upgrade does. */
+const char *upgrade_get_description(UpgradeType type);

@@ -69,3 +69,18 @@ Weapon weapon_get_preset(WeaponType type) {
 Weapon weapon_get_default(void) {
     return weapon_presets[WEAPON_PISTOL];
 }
+
+const char *weapon_get_description(WeaponType type) {
+    switch (type) {
+    case WEAPON_PISTOL:
+        return "Reliable sidearm. Balanced damage and accuracy.";
+    case WEAPON_SMG:
+        return "Rapid-fire spray. Low damage, high volume.";
+    case WEAPON_SHOTGUN:
+        return "5-pellet burst. Devastating at close range.";
+    case WEAPON_PLASMA:
+        return "Slow, heavy bolts. Maximum damage per shot.";
+    default:
+        return "Unknown weapon.";
+    }
+}

@@ -5,12 +5,12 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Current State
 
-- **Phase:** Visual overhaul -- settings UI, configurable effects, HUD readability fix. Previously: post-processing shaders, juice mechanics, lighting, weapon system, enemy types, melee, floor progression, combos, upgrades.
+- **Phase:** Pickup menu system, visual overhaul. Previously: settings UI, configurable effects, HUD readability, post-processing shaders, juice mechanics, lighting, weapon system, enemy types, melee, floor progression, combos, upgrades.
 - **Engine/Framework:** Raylib 5.5 (C99), built via CMake FetchContent.
 - **Build:** `task build` (or `cmake -B build && cmake --build build --config Release`)
-- **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest. 14 test suites, all passing (19 settings tests).
+- **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest. 15 test suites, all passing.
 - **Branch:** `feature/visual-juice-and-gameplay-depth` -- 18+ commits ahead of main.
-- **Playable:** Yes. Pixel-perfect rendering at 400x300 with 2x nearest-neighbor upscale to 800x600. All visual effects configurable via Settings UI. game_draw split into world + UI layers (UI at full 800x600, world at 400x300 with postfx + lightmap).
+- **Playable:** Yes. Pickup menu pauses game and shows item comparison UI (weapon: side-by-side stats; upgrade: card with description). First-run movement picker uses card layout. Pixel-perfect rendering at 400x300 with 2x upscale. All visual effects configurable via Settings UI.
 
 ## Recent Changes
 

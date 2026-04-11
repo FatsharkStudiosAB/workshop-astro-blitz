@@ -39,3 +39,6 @@ Weapon weapon_get_preset(WeaponType type);
 
 /* Get the default starting weapon (Pistol). */
 Weapon weapon_get_default(void);
+
+/* Get a short description of what makes this weapon unique. */
+const char *weapon_get_description(WeaponType type);

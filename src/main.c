@@ -131,6 +131,7 @@ int main(void) {
         /* Determine if we have world content (gameplay phases) */
         bool has_world =
             (gs.phase == PHASE_PLAYING || gs.phase == PHASE_PAUSED || gs.phase == PHASE_GAME_OVER ||
+             gs.phase == PHASE_PICKUP_WEAPON || gs.phase == PHASE_PICKUP_UPGRADE ||
              (gs.phase == PHASE_SETTINGS && gs.settings_return_phase != PHASE_MAIN_MENU));
 
         if (has_world) {

@@ -308,17 +308,13 @@ static void resolve_upgrade_pickup_collisions(GameState *gs) {
 
         if (check_circle_collision(p->position, PLAYER_RADIUS, up->position,
                                    UPGRADE_PICKUP_RADIUS)) {
-            if (upgrade_add(&gs->upgrades, up->type)) {
-                up->active = false;
-                particle_burst(&gs->particles, up->position, 8, 30.0f, 80.0f, 0.1f, 0.3f, 2.5f,
-                               upgrade_get_color(up->type));
-
-                /* Apply max HP upgrade immediately */
-                if (up->type == UPGRADE_MAX_HP) {
-                    float bonus = UPGRADE_MAX_HP_BONUS;
-                    p->max_hp += bonus;
-                    p->hp += bonus; /* heal the bonus amount too */
-                }
+            /* Only show menu if we can actually add the upgrade */
+            if (gs->upgrades.stacks[up->type] < MAX_UPGRADE_STACKS) {
+                gs->pending_upgrade = up->type;
+                gs->pending_upgrade_index = i;
+                gs->menu_cursor = 0; /* default to "Keep" */
+                gs->phase = PHASE_PICKUP_UPGRADE;
+                return; /* pause -- handle one at a time */
             }
         }
     }
@@ -754,13 +750,11 @@ static void resolve_weapon_pickup_collisions(GameState *gs) {
 
         if (check_circle_collision(p->position, PLAYER_RADIUS, wp->position,
                                    WEAPON_PICKUP_RADIUS)) {
-            /* Swap weapon */
-            p->current_weapon = wp->weapon;
-            wp->active = false;
-
-            /* Pickup effect */
-            particle_burst(&gs->particles, wp->position, 8, 30.0f, 100.0f, 0.1f, 0.3f, 2.5f,
-                           wp->weapon.bullet_color);
+            gs->pending_weapon = wp->weapon;
+            gs->pending_weapon_index = i;
+            gs->menu_cursor = 0; /* default to "Keep Current" */
+            gs->phase = PHASE_PICKUP_WEAPON;
+            return; /* pause -- handle one at a time */
         }
     }
 }
@@ -998,19 +992,16 @@ static void draw_menu_items(const char *items[], int count, int selected, int st
 /* ── Phase-specific update helpers ─────────────────────────────────────────── */
 
 static void update_first_run(GameState *gs) {
-    enum { PICK_8DIR, PICK_TANK, PICK_COUNT };
-
-    gs->menu_cursor = menu_navigate(gs->menu_cursor, PICK_COUNT);
+    /* Left/Right or A/D to toggle between the two cards */
+    if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+        gs->menu_cursor = 0;
+    }
+    if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+        gs->menu_cursor = 1;
+    }
 
     if (menu_confirm()) {
-        switch (gs->menu_cursor) {
-        case PICK_8DIR:
-            gs->settings.movement_layout = MOVEMENT_8DIR;
-            break;
-        case PICK_TANK:
-            gs->settings.movement_layout = MOVEMENT_TANK;
-            break;
-        }
+        gs->settings.movement_layout = (gs->menu_cursor == 0) ? MOVEMENT_8DIR : MOVEMENT_TANK;
         settings_save(&gs->settings);
         gs->phase = PHASE_MAIN_MENU;
         gs->menu_cursor = 0;
@@ -1458,46 +1449,324 @@ static void update_game_over(GameState *gs) {
     }
 }
 
+/* ── Pickup phase update/draw ───────────────────────────────────────────────── */
+
+static void update_pickup_weapon(GameState *gs) {
+    /* Left/Right or A/D to toggle selection (0 = Keep, 1 = Replace) */
+    if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+        gs->menu_cursor = 0;
+    }
+    if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+        gs->menu_cursor = 1;
+    }
+
+    /* Enter / Space to confirm */
+    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+        if (gs->menu_cursor == 1) {
+            /* Replace: swap weapon */
+            gs->player.current_weapon = gs->pending_weapon;
+        }
+        /* Either way, consume the pickup */
+        WeaponPickup *wp = &gs->weapon_pickups.pickups[gs->pending_weapon_index];
+        particle_burst(&gs->particles, wp->position, 8, 30.0f, 100.0f, 0.1f, 0.3f, 2.5f,
+                       wp->weapon.bullet_color);
+        wp->active = false;
+        gs->phase = PHASE_PLAYING;
+    }
+}
+
+static void update_pickup_upgrade(GameState *gs) {
+    /* Up/Down or W/S to toggle (0 = Keep, 1 = Discard) */
+    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
+        gs->menu_cursor = 0;
+    }
+    if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
+        gs->menu_cursor = 1;
+    }
+
+    /* Enter / Space to confirm */
+    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+        UpgradePickup *up = &gs->upgrade_pickups.pickups[gs->pending_upgrade_index];
+        if (gs->menu_cursor == 0) {
+            /* Keep: apply the upgrade */
+            if (upgrade_add(&gs->upgrades, up->type)) {
+                /* Apply max HP upgrade immediately */
+                if (up->type == UPGRADE_MAX_HP) {
+                    float bonus = UPGRADE_MAX_HP_BONUS;
+                    gs->player.max_hp += bonus;
+                    gs->player.hp += bonus;
+                }
+            }
+        }
+        /* Either way, consume the pickup */
+        particle_burst(&gs->particles, up->position, 8, 30.0f, 80.0f, 0.1f, 0.3f, 2.5f,
+                       upgrade_get_color(up->type));
+        up->active = false;
+        gs->phase = PHASE_PLAYING;
+    }
+}
+
+/* ── Card drawing helper ───────────────────────────────────────────────────── */
+
+/* Draw a rounded-corner card frame at (x, y) with given size and border color. */
+static void draw_card(int x, int y, int w, int h, Color border, bool selected) {
+    Color bg = {15, 15, 25, 240};
+    DrawRectangle(x, y, w, h, bg);
+    Color outline = selected ? border : (Color){80, 80, 80, 255};
+    DrawRectangleLines(x, y, w, h, outline);
+    if (selected) {
+        /* Double border for emphasis */
+        DrawRectangleLines(x - 1, y - 1, w + 2, h + 2, outline);
+    }
+}
+
+/* Draw a selectable button at (x, y) centered in given width. */
+static void draw_button(int cx, int y, const char *label, int font_size, Color border_color,
+                        bool selected) {
+    int w = MeasureText(label, font_size) + 30;
+    int h = font_size + 12;
+    int x = cx - w / 2;
+    Color bg = selected ? (Color){border_color.r, border_color.g, border_color.b, 40}
+                        : (Color){20, 20, 30, 200};
+    DrawRectangle(x, y, w, h, bg);
+    DrawRectangleLines(x, y, w, h, border_color);
+    Color text_color = selected ? RAYWHITE : GRAY;
+    DrawText(label, cx - MeasureText(label, font_size) / 2, y + 6, font_size, text_color);
+}
+
+/* Draw weapon stats inside a card area. */
+static void draw_weapon_stats(int x, int y, const Weapon *w) {
+    int fs = 14;
+    int line_h = 18;
+    DrawText(w->name, x, y, 20, w->bullet_color);
+    y += 26;
+    DrawText(weapon_get_description(w->type), x, y, 12, GRAY);
+    y += 20;
+    DrawText(TextFormat("Damage: %.1f", (double)w->damage), x, y, fs, RAYWHITE);
+    y += line_h;
+    if (w->projectile_count > 1) {
+        DrawText(TextFormat("Pellets: %d", w->projectile_count), x, y, fs, RAYWHITE);
+        y += line_h;
+    }
+    DrawText(TextFormat("Fire Rate: %.2fs", (double)w->fire_rate), x, y, fs, RAYWHITE);
+    y += line_h;
+    DrawText(TextFormat("Speed: %.0f", (double)w->bullet_speed), x, y, fs, RAYWHITE);
+    y += line_h;
+    if (w->spread_angle > 0.0f) {
+        DrawText(TextFormat("Spread: %.0f deg", (double)w->spread_angle), x, y, fs,
+                 (Color){255, 200, 100, 255});
+    } else {
+        DrawText("Spread: None", x, y, fs, (Color){100, 255, 100, 255});
+    }
+}
+
+static void draw_pickup_weapon(const GameState *gs) {
+    /* Dark overlay over the frozen game world */
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 180});
+
+    /* Title */
+    const char *title = "WEAPON FOUND";
+    int title_w = MeasureText(title, 28);
+    DrawText(title, (SCREEN_WIDTH - title_w) / 2, 40, 28, (Color){0, 220, 200, 255});
+
+    /* Two side-by-side cards: Current (left) vs New (right) */
+    int card_w = 280;
+    int card_h = 260;
+    int gap = 40;
+    int total_w = card_w * 2 + gap;
+    int left_x = (SCREEN_WIDTH - total_w) / 2;
+    int right_x = left_x + card_w + gap;
+    int card_y = 85;
+
+    /* "Current" label */
+    const char *cur_label = "CURRENT";
+    int cur_lw = MeasureText(cur_label, 14);
+    DrawText(cur_label, left_x + (card_w - cur_lw) / 2, card_y - 18, 14, GRAY);
+
+    /* "New" label */
+    const char *new_label = "NEW";
+    int new_lw = MeasureText(new_label, 14);
+    DrawText(new_label, right_x + (card_w - new_lw) / 2, card_y - 18, 14,
+             gs->pending_weapon.bullet_color);
+
+    /* Current weapon card */
+    draw_card(left_x, card_y, card_w, card_h, RAYWHITE, gs->menu_cursor == 0);
+    draw_weapon_stats(left_x + 16, card_y + 16, &gs->player.current_weapon);
+
+    /* New weapon card (highlighted with weapon color border) */
+    draw_card(right_x, card_y, card_w, card_h, gs->pending_weapon.bullet_color,
+              gs->menu_cursor == 1);
+    draw_weapon_stats(right_x + 16, card_y + 16, &gs->pending_weapon);
+
+    /* Buttons */
+    int btn_y = card_y + card_h + 20;
+    draw_button(left_x + card_w / 2, btn_y, "Keep Current", 16, RAYWHITE, gs->menu_cursor == 0);
+    draw_button(right_x + card_w / 2, btn_y, "Replace", 16, gs->pending_weapon.bullet_color,
+                gs->menu_cursor == 1);
+
+    /* Hint */
+    const char *hint = "A/D to choose  |  Enter to confirm";
+    int hint_w = MeasureText(hint, 14);
+    DrawText(hint, (SCREEN_WIDTH - hint_w) / 2, SCREEN_HEIGHT - 40, 14, DARKGRAY);
+}
+
+static void draw_pickup_upgrade(const GameState *gs) {
+    /* Dark overlay */
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 180});
+
+    /* Title */
+    const char *title = "UPGRADE FOUND";
+    int title_w = MeasureText(title, 28);
+    DrawText(title, (SCREEN_WIDTH - title_w) / 2, 60, 28, (Color){0, 220, 200, 255});
+
+    /* Single centered card */
+    Color uc = upgrade_get_color(gs->pending_upgrade);
+    int card_w = 340;
+    int card_h = 200;
+    int card_x = (SCREEN_WIDTH - card_w) / 2;
+    int card_y = 110;
+
+    draw_card(card_x, card_y, card_w, card_h, uc, true);
+
+    /* Upgrade name (large, colored) */
+    const char *uname = upgrade_get_name(gs->pending_upgrade);
+    const char *full_name = NULL;
+    switch (gs->pending_upgrade) {
+    case UPGRADE_SPEED:
+        full_name = "Speed Boost";
+        break;
+    case UPGRADE_DAMAGE:
+        full_name = "Damage Up";
+        break;
+    case UPGRADE_FIRE_RATE:
+        full_name = "Rapid Fire";
+        break;
+    case UPGRADE_MAX_HP:
+        full_name = "Vitality";
+        break;
+    case UPGRADE_BULLET_SPEED:
+        full_name = "Velocity";
+        break;
+    case UPGRADE_DASH_CD:
+        full_name = "Swift Dash";
+        break;
+    default:
+        full_name = "Unknown";
+        break;
+    }
+
+    int name_x = card_x + 20;
+    int name_y = card_y + 16;
+    DrawText(full_name, name_x, name_y, 24, uc);
+
+    /* Short code tag */
+    DrawText(TextFormat("[%s]", uname), name_x + MeasureText(full_name, 24) + 10, name_y + 4, 16,
+             (Color){uc.r, uc.g, uc.b, 160});
+
+    /* Description */
+    const char *desc = upgrade_get_description(gs->pending_upgrade);
+    DrawText(desc, name_x, name_y + 34, 16, RAYWHITE);
+
+    /* Current stacks */
+    int stacks = gs->upgrades.stacks[gs->pending_upgrade];
+    DrawText(TextFormat("Current stacks: %d / %d", stacks, MAX_UPGRADE_STACKS), name_x, name_y + 60,
+             14, GRAY);
+
+    /* Rarity bar (colored stripe on the right side of card) */
+    int bar_w = 4;
+    DrawRectangle(card_x + card_w - bar_w - 4, card_y + 8, bar_w, card_h - 16, uc);
+
+    /* Buttons below card */
+    int btn_y = card_y + card_h + 25;
+    Color keep_color = (Color){60, 200, 120, 255};
+    Color discard_color = (Color){200, 60, 60, 255};
+    int btn_cx = SCREEN_WIDTH / 2;
+    draw_button(btn_cx, btn_y, "Keep", 18, keep_color, gs->menu_cursor == 0);
+    draw_button(btn_cx, btn_y + 50, "Discard", 18, discard_color, gs->menu_cursor == 1);
+
+    /* Hint */
+    const char *hint = "W/S to choose  |  Enter to confirm";
+    int hint_w = MeasureText(hint, 14);
+    DrawText(hint, (SCREEN_WIDTH - hint_w) / 2, SCREEN_HEIGHT - 40, 14, DARKGRAY);
+}
+
 /* ── Phase-specific draw helpers ───────────────────────────────────────────── */
 
 static void draw_first_run(const GameState *gs) {
     /* Title */
     const char *title = "ASTRO BLITZ";
-    int title_size = 50;
-    int title_w = MeasureText(title, title_size);
-    DrawText(title, (SCREEN_WIDTH - title_w) / 2, 80, title_size, (Color){0, 220, 200, 255});
+    int title_w = MeasureText(title, 50);
+    DrawText(title, (SCREEN_WIDTH - title_w) / 2, 50, 50, (Color){0, 220, 200, 255});
 
     /* Prompt */
     const char *prompt = "Choose your movement style:";
-    int prompt_size = 20;
-    int prompt_w = MeasureText(prompt, prompt_size);
-    DrawText(prompt, (SCREEN_WIDTH - prompt_w) / 2, 170, prompt_size, RAYWHITE);
+    int prompt_w = MeasureText(prompt, 20);
+    DrawText(prompt, (SCREEN_WIDTH - prompt_w) / 2, 120, 20, RAYWHITE);
 
-    /* Options */
-    const char *items[] = {"8-Directional", "Tank Controls"};
-    draw_menu_items(items, 2, gs->menu_cursor, 240, 24, 50);
+    /* Two side-by-side cards */
+    Color teal = {0, 220, 200, 255};
+    int card_w = 280;
+    int card_h = 260;
+    int gap = 40;
+    int total_w = card_w * 2 + gap;
+    int left_x = (SCREEN_WIDTH - total_w) / 2;
+    int right_x = left_x + card_w + gap;
+    int card_y = 165;
 
-    /* Descriptions for the currently highlighted option */
-    const char *desc = NULL;
-    if (gs->menu_cursor == 0) {
-        desc = "W = up, S = down, A = left, D = right";
-    } else {
-        desc = "W/S = forward/back toward aim, A/D = strafe";
-    }
-    int desc_size = 16;
-    int desc_w = MeasureText(desc, desc_size);
-    DrawText(desc, (SCREEN_WIDTH - desc_w) / 2, 360, desc_size, GRAY);
+    /* 8-Directional card */
+    draw_card(left_x, card_y, card_w, card_h, teal, gs->menu_cursor == 0);
+    int lx = left_x + 20;
+    int ly = card_y + 16;
+    DrawText("8-Directional", lx, ly, 22, gs->menu_cursor == 0 ? teal : GRAY);
+    ly += 32;
+    DrawText("Simple and intuitive.", lx, ly, 14, GRAY);
+    ly += 24;
+    DrawText("W = Up", lx, ly, 16, RAYWHITE);
+    ly += 20;
+    DrawText("S = Down", lx, ly, 16, RAYWHITE);
+    ly += 20;
+    DrawText("A = Left", lx, ly, 16, RAYWHITE);
+    ly += 20;
+    DrawText("D = Right", lx, ly, 16, RAYWHITE);
+    ly += 28;
+    DrawText("Aim with mouse.", lx, ly, 14, (Color){150, 150, 150, 255});
+    ly += 18;
+    DrawText("Movement is screen-relative.", lx, ly, 14, (Color){150, 150, 150, 255});
 
+    /* Tank Controls card */
+    draw_card(right_x, card_y, card_w, card_h, teal, gs->menu_cursor == 1);
+    int rx = right_x + 20;
+    int ry = card_y + 16;
+    DrawText("Tank Controls", rx, ry, 22, gs->menu_cursor == 1 ? teal : GRAY);
+    ry += 32;
+    DrawText("Strafing relative to aim.", rx, ry, 14, GRAY);
+    ry += 24;
+    DrawText("W = Toward cursor", rx, ry, 16, RAYWHITE);
+    ry += 20;
+    DrawText("S = Away from cursor", rx, ry, 16, RAYWHITE);
+    ry += 20;
+    DrawText("A = Strafe left", rx, ry, 16, RAYWHITE);
+    ry += 20;
+    DrawText("D = Strafe right", rx, ry, 16, RAYWHITE);
+    ry += 28;
+    DrawText("Aim with mouse.", rx, ry, 14, (Color){150, 150, 150, 255});
+    ry += 18;
+    DrawText("Movement relative to aim.", rx, ry, 14, (Color){150, 150, 150, 255});
+
+    /* Buttons under each card */
+    int btn_y = card_y + card_h + 20;
+    draw_button(left_x + card_w / 2, btn_y, "Select", 16, teal, gs->menu_cursor == 0);
+    draw_button(right_x + card_w / 2, btn_y, "Select", 16, teal, gs->menu_cursor == 1);
+
+    /* Note */
     const char *note = "(You can change this later in Settings)";
-    int note_size = 14;
-    int note_w = MeasureText(note, note_size);
-    DrawText(note, (SCREEN_WIDTH - note_w) / 2, 390, note_size, DARKGRAY);
+    int note_w = MeasureText(note, 14);
+    DrawText(note, (SCREEN_WIDTH - note_w) / 2, btn_y + 48, 14, DARKGRAY);
 
     /* Hint */
-    const char *hint = "W/S to select  |  Enter to confirm";
-    int hint_size = 14;
-    int hint_w = MeasureText(hint, hint_size);
-    DrawText(hint, (SCREEN_WIDTH - hint_w) / 2, SCREEN_HEIGHT - 50, hint_size, DARKGRAY);
+    const char *hint = "A/D to choose  |  Enter to confirm";
+    int hint_w = MeasureText(hint, 14);
+    DrawText(hint, (SCREEN_WIDTH - hint_w) / 2, SCREEN_HEIGHT - 40, 14, DARKGRAY);
 }
 
 static void draw_main_menu(const GameState *gs) {
@@ -1720,6 +1989,12 @@ void game_update(GameState *gs) {
     case PHASE_GAME_OVER:
         update_game_over(gs);
         break;
+    case PHASE_PICKUP_WEAPON:
+        update_pickup_weapon(gs);
+        break;
+    case PHASE_PICKUP_UPGRADE:
+        update_pickup_upgrade(gs);
+        break;
     }
 }
 
@@ -1743,7 +2018,9 @@ void game_draw_world(const GameState *gs) {
 
     case PHASE_PLAYING:
     case PHASE_PAUSED:
-    case PHASE_GAME_OVER: {
+    case PHASE_GAME_OVER:
+    case PHASE_PICKUP_WEAPON:
+    case PHASE_PICKUP_UPGRADE: {
         /* Apply screen shake + camera kick to camera for world rendering */
         Camera2D draw_cam = screenshake_apply(&gs->shake, gs->camera);
         draw_cam.target.x += gs->camera_kick.x;
@@ -1852,6 +2129,16 @@ void game_draw_ui(const GameState *gs) {
             draw_hud(gs);
         }
         draw_settings(gs);
+        break;
+
+    case PHASE_PICKUP_WEAPON:
+        draw_hud(gs);
+        draw_pickup_weapon(gs);
+        break;
+
+    case PHASE_PICKUP_UPGRADE:
+        draw_hud(gs);
+        draw_pickup_upgrade(gs);
         break;
     }
 }
