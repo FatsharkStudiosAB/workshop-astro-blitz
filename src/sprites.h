@@ -9,6 +9,7 @@
 #pragma once
 
 #include "raylib.h"
+#include <stdbool.h>
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 

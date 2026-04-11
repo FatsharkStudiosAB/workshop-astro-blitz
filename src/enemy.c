@@ -281,9 +281,16 @@ static void update_bomber(Enemy *e, float dt, Vector2 target, Rectangle arena, c
 
     if (e->is_charging) {
         /* Charging: rush toward player at high speed */
-        e->position = Vector2Add(e->position, Vector2Scale(e->velocity, dt));
-        clamp_to_arena(&e->position, e->radius, arena);
-        resolve_tile_collision_enemy(&e->position, e->radius, tm);
+        e->ai_timer -= dt;
+        if (e->ai_timer <= 0.0f) {
+            /* Charge expired without contact -- reset */
+            e->is_charging = false;
+            e->ai_timer = 0.0f;
+        } else {
+            e->position = Vector2Add(e->position, Vector2Scale(e->velocity, dt));
+            clamp_to_arena(&e->position, e->radius, arena);
+            resolve_tile_collision_enemy(&e->position, e->radius, tm);
+        }
         return;
     }
 
@@ -297,6 +304,7 @@ static void update_bomber(Enemy *e, float dt, Vector2 target, Rectangle arena, c
     /* Start charge when close enough */
     if (dist < BOMBER_CHARGE_RANGE && dist > 1.0f) {
         e->is_charging = true;
+        e->ai_timer = BOMBER_CHARGE_DURATION;
         Vector2 charge_dir = Vector2Scale(diff, 1.0f / dist);
         e->velocity = Vector2Scale(charge_dir, BOMBER_CHARGE_SPEED);
     }
@@ -347,36 +355,37 @@ static void get_facing(const Enemy *e, Vector2 *facing, Vector2 *perp) {
     *perp = (Vector2){-facing->y, facing->x};
 }
 
+/* Get the facing direction from velocity (no perpendicular needed). */
+static Vector2 enemy_facing(const Enemy *e) {
+    float spd = Vector2Length(e->velocity);
+    if (spd > 1.0f) {
+        return Vector2Scale(e->velocity, 1.0f / spd);
+    }
+    return (Vector2){0.0f, 1.0f};
+}
+
 static void draw_swarmer(const Enemy *e) {
-    Vector2 facing, perp;
-    get_facing(e, &facing, &perp);
     Color glow = (e->hit_flash > 0.0f) ? (Color){255, 255, 255, 80} : (Color){255, 30, 10, 45};
     DrawCircleV(e->position, e->radius + 2.0f, glow);
-    sprite_draw_swarmer(e->position, facing, e->hit_flash);
+    sprite_draw_swarmer(e->position, enemy_facing(e), e->hit_flash);
 }
 
 static void draw_grunt(const Enemy *e) {
-    Vector2 facing, perp;
-    get_facing(e, &facing, &perp);
     Color glow = (e->hit_flash > 0.0f) ? (Color){255, 255, 255, 80} : (Color){60, 60, 255, 40};
     DrawCircleV(e->position, e->radius + 2.0f, glow);
-    sprite_draw_grunt(e->position, facing, e->hit_flash);
+    sprite_draw_grunt(e->position, enemy_facing(e), e->hit_flash);
 }
 
 static void draw_stalker(const Enemy *e) {
-    Vector2 facing, perp;
-    get_facing(e, &facing, &perp);
     Color glow = (e->hit_flash > 0.0f) ? (Color){255, 255, 255, 80} : (Color){50, 255, 50, 40};
     DrawCircleV(e->position, e->radius + 2.0f, glow);
-    sprite_draw_stalker(e->position, facing, e->hit_flash);
+    sprite_draw_stalker(e->position, enemy_facing(e), e->hit_flash);
 }
 
 static void draw_bomber(const Enemy *e) {
-    Vector2 facing, perp;
-    get_facing(e, &facing, &perp);
     Color glow = (e->hit_flash > 0.0f) ? (Color){255, 255, 255, 80} : (Color){255, 100, 20, 50};
     DrawCircleV(e->position, e->radius + 2.0f, glow);
-    sprite_draw_bomber(e->position, facing, e->hit_flash, e->is_charging);
+    sprite_draw_bomber(e->position, enemy_facing(e), e->hit_flash, e->is_charging);
 }
 
 void enemy_pool_draw(const EnemyPool *pool) {

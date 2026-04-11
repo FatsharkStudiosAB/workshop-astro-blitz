@@ -142,6 +142,23 @@ if(BUILD_TESTING)
     target_link_libraries(test_upgrade PRIVATE unity astro_blitz_lib)
     add_test(NAME test_upgrade COMMAND test_upgrade)
 
+    # Sprites module tests (uses stubs because sprites call DrawPixel)
+    add_executable(test_sprites tests/test_sprites.c)
+    target_include_directories(test_sprites PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests
+        ${raylib_SOURCE_DIR}/src
+    )
+    target_link_libraries(test_sprites PRIVATE
+        unity
+        $<TARGET_OBJECTS:astro_blitz_objs>
+        raylib_stubs
+    )
+    if(NOT MSVC)
+        target_link_libraries(test_sprites PRIVATE m)
+    endif()
+    add_test(NAME test_sprites COMMAND test_sprites)
+
     # ── Integration tests (game objects + Raylib stubs, no real Raylib) ───
     add_library(raylib_stubs STATIC tests/raylib_stubs.c)
     target_include_directories(raylib_stubs PUBLIC

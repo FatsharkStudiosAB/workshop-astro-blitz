@@ -52,6 +52,7 @@ typedef struct Tilemap Tilemap;
 #define BOMBER_DAMAGE 20.0f /* contact damage */
 #define BOMBER_CHARGE_RANGE 150.0f
 #define BOMBER_CHARGE_SPEED 350.0f
+#define BOMBER_CHARGE_DURATION 1.0f /* seconds before charge resets if no contact */
 #define BOMBER_EXPLOSION_RADIUS 60.0f
 #define BOMBER_EXPLOSION_DAMAGE 25.0f
 
