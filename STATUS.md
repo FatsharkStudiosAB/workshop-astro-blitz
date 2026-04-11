@@ -5,12 +5,12 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Current State
 
-- **Phase:** Visual overhaul -- post-processing shaders, juice mechanics, lighting. Previously: weapon system, enemy types, melee, floor progression, combos, upgrades.
+- **Phase:** Visual overhaul -- settings UI, configurable effects, HUD readability fix. Previously: post-processing shaders, juice mechanics, lighting, weapon system, enemy types, melee, floor progression, combos, upgrades.
 - **Engine/Framework:** Raylib 5.5 (C99), built via CMake FetchContent.
 - **Build:** `task build` (or `cmake -B build && cmake --build build --config Release`)
-- **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest. 14 test suites, all passing.
+- **Test framework:** Unity (ThrowTheSwitch) v2.6.1 via FetchContent + CTest. 14 test suites, all passing (19 settings tests).
 - **Branch:** `feature/visual-juice-and-gameplay-depth` -- 18+ commits ahead of main.
-- **Playable:** Yes. Post-processing shaders (bloom, CRT, vignette, chromatic aberration). Hitstop freeze frames, slow-motion on kills, camera kick, enemy knockback. Animated floor grid, ambient dust particles, enemy HP bars. Player has kite-shaped hull with visor, thrusters, weapon barrel.
+- **Playable:** Yes. All visual effects configurable via Settings UI with slider controls: bloom, CRT scanlines, chromatic aberration, vignette, lighting, screen shake, hitstop. game_draw split into world + UI layers so HUD is not darkened by lightmap. Menu screens skip postfx entirely.
 
 ## Recent Changes
 
@@ -32,11 +32,12 @@ When it grows too long, summarize older entries and remove resolved items.
 
 ## Known Issues / Next Steps
 
-- **Next up:** Multiplicative light map (Children of Morta style), pixel-perfect rendering pipeline, pixel art sprites, enemy corpse permanence.
+- **Next up:** Pixel-perfect rendering pipeline (400x300 -> 800x600 integer scale), pixel art sprites (player 24x24, enemies 16-24px).
 - **Remaining features:** minimap (B11), gameplay music (B12).
 - **Redundant include path in CMakeLists.txt:** Harmless but could be cleaned up.
 - Room-based level generation would improve map variety.
 - **PostFX toggle:** F1 key toggles post-processing on/off at runtime.
+- **PostFX + lightmap modules use GPU calls:** Cannot be in `astro_blitz_objs` -- linked directly to exe target.
 
 ## Workarounds & Patterns
 

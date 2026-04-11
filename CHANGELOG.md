@@ -7,6 +7,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Visual effects settings UI**: Full settings screen with 8 adjustable options: Movement layout (toggle), Screen Shake, Hitstop, Bloom, Scanlines, Chromatic Aberration, Vignette, and Lighting (all 0-100% sliders). Navigate with W/S, adjust with Left/Right. Settings persist to `settings.ini`.
+- **HUD readability fix**: `game_draw` split into `game_draw_world()` and `game_draw_ui()`. UI renders after lightmap composite so HUD text is not darkened. Menu-only phases (first run, main menu, settings from main menu) skip post-processing entirely for clean text rendering.
+- **Multiplicative light map** (`src/lightmap.h/c`): Children of Morta-style 2D point lighting with radial gradient additive lights and multiplicative scene composite. Player=warm white, bullets=weapon color, enemies=type color, exit=green, bomber charges=bright.
+- **Scaled lightmap rendering**: `lightmap_render_scaled()` interpolates ambient darkness based on lighting setting (0=no lighting, 1=full atmospheric lighting).
+- **Enemy corpse permanence**: Dead enemies leave fading colored ghosts at death position for 3 seconds. Pool of 32 corpses, oldest overwritten when full.
+- 4 new settings unit tests: visual defaults, round-trip save/load, out-of-range clamping, missing fields preserve defaults.
 - **Post-processing shader pipeline** (`src/postfx.h/c`): Combined bloom/glow, CRT scanlines, chromatic aberration, and vignette in a single GLSL 330 fragment shader. Renders scene to off-screen `RenderTexture2D`, then composites through shader. Toggle with F1 key.
 - **Hitstop/freeze frames**: Game freezes for 3 frames on enemy hit, 5 frames on kill, 4 frames on player damage. Vlambeer-style impact feel.
 - **Slow-motion on kills**: 120ms of 25% time scale after every enemy kill for cinematic weight.
@@ -40,7 +46,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
-- `game_draw()` no longer calls `BeginDrawing()`/`EndDrawing()` -- these are now managed by `postfx_begin()`/`postfx_end()` in `main.c` for the post-processing pipeline
+- `game_draw()` replaced by `game_draw_world()` and `game_draw_ui()` for layered rendering (world -> lightmap -> UI)
+- PostFX shader now accepts per-frame intensity uniforms for bloom, scanlines, chromatic aberration, and vignette (driven by settings)
+- Screenshake and hitstop scaled by their respective settings (0 = disabled, 1 = full)
+- `Settings` struct expanded with 7 new float fields for visual effect intensities
+- `settings_save_to` / `settings_load_from` now persist all visual effect settings to INI file
 - `tilemap_draw()` gains `float time` parameter for animated floor grid lines
 - `Enemy` struct gains `max_hp` field for HP bar display
 - `GameState` gains `hitstop_timer`, `slowmo_timer`, `slowmo_scale`, `camera_kick`, and `ambient[]` particle array

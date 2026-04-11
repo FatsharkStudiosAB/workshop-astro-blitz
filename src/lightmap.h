@@ -51,3 +51,7 @@ void lightmap_add(LightMap *lm, Vector2 world_pos, Color color, float radius);
  * Call AFTER EndMode2D() but BEFORE EndDrawing() / postfx_end().
  * The camera is needed to convert world positions to screen positions. */
 void lightmap_render(LightMap *lm, Camera2D camera);
+
+/* Same as lightmap_render but scales the effect intensity (0 = no lighting,
+ * 1 = full lighting).  At 0 the lightmap is skipped entirely. */
+void lightmap_render_scaled(LightMap *lm, Camera2D camera, float intensity);

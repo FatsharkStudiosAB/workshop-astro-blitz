@@ -21,6 +21,9 @@ static const char *postfx_fs =
     "uniform float time;\n"
     "uniform vec2 resolution;\n"
     "uniform float bloomIntensity;\n"
+    "uniform float scanlineIntensity;\n"
+    "uniform float aberrationAmount;\n"
+    "uniform float vignetteAmount;\n"
     "\n"
     "out vec4 finalColor;\n"
     "\n"
@@ -29,7 +32,7 @@ static const char *postfx_fs =
     "    vec2 uv = fragTexCoord;\n"
     "\n"
     "    // ── Chromatic aberration ──────────────────────────────\n"
-    "    float aberration = 0.002;\n"
+    "    float aberration = 0.002 * aberrationAmount;\n"
     "    float r = texture(texture0, uv + vec2( aberration, 0.0)).r;\n"
     "    float g = texture(texture0, uv).g;\n"
     "    float b = texture(texture0, uv + vec2(-aberration, 0.0)).b;\n"
@@ -42,7 +45,6 @@ static const char *postfx_fs =
     "        for (int y = -2; y <= 2; y++) {\n"
     "            vec2 offset = vec2(float(x), float(y)) * texel * 2.0;\n"
     "            vec3 s = texture(texture0, uv + offset).rgb;\n"
-    "            // Extract bright pixels (threshold 0.5)\n"
     "            float brightness = dot(s, vec3(0.2126, 0.7152, 0.0722));\n"
     "            if (brightness > 0.5) {\n"
     "                bloom += s * (brightness - 0.5) * 2.0;\n"
@@ -50,15 +52,16 @@ static const char *postfx_fs =
     "        }\n"
     "    }\n"
     "    bloom /= 25.0;\n"
-    "    color += bloom * bloomIntensity;\n"
+    "    color += bloom * bloomIntensity * 1.5;\n"
     "\n"
     "    // ── CRT scanlines ────────────────────────────────────\n"
-    "    float scanline = sin(fragTexCoord.y * resolution.y * 3.14159) * 0.04;\n"
+    "    float scanline = sin(fragTexCoord.y * resolution.y * 3.14159) * 0.04 * "
+    "scanlineIntensity;\n"
     "    color -= scanline;\n"
     "\n"
     "    // ── Vignette ─────────────────────────────────────────\n"
     "    vec2 vig_uv = fragTexCoord * 2.0 - 1.0;\n"
-    "    float vignette = 1.0 - dot(vig_uv, vig_uv) * 0.35;\n"
+    "    float vignette = 1.0 - dot(vig_uv, vig_uv) * 0.35 * vignetteAmount;\n"
     "    color *= vignette;\n"
     "\n"
     "    // ── Slight color grading (boost cyan/teal highlights) ─\n"
@@ -76,14 +79,21 @@ void postfx_init(PostFX *pfx, int width, int height) {
     pfx->time_loc = GetShaderLocation(pfx->shader, "time");
     pfx->resolution_loc = GetShaderLocation(pfx->shader, "resolution");
     pfx->bloom_intensity_loc = GetShaderLocation(pfx->shader, "bloomIntensity");
+    pfx->scanline_intensity_loc = GetShaderLocation(pfx->shader, "scanlineIntensity");
+    pfx->aberration_amount_loc = GetShaderLocation(pfx->shader, "aberrationAmount");
+    pfx->vignette_amount_loc = GetShaderLocation(pfx->shader, "vignetteAmount");
     pfx->enabled = true;
 
     /* Set static uniforms */
     float res[2] = {(float)width, (float)height};
     SetShaderValue(pfx->shader, pfx->resolution_loc, res, SHADER_UNIFORM_VEC2);
 
-    float bloom = 1.5f;
-    SetShaderValue(pfx->shader, pfx->bloom_intensity_loc, &bloom, SHADER_UNIFORM_FLOAT);
+    /* Defaults: all effects at full */
+    float one = 1.0f;
+    SetShaderValue(pfx->shader, pfx->bloom_intensity_loc, &one, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(pfx->shader, pfx->scanline_intensity_loc, &one, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(pfx->shader, pfx->aberration_amount_loc, &one, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(pfx->shader, pfx->vignette_amount_loc, &one, SHADER_UNIFORM_FLOAT);
 }
 
 void postfx_cleanup(PostFX *pfx) {
@@ -124,4 +134,12 @@ void postfx_end(PostFX *pfx, float time) {
 
 void postfx_toggle(PostFX *pfx) {
     pfx->enabled = !pfx->enabled;
+}
+
+void postfx_set_params(PostFX *pfx, float bloom, float scanlines, float aberration,
+                       float vignette) {
+    SetShaderValue(pfx->shader, pfx->bloom_intensity_loc, &bloom, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(pfx->shader, pfx->scanline_intensity_loc, &scanlines, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(pfx->shader, pfx->aberration_amount_loc, &aberration, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(pfx->shader, pfx->vignette_amount_loc, &vignette, SHADER_UNIFORM_FLOAT);
 }

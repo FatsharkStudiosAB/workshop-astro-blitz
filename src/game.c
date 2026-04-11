@@ -14,6 +14,21 @@
 /* Hit flash duration in seconds */
 #define HIT_FLASH_DURATION 0.1f
 
+/* ── Juice helpers (scaled by settings) ────────────────────────────────────── */
+
+/* Apply hitstop, scaled by the hitstop setting. */
+static void apply_hitstop(GameState *gs, float duration) {
+    float scaled = duration * gs->settings.hitstop;
+    if (scaled > gs->hitstop_timer) {
+        gs->hitstop_timer = scaled;
+    }
+}
+
+/* Apply screen shake, scaled by the screen_shake setting. */
+static void apply_shake(GameState *gs, float trauma) {
+    screenshake_add_trauma(&gs->shake, trauma * gs->settings.screen_shake);
+}
+
 /* ── Damage number helpers ─────────────────────────────────────────────────── */
 
 static void damage_number_pool_init(DamageNumberPool *pool) {
@@ -482,7 +497,7 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                 audio_play_enemy_hit(&gs->audio);
 
                 /* Hitstop */
-                gs->hitstop_timer = HITSTOP_HIT;
+                apply_hitstop(gs, HITSTOP_HIT);
 
                 /* Hit sparks */
                 particle_burst(&gs->particles, bullet->position, 6, 40.0f, 120.0f, 0.1f, 0.3f, 2.5f,
@@ -500,7 +515,7 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                     gs->stats.kills++;
 
                     /* Kill juice: longer hitstop + slowmo */
-                    gs->hitstop_timer = HITSTOP_KILL;
+                    apply_hitstop(gs, HITSTOP_KILL);
                     gs->slowmo_timer = SLOWMO_DURATION;
                     gs->slowmo_scale = SLOWMO_SCALE;
 
@@ -517,7 +532,7 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
                     if (shake_amount > 0.5f) {
                         shake_amount = 0.5f;
                     }
-                    screenshake_add_trauma(&gs->shake, shake_amount);
+                    apply_shake(gs, shake_amount);
 
                     /* Death explosion particles */
                     particle_burst(&gs->particles, enemy->position, 15, 30.0f, 150.0f, 0.2f, 0.6f,
@@ -527,7 +542,7 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
 
                     /* Bomber AoE explosion on death */
                     if (enemy->type == ENEMY_BOMBER) {
-                        screenshake_add_trauma(&gs->shake, 0.4f);
+                        apply_shake(gs, 0.4f);
                         particle_burst(&gs->particles, enemy->position, 20, 50.0f, 200.0f, 0.3f,
                                        0.8f, 5.0f, (Color){255, 120, 20, 255});
                         /* Damage player if within blast radius */
@@ -591,8 +606,8 @@ static void resolve_enemy_player_collisions(GameState *gs) {
                          enemy_type_color(enemy->type));
             enemy->active = false; /* swarmer dies on contact */
             audio_play_hit(&gs->audio);
-            screenshake_add_trauma(&gs->shake, 0.35f);
-            gs->hitstop_timer = HITSTOP_PLAYER;
+            apply_shake(gs, 0.35f);
+            apply_hitstop(gs, HITSTOP_PLAYER);
 
             /* Damage number on player */
             damage_number_spawn(&gs->damage_numbers, p->position, (int)enemy->damage,
@@ -628,8 +643,8 @@ static void resolve_enemy_bullet_player_collisions(GameState *gs) {
             b->active = false;
             p->hp -= b->damage;
             audio_play_hit(&gs->audio);
-            screenshake_add_trauma(&gs->shake, 0.2f);
-            gs->hitstop_timer = HITSTOP_PLAYER;
+            apply_shake(gs, 0.2f);
+            apply_hitstop(gs, HITSTOP_PLAYER);
 
             damage_number_spawn(&gs->damage_numbers, p->position, (int)b->damage,
                                 (Color){255, 60, 60, 255});
@@ -681,7 +696,7 @@ static void resolve_melee_enemy_collisions(GameState *gs) {
         enemy->hp -= MELEE_DAMAGE;
         enemy->hit_flash = 0.1f;
         audio_play_enemy_hit(&gs->audio);
-        gs->hitstop_timer = HITSTOP_MELEE;
+        apply_hitstop(gs, HITSTOP_MELEE);
 
         /* Knockback */
         Vector2 knockback_dir = Vector2Scale(to_enemy, MELEE_KNOCKBACK);
@@ -702,7 +717,7 @@ static void resolve_melee_enemy_collisions(GameState *gs) {
             gs->stats.kills++;
 
             /* Kill juice */
-            gs->hitstop_timer = HITSTOP_KILL + (2.0f / 60.0f); /* melee kills: extra hitstop */
+            apply_hitstop(gs, HITSTOP_KILL + (2.0f / 60.0f)); /* melee kills: extra hitstop */
             gs->slowmo_timer = SLOWMO_DURATION;
             gs->slowmo_scale = SLOWMO_SCALE;
 
@@ -712,7 +727,7 @@ static void resolve_melee_enemy_collisions(GameState *gs) {
             if (gs->combo.count > gs->combo.best) {
                 gs->combo.best = gs->combo.count;
             }
-            screenshake_add_trauma(&gs->shake, 0.25f);
+            apply_shake(gs, 0.25f);
 
             /* Death explosion */
             particle_burst(&gs->particles, enemy->position, 15, 30.0f, 150.0f, 0.2f, 0.6f, 3.5f,
@@ -1095,6 +1110,43 @@ static void update_paused(GameState *gs) {
     }
 }
 
+/* Number of items in the settings menu */
+#define SETTINGS_ITEM_COUNT 8
+
+/* Clamp float to [0,1] for settings sliders */
+static float settings_clamp01(float v) {
+    if (v < 0.0f) {
+        return 0.0f;
+    }
+    if (v > 1.0f) {
+        return 1.0f;
+    }
+    return v;
+}
+
+/* Get pointer to the float setting for a given settings menu row (1-7).
+ * Row 0 is movement layout (not a float). Returns NULL for invalid. */
+static float *settings_float_ptr(Settings *s, int row) {
+    switch (row) {
+    case 1:
+        return &s->screen_shake;
+    case 2:
+        return &s->hitstop;
+    case 3:
+        return &s->bloom;
+    case 4:
+        return &s->scanlines;
+    case 5:
+        return &s->chromatic_aberration;
+    case 6:
+        return &s->vignette;
+    case 7:
+        return &s->lighting;
+    default:
+        return NULL;
+    }
+}
+
 static void update_settings(GameState *gs) {
     /* ESC to go back */
     if (IsKeyPressed(KEY_ESCAPE)) {
@@ -1103,13 +1155,39 @@ static void update_settings(GameState *gs) {
         return;
     }
 
-    /* Left/Right to toggle movement layout */
-    if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT)) {
-        if (gs->settings.movement_layout == MOVEMENT_TANK) {
-            gs->settings.movement_layout = MOVEMENT_8DIR;
-        } else {
-            gs->settings.movement_layout = MOVEMENT_TANK;
+    /* Navigate with W/S/Up/Down */
+    gs->menu_cursor = menu_navigate(gs->menu_cursor, SETTINGS_ITEM_COUNT);
+
+    /* Left/Right to adjust selected setting */
+    bool changed = false;
+    float step = 0.1f;
+
+    if (gs->menu_cursor == 0) {
+        /* Movement layout: toggle */
+        if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT)) {
+            if (gs->settings.movement_layout == MOVEMENT_TANK) {
+                gs->settings.movement_layout = MOVEMENT_8DIR;
+            } else {
+                gs->settings.movement_layout = MOVEMENT_TANK;
+            }
+            changed = true;
         }
+    } else {
+        /* Float slider: adjust by step */
+        float *val = settings_float_ptr(&gs->settings, gs->menu_cursor);
+        if (val) {
+            if (IsKeyPressed(KEY_LEFT)) {
+                *val = settings_clamp01(*val - step);
+                changed = true;
+            }
+            if (IsKeyPressed(KEY_RIGHT)) {
+                *val = settings_clamp01(*val + step);
+                changed = true;
+            }
+        }
+    }
+
+    if (changed) {
         settings_save(&gs->settings);
     }
 }
@@ -1459,6 +1537,16 @@ static void draw_paused(const GameState *gs) {
     }
 }
 
+/* Draw a horizontal slider bar at (x,y) with given width/height and fill ratio (0-1). */
+static void draw_slider_bar(int x, int y, int w, int h, float ratio, Color fill_color,
+                            bool selected) {
+    Color bg = selected ? (Color){60, 60, 60, 255} : (Color){40, 40, 40, 255};
+    Color border = selected ? (Color){0, 220, 200, 255} : (Color){80, 80, 80, 255};
+    DrawRectangle(x, y, w, h, bg);
+    DrawRectangle(x, y, (int)((float)w * ratio), h, fill_color);
+    DrawRectangleLines(x, y, w, h, border);
+}
+
 static void draw_settings(const GameState *gs) {
     /* Dark overlay if coming from pause (game is behind) */
     if (gs->settings_return_phase != PHASE_MAIN_MENU) {
@@ -1468,37 +1556,89 @@ static void draw_settings(const GameState *gs) {
     const char *title = "SETTINGS";
     int title_size = 40;
     int title_w = MeasureText(title, title_size);
-    DrawText(title, (SCREEN_WIDTH - title_w) / 2, 120, title_size, (Color){0, 220, 200, 255});
+    DrawText(title, (SCREEN_WIDTH - title_w) / 2, 60, title_size, (Color){0, 220, 200, 255});
 
-    /* Movement layout option */
-    const char *label = "Movement:";
-    int label_size = 22;
-    int label_w = MeasureText(label, label_size);
-    int label_x = SCREEN_WIDTH / 2 - label_w - 10;
-    int y = 240;
-    DrawText(label, label_x, y, label_size, RAYWHITE);
+    int font_size = 18;
+    int start_y = 130;
+    int row_h = 32;
+    int label_x = 120;
+    int slider_x = 360;
+    int slider_w = 200;
+    int slider_h = 14;
 
-    const char *value =
-        (gs->settings.movement_layout == MOVEMENT_TANK) ? "< Tank Controls >" : "< 8-Directional >";
-    int value_size = 22;
-    DrawText(value, SCREEN_WIDTH / 2 + 10, y, value_size, (Color){0, 220, 200, 255});
+    /* Setting labels */
+    const char *labels[SETTINGS_ITEM_COUNT] = {"Movement", "Screen Shake", "Hitstop",
+                                               "Bloom",    "Scanlines",    "Chromatic Ab.",
+                                               "Vignette", "Lighting"};
 
-    /* Description */
+    for (int i = 0; i < SETTINGS_ITEM_COUNT; i++) {
+        int y = start_y + i * row_h;
+        bool sel = (gs->menu_cursor == i);
+        Color label_color = sel ? (Color){0, 220, 200, 255} : GRAY;
+
+        /* Selection arrow */
+        if (sel) {
+            DrawText(">", label_x - 20, y, font_size, label_color);
+        }
+
+        DrawText(labels[i], label_x, y, font_size, label_color);
+
+        if (i == 0) {
+            /* Movement layout: toggle text */
+            const char *value = (gs->settings.movement_layout == MOVEMENT_TANK)
+                                    ? "< Tank Controls >"
+                                    : "< 8-Directional >";
+            DrawText(value, slider_x, y, font_size, sel ? RAYWHITE : GRAY);
+        } else {
+            /* Float slider */
+            float val = 0.0f;
+            switch (i) {
+            case 1:
+                val = gs->settings.screen_shake;
+                break;
+            case 2:
+                val = gs->settings.hitstop;
+                break;
+            case 3:
+                val = gs->settings.bloom;
+                break;
+            case 4:
+                val = gs->settings.scanlines;
+                break;
+            case 5:
+                val = gs->settings.chromatic_aberration;
+                break;
+            case 6:
+                val = gs->settings.vignette;
+                break;
+            case 7:
+                val = gs->settings.lighting;
+                break;
+            }
+            Color fill = sel ? (Color){0, 200, 180, 255} : (Color){60, 140, 130, 255};
+            draw_slider_bar(slider_x, y + 3, slider_w, slider_h, val, fill, sel);
+
+            /* Percentage label */
+            const char *pct = TextFormat("%d%%", (int)(val * 100.0f));
+            DrawText(pct, slider_x + slider_w + 10, y, font_size, sel ? RAYWHITE : GRAY);
+        }
+    }
+
+    /* Movement description below all settings */
     const char *desc = NULL;
     if (gs->settings.movement_layout == MOVEMENT_TANK) {
-        desc = "W/S = forward/back relative to aim, A/D = strafe";
+        desc = "W/S = forward/back toward aim, A/D = strafe";
     } else {
-        desc = "W = up, S = down, A = left, D = right (screen-relative)";
+        desc = "W/S/A/D = screen-relative directions";
     }
-    int desc_size = 14;
-    int desc_w = MeasureText(desc, desc_size);
-    DrawText(desc, (SCREEN_WIDTH - desc_w) / 2, y + 40, desc_size, GRAY);
+    int desc_y = start_y + SETTINGS_ITEM_COUNT * row_h + 16;
+    int desc_w = MeasureText(desc, 14);
+    DrawText(desc, (SCREEN_WIDTH - desc_w) / 2, desc_y, 14, (Color){100, 100, 100, 255});
 
     /* Instructions */
-    const char *hint = "Left/Right to change  |  ESC to go back";
-    int hint_size = 14;
-    int hint_w = MeasureText(hint, hint_size);
-    DrawText(hint, (SCREEN_WIDTH - hint_w) / 2, SCREEN_HEIGHT - 60, hint_size, DARKGRAY);
+    const char *hint = "W/S to navigate  |  Left/Right to adjust  |  ESC to go back";
+    int hint_w = MeasureText(hint, 14);
+    DrawText(hint, (SCREEN_WIDTH - hint_w) / 2, SCREEN_HEIGHT - 50, 14, DARKGRAY);
 }
 
 /* ── Public ────────────────────────────────────────────────────────────────── */
@@ -1593,14 +1733,11 @@ bool game_should_quit(const GameState *gs) {
     return gs->should_quit;
 }
 
-void game_draw(const GameState *gs) {
+void game_draw_world(const GameState *gs) {
     switch (gs->phase) {
     case PHASE_FIRST_RUN:
-        draw_first_run(gs);
-        break;
-
     case PHASE_MAIN_MENU:
-        draw_main_menu(gs);
+        /* No world to draw on menu screens */
         break;
 
     case PHASE_PLAYING:
@@ -1611,10 +1748,10 @@ void game_draw(const GameState *gs) {
         draw_cam.target.x += gs->camera_kick.x;
         draw_cam.target.y += gs->camera_kick.y;
 
-        /* Draw the world behind any overlay */
         BeginMode2D(draw_cam);
         tilemap_draw(&gs->tilemap, gs->camera, gs->stats.survival_time);
         corpse_pool_draw(&gs->corpses);
+
         /* Exit portal */
         if (gs->exit_active) {
             float pulse = 0.5f + 0.5f * sinf((float)gs->stats.survival_time * 3.0f);
@@ -1670,19 +1807,11 @@ void game_draw(const GameState *gs) {
         }
 
         EndMode2D();
-
-        draw_hud(gs);
-
-        if (gs->phase == PHASE_GAME_OVER) {
-            draw_game_over(gs);
-        } else if (gs->phase == PHASE_PAUSED) {
-            draw_paused(gs);
-        }
         break;
     }
 
     case PHASE_SETTINGS:
-        /* Draw world behind if returning to pause, black bg if from main menu */
+        /* Draw world behind if returning to pause */
         if (gs->settings_return_phase != PHASE_MAIN_MENU) {
             BeginMode2D(gs->camera);
             tilemap_draw(&gs->tilemap, gs->camera, gs->stats.survival_time);
@@ -1691,6 +1820,34 @@ void game_draw(const GameState *gs) {
             particle_pool_draw(&gs->particles);
             player_draw(&gs->player);
             EndMode2D();
+        }
+        break;
+    }
+}
+
+void game_draw_ui(const GameState *gs) {
+    switch (gs->phase) {
+    case PHASE_FIRST_RUN:
+        draw_first_run(gs);
+        break;
+
+    case PHASE_MAIN_MENU:
+        draw_main_menu(gs);
+        break;
+
+    case PHASE_PLAYING:
+    case PHASE_PAUSED:
+    case PHASE_GAME_OVER:
+        draw_hud(gs);
+        if (gs->phase == PHASE_GAME_OVER) {
+            draw_game_over(gs);
+        } else if (gs->phase == PHASE_PAUSED) {
+            draw_paused(gs);
+        }
+        break;
+
+    case PHASE_SETTINGS:
+        if (gs->settings_return_phase != PHASE_MAIN_MENU) {
             draw_hud(gs);
         }
         draw_settings(gs);

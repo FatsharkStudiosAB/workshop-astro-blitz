@@ -210,8 +210,13 @@ void game_init(GameState *gs);
 /* Advance one frame: dispatch to the current phase's update logic. */
 void game_update(GameState *gs);
 
-/* Draw the current frame: dispatch to the current phase's draw logic. */
-void game_draw(const GameState *gs);
+/* Draw the world layer (tilemap, entities, particles, effects).
+ * Call between postfx_begin and lightmap_render. */
+void game_draw_world(const GameState *gs);
+
+/* Draw the UI layer (HUD, menus, overlays).
+ * Call after lightmap_render so UI is not darkened by lighting. */
+void game_draw_ui(const GameState *gs);
 
 /* Transition to PHASE_GAME_OVER if the player is dead. Separated from
  * game_update so it can be unit-tested without a Raylib window context. */

@@ -24,6 +24,15 @@ typedef enum {
 /* All persistent game settings */
 typedef struct {
     MovementLayout movement_layout;
+
+    /* Visual effects (0.0 = off, 1.0 = full intensity) */
+    float screen_shake;         /* screen shake intensity (default 1.0) */
+    float hitstop;              /* hitstop/freeze frame duration scale (default 1.0) */
+    float bloom;                /* bloom glow intensity (default 1.0) */
+    float scanlines;            /* CRT scanline intensity (default 1.0) */
+    float chromatic_aberration; /* chromatic aberration strength (default 1.0) */
+    float vignette;             /* vignette darkening strength (default 1.0) */
+    float lighting;             /* dynamic lighting intensity (default 1.0) */
 } Settings;
 
 /* ── Public API ────────────────────────────────────────────────────────────── */

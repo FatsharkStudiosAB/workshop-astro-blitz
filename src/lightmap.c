@@ -105,3 +105,31 @@ void lightmap_render(LightMap *lm, Camera2D camera) {
         (Vector2){0, 0}, WHITE);
     EndBlendMode();
 }
+
+void lightmap_render_scaled(LightMap *lm, Camera2D camera, float intensity) {
+    if (intensity <= 0.0f) {
+        return; /* lighting disabled -- skip entirely */
+    }
+
+    /* At full intensity, use standard render */
+    if (intensity >= 1.0f) {
+        lightmap_render(lm, camera);
+        return;
+    }
+
+    /* Partial intensity: lighten the ambient to reduce the darkening effect.
+     * Interpolate ambient from the real ambient towards full white (no shadow). */
+    Color original_ambient = lm->ambient;
+    unsigned char ar = (unsigned char)((float)original_ambient.r +
+                                       (255.0f - (float)original_ambient.r) * (1.0f - intensity));
+    unsigned char ag = (unsigned char)((float)original_ambient.g +
+                                       (255.0f - (float)original_ambient.g) * (1.0f - intensity));
+    unsigned char ab = (unsigned char)((float)original_ambient.b +
+                                       (255.0f - (float)original_ambient.b) * (1.0f - intensity));
+    lm->ambient = (Color){ar, ag, ab, 255};
+
+    lightmap_render(lm, camera);
+
+    /* Restore original ambient */
+    lm->ambient = original_ambient;
+}

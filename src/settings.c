@@ -10,6 +10,7 @@
 
 #include "settings.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
@@ -46,9 +47,27 @@ static void strip_newline(char *str) {
 
 /* ── Public ────────────────────────────────────────────────────────────────── */
 
+/* Clamp a float to [0, max] */
+static float clampf(float v, float lo, float hi) {
+    if (v < lo) {
+        return lo;
+    }
+    if (v > hi) {
+        return hi;
+    }
+    return v;
+}
+
 bool settings_init(Settings *s) {
     /* Defaults */
     s->movement_layout = MOVEMENT_8DIR;
+    s->screen_shake = 1.0f;
+    s->hitstop = 1.0f;
+    s->bloom = 1.0f;
+    s->scanlines = 1.0f;
+    s->chromatic_aberration = 1.0f;
+    s->vignette = 1.0f;
+    s->lighting = 1.0f;
 
     /* Try to load from file; if it fails, defaults remain */
     return settings_load(s);
@@ -72,6 +91,15 @@ bool settings_save_to(const Settings *s, const char *path) {
         fclose(f);
         return false;
     }
+
+    /* Visual effect intensities (0.0-1.0) */
+    fprintf(f, "screen_shake=%.2f\n", (double)s->screen_shake);
+    fprintf(f, "hitstop=%.2f\n", (double)s->hitstop);
+    fprintf(f, "bloom=%.2f\n", (double)s->bloom);
+    fprintf(f, "scanlines=%.2f\n", (double)s->scanlines);
+    fprintf(f, "chromatic_aberration=%.2f\n", (double)s->chromatic_aberration);
+    fprintf(f, "vignette=%.2f\n", (double)s->vignette);
+    fprintf(f, "lighting=%.2f\n", (double)s->lighting);
 
     if (fclose(f) != 0) {
         return false;
@@ -106,6 +134,20 @@ bool settings_load_from(Settings *s, const char *path) {
 
         if (strcmp(key, "movement_layout") == 0) {
             s->movement_layout = str_to_movement_layout(value, s->movement_layout);
+        } else if (strcmp(key, "screen_shake") == 0) {
+            s->screen_shake = clampf((float)atof(value), 0.0f, 1.0f);
+        } else if (strcmp(key, "hitstop") == 0) {
+            s->hitstop = clampf((float)atof(value), 0.0f, 1.0f);
+        } else if (strcmp(key, "bloom") == 0) {
+            s->bloom = clampf((float)atof(value), 0.0f, 1.0f);
+        } else if (strcmp(key, "scanlines") == 0) {
+            s->scanlines = clampf((float)atof(value), 0.0f, 1.0f);
+        } else if (strcmp(key, "chromatic_aberration") == 0) {
+            s->chromatic_aberration = clampf((float)atof(value), 0.0f, 1.0f);
+        } else if (strcmp(key, "vignette") == 0) {
+            s->vignette = clampf((float)atof(value), 0.0f, 1.0f);
+        } else if (strcmp(key, "lighting") == 0) {
+            s->lighting = clampf((float)atof(value), 0.0f, 1.0f);
         }
         /* Unknown keys are silently ignored */
     }

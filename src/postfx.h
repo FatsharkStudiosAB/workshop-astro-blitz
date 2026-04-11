@@ -14,12 +14,15 @@
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
 typedef struct {
-    RenderTexture2D target;  /* scene rendered here first */
-    Shader shader;           /* combined post-processing shader */
-    int time_loc;            /* uniform: elapsed time */
-    int resolution_loc;      /* uniform: screen resolution */
-    int bloom_intensity_loc; /* uniform: bloom strength */
-    bool enabled;            /* toggle post-processing on/off */
+    RenderTexture2D target;     /* scene rendered here first */
+    Shader shader;              /* combined post-processing shader */
+    int time_loc;               /* uniform: elapsed time */
+    int resolution_loc;         /* uniform: screen resolution */
+    int bloom_intensity_loc;    /* uniform: bloom strength (0-1) */
+    int scanline_intensity_loc; /* uniform: scanline strength (0-1) */
+    int aberration_amount_loc;  /* uniform: chromatic aberration (0-1) */
+    int vignette_amount_loc;    /* uniform: vignette darkening (0-1) */
+    bool enabled;               /* toggle post-processing on/off */
 } PostFX;
 
 /* ── Public API ────────────────────────────────────────────────────────────── */
@@ -38,3 +41,6 @@ void postfx_end(PostFX *pfx, float time);
 
 /* Toggle post-processing on/off. */
 void postfx_toggle(PostFX *pfx);
+
+/* Set effect intensities (all 0.0-1.0). Call before postfx_end each frame. */
+void postfx_set_params(PostFX *pfx, float bloom, float scanlines, float aberration, float vignette);

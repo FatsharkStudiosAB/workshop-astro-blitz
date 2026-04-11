@@ -125,18 +125,37 @@ int main(void) {
             postfx_toggle(&pfx);
         }
 
-        /* Render: postfx wraps the entire draw */
-        postfx_begin(&pfx);
-        game_draw(&gs);
+        /* Determine if we have world content (gameplay phases) */
+        bool has_world =
+            (gs.phase == PHASE_PLAYING || gs.phase == PHASE_PAUSED || gs.phase == PHASE_GAME_OVER ||
+             (gs.phase == PHASE_SETTINGS && gs.settings_return_phase != PHASE_MAIN_MENU));
 
-        /* Light map: populate and composite over the scene */
-        Camera2D draw_cam = gs.camera;
-        draw_cam.target.x += gs.camera_kick.x;
-        draw_cam.target.y += gs.camera_kick.y;
-        populate_lights(&lm, &gs);
-        lightmap_render(&lm, draw_cam);
+        if (has_world) {
+            /* Push settings to postfx shader uniforms each frame */
+            postfx_set_params(&pfx, gs.settings.bloom, gs.settings.scanlines,
+                              gs.settings.chromatic_aberration, gs.settings.vignette);
 
-        postfx_end(&pfx, elapsed);
+            /* Full pipeline: postfx -> world -> lightmap -> UI -> postfx end */
+            postfx_begin(&pfx);
+            game_draw_world(&gs);
+
+            /* Light map: populate and composite over the world layer */
+            Camera2D draw_cam = gs.camera;
+            draw_cam.target.x += gs.camera_kick.x;
+            draw_cam.target.y += gs.camera_kick.y;
+            populate_lights(&lm, &gs);
+            lightmap_render_scaled(&lm, draw_cam, gs.settings.lighting);
+
+            /* UI drawn after lightmap so it's not darkened */
+            game_draw_ui(&gs);
+            postfx_end(&pfx, elapsed);
+        } else {
+            /* Menu-only: no postfx, no lightmap -- clean text */
+            BeginDrawing();
+            ClearBackground(BLACK);
+            game_draw_ui(&gs);
+            EndDrawing();
+        }
     }
 
     lightmap_cleanup(&lm);
