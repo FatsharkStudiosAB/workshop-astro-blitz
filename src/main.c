@@ -103,6 +103,10 @@ int main(void) {
     LightMap lm;
     lightmap_init(&lm, RENDER_WIDTH, RENDER_HEIGHT);
 
+    /* Set nearest-neighbor filter once on postfx output textures */
+    SetTextureFilter(pfx.output.texture, TEXTURE_FILTER_POINT);
+    SetTextureFilter(pfx.target.texture, TEXTURE_FILTER_POINT);
+
     GameState gs;
     memset(&gs, 0, sizeof(gs));
 
@@ -139,28 +143,32 @@ int main(void) {
             postfx_set_params(&pfx, gs.settings.bloom, gs.settings.scanlines,
                               gs.settings.chromatic_aberration, gs.settings.vignette);
 
-            /* ── Render world at internal resolution (400x300) ────────── */
-            postfx_begin(&pfx);
-            game_draw_world(&gs);
-
-            /* Light map: populate and composite over the world layer */
             Camera2D draw_cam = gs.camera;
             draw_cam.target.x += gs.camera_kick.x;
             draw_cam.target.y += gs.camera_kick.y;
-            populate_lights(&lm, &gs);
-            lightmap_render_scaled(&lm, draw_cam, gs.settings.lighting);
 
-            /* Apply postfx shader (result stored in output texture) */
+            /* Step 1: Build lightmap to its own texture (separate render target) */
+            populate_lights(&lm, &gs);
+            lightmap_build_scaled(&lm, draw_cam, gs.settings.lighting);
+
+            /* Step 2: Render world into postfx target */
+            postfx_begin(&pfx);
+            game_draw_world(&gs);
+
+            /* Step 3: Composite lightmap over world (just a textured quad,
+             * no nested BeginTextureMode) */
+            if (gs.settings.lighting > 0.0f) {
+                lightmap_composite(&lm);
+            }
+
+            /* Step 4: Apply postfx shader (result stored in output texture) */
             postfx_end(&pfx, elapsed);
 
-            /* ── Upscale to window resolution + draw UI ───────────────── */
+            /* Step 5: Upscale to window resolution + draw UI */
             BeginDrawing();
             ClearBackground(BLACK);
 
-            /* Draw the post-processed world texture at 2x with nearest-neighbor.
-             * The output RenderTexture is Y-flipped, so draw with negative height. */
             Texture2D world_tex = postfx_get_texture(&pfx);
-            SetTextureFilter(world_tex, TEXTURE_FILTER_POINT); /* nearest-neighbor */
             DrawTexturePro(world_tex,
                            (Rectangle){0, 0, (float)world_tex.width, -(float)world_tex.height},
                            (Rectangle){0, 0, (float)SCREEN_WIDTH, (float)SCREEN_HEIGHT},

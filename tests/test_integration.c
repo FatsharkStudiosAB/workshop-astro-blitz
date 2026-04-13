@@ -338,14 +338,19 @@ void test_grunt_enemy_fires_bullet(void) {
 /* ── Test: combo increments on consecutive kills ──────────────────────────── */
 
 void test_combo_increments_on_kills(void) {
+    /* Disable hitstop so kills don't freeze the simulation and starve the
+     * second bullet of movement frames. */
+    gs.settings.hitstop = 0.0f;
+
     /* Place two 1-HP swarmers right next to each other in front of player */
     float x = gs.player.position.x + 30.0f;
     enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER, (Vector2){x, gs.player.position.y});
     enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER, (Vector2){x + 5.0f, gs.player.position.y});
 
-    /* Fire a bullet at them */
+    /* Fire two bullets at them (reset cooldown between shots so both fire) */
     gs.player.aim_direction = (Vector2){1.0f, 0.0f};
     bullet_pool_fire(&gs.bullets, gs.player.position, (Vector2){1.0f, 0.0f});
+    gs.bullets.fire_cooldown = 0.0f;
     bullet_pool_fire(&gs.bullets, gs.player.position, (Vector2){1.0f, 0.0f});
 
     /* Advance frames until bullets reach enemies */
@@ -353,9 +358,11 @@ void test_combo_increments_on_kills(void) {
         game_update(&gs);
     }
 
-    /* Both should be dead, combo should be >= 2 */
+    /* Both should be dead, kills >= 2.
+     * Verify the combo system recorded at least 1 combo kill (best >= 1). */
     TEST_ASSERT_EQUAL_INT(0, enemy_pool_active_count(&gs.enemies));
-    TEST_ASSERT_GREATER_OR_EQUAL(2, gs.combo.count + gs.stats.kills);
+    TEST_ASSERT_GREATER_OR_EQUAL(2, gs.stats.kills);
+    TEST_ASSERT_GREATER_OR_EQUAL(1, gs.combo.best);
 }
 
 /* ── Test: elite enemy has modified stats ─────────────────────────────────── */

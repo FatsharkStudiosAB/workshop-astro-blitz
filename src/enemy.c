@@ -67,7 +67,7 @@ void enemy_pool_init(EnemyPool *pool) {
     memset(pool->enemies, 0, sizeof(pool->enemies));
 }
 
-void enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position) {
+int enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
         Enemy *e = &pool->enemies[i];
         if (!e->active) {
@@ -112,48 +112,39 @@ void enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position) {
                 break;
             }
             e->max_hp = e->hp;
-            return;
+            return i;
         }
     }
-    /* Pool full -- silently drop the spawn */
+    return -1; /* pool full */
 }
 
-void enemy_pool_spawn_elite(EnemyPool *pool, EnemyType type, Vector2 position,
-                            EliteModifier elite) {
-    /* Spawn normally first */
-    int prev_count = enemy_pool_active_count(pool);
-    enemy_pool_spawn(pool, type, position);
-    int new_count = enemy_pool_active_count(pool);
-
-    /* If spawn succeeded, find the newly spawned enemy and apply modifier */
-    if (new_count > prev_count) {
-        /* Find the last-spawned active enemy (it's the one just created) */
-        for (int i = 0; i < MAX_ENEMIES; i++) {
-            Enemy *e = &pool->enemies[i];
-            if (e->active && e->elite == ELITE_NONE && e->position.x == position.x &&
-                e->position.y == position.y) {
-                e->elite = elite;
-
-                switch (elite) {
-                case ELITE_ARMORED:
-                    e->hp *= ARMORED_HP_MULT;
-                    e->speed *= ARMORED_SPEED_MULT;
-                    break;
-                case ELITE_SWIFT:
-                    e->speed *= SWIFT_SPEED_MULT;
-                    e->radius *= SWIFT_RADIUS_MULT;
-                    break;
-                case ELITE_BURNING:
-                    e->damage += BURNING_DAMAGE_BONUS;
-                    break;
-                default:
-                    break;
-                }
-                e->max_hp = e->hp; /* update max after elite modifiers */
-                return;
-            }
-        }
+int enemy_pool_spawn_elite(EnemyPool *pool, EnemyType type, Vector2 position,
+                           EliteModifier elite) {
+    int idx = enemy_pool_spawn(pool, type, position);
+    if (idx < 0) {
+        return -1;
     }
+
+    Enemy *e = &pool->enemies[idx];
+    e->elite = elite;
+
+    switch (elite) {
+    case ELITE_ARMORED:
+        e->hp *= ARMORED_HP_MULT;
+        e->speed *= ARMORED_SPEED_MULT;
+        break;
+    case ELITE_SWIFT:
+        e->speed *= SWIFT_SPEED_MULT;
+        e->radius *= SWIFT_RADIUS_MULT;
+        break;
+    case ELITE_BURNING:
+        e->damage += BURNING_DAMAGE_BONUS;
+        break;
+    default:
+        break;
+    }
+    e->max_hp = e->hp;
+    return idx;
 }
 
 /* Compute a direction toward target using flow field if available, else direct. */
@@ -343,16 +334,6 @@ void enemy_pool_update(EnemyPool *pool, float dt, Vector2 target, Rectangle aren
             break;
         }
     }
-}
-
-/* Helper to get facing direction + perpendicular from velocity */
-static void get_facing(const Enemy *e, Vector2 *facing, Vector2 *perp) {
-    *facing = (Vector2){0.0f, 1.0f};
-    float spd = Vector2Length(e->velocity);
-    if (spd > 1.0f) {
-        *facing = Vector2Scale(e->velocity, 1.0f / spd);
-    }
-    *perp = (Vector2){-facing->y, facing->x};
 }
 
 /* Get the facing direction from velocity (no perpendicular needed). */

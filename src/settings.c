@@ -47,7 +47,7 @@ static void strip_newline(char *str) {
 
 /* ── Public ────────────────────────────────────────────────────────────────── */
 
-/* Clamp a float to [0, max] */
+/* Clamp a float to [lo, hi]. */
 static float clampf(float v, float lo, float hi) {
     if (v < lo) {
         return lo;

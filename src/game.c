@@ -433,24 +433,19 @@ static void spawn_wave(GameState *gs) {
                     /* ELITE_ARMORED=1, ELITE_SWIFT=2, ELITE_BURNING=3 */
                 }
 
-                int prev = enemy_pool_active_count(&gs->enemies);
+                int idx;
                 if (elite != ELITE_NONE) {
-                    enemy_pool_spawn_elite(&gs->enemies, type, pos, elite);
+                    idx = enemy_pool_spawn_elite(&gs->enemies, type, pos, elite);
                 } else {
-                    enemy_pool_spawn(&gs->enemies, type, pos);
+                    idx = enemy_pool_spawn(&gs->enemies, type, pos);
                 }
 
                 /* Scale HP by floor level */
-                if (gs->floor > 0 && enemy_pool_active_count(&gs->enemies) > prev) {
+                if (idx >= 0 && gs->floor > 0) {
                     float scale = 1.0f + FLOOR_ENEMY_HP_SCALE * (float)gs->floor;
-                    for (int fi = 0; fi < MAX_ENEMIES; fi++) {
-                        Enemy *fe = &gs->enemies.enemies[fi];
-                        if (fe->active && fe->position.x == pos.x && fe->position.y == pos.y) {
-                            fe->hp *= scale;
-                            fe->max_hp = fe->hp;
-                            break;
-                        }
-                    }
+                    Enemy *fe = &gs->enemies.enemies[idx];
+                    fe->hp *= scale;
+                    fe->max_hp = fe->hp;
                 }
                 break;
             }
@@ -476,16 +471,19 @@ static void resolve_bullet_enemy_collisions(GameState *gs) {
 
             if (check_circle_collision(bullet->position, BULLET_RADIUS, enemy->position,
                                        enemy->radius)) {
-                int dmg = (int)bullet->damage;
+                /* Round up for display so 0.5 shows as "1" consistently */
+                int dmg = (int)ceilf(bullet->damage);
                 if (dmg < 1) {
                     dmg = 1;
                 }
-                /* Knockback: push enemy in bullet direction */
+                /* Knockback: displace enemy position in bullet direction.
+                 * Using position instead of velocity because AI overwrites
+                 * velocity each frame. */
                 float bspeed = Vector2Length(bullet->velocity);
                 if (bspeed > 0.01f) {
                     Vector2 kb_dir = Vector2Scale(bullet->velocity, 1.0f / bspeed);
-                    enemy->velocity =
-                        Vector2Add(enemy->velocity, Vector2Scale(kb_dir, KNOCKBACK_BULLET));
+                    enemy->position =
+                        Vector2Add(enemy->position, Vector2Scale(kb_dir, KNOCKBACK_BULLET));
                 }
 
                 bullet->active = false;
@@ -695,9 +693,9 @@ static void resolve_melee_enemy_collisions(GameState *gs) {
         audio_play_enemy_hit(&gs->audio);
         apply_hitstop(gs, HITSTOP_MELEE);
 
-        /* Knockback */
+        /* Knockback: immediate position displacement (AI overwrites velocity) */
         Vector2 knockback_dir = Vector2Scale(to_enemy, MELEE_KNOCKBACK);
-        enemy->velocity = knockback_dir;
+        enemy->position = Vector2Add(enemy->position, knockback_dir);
 
         /* Damage number */
         damage_number_spawn(&gs->damage_numbers, enemy->position, (int)MELEE_DAMAGE,
@@ -1230,13 +1228,17 @@ static void update_playing(GameState *gs) {
         return; /* skip ALL gameplay logic this frame */
     }
 
-    float dt = GetFrameTime();
+    float real_dt = GetFrameTime();
+    float dt = real_dt;
 
-    /* ── Slow-motion: scale time after kills ──────────────────────────── */
+    /* ── Slow-motion: scale simulation time after kills ───────────────── */
     if (gs->slowmo_timer > 0.0f) {
-        gs->slowmo_timer -= dt;
+        gs->slowmo_timer -= real_dt;
         dt *= gs->slowmo_scale;
     }
+
+    /* Survival time always uses real (wall-clock) dt */
+    gs->stats.survival_time += real_dt;
 
     /* ── Camera kick decay ────────────────────────────────────────────── */
     float kick_len = Vector2Length(gs->camera_kick);
@@ -1250,7 +1252,6 @@ static void update_playing(GameState *gs) {
     } else {
         gs->camera_kick = (Vector2){0, 0};
     }
-    gs->stats.survival_time += dt;
 
     /* Apply upgrade-driven modifiers before movement */
     gs->player.speed_bonus = upgrade_get_speed_bonus(&gs->upgrades);
@@ -2027,7 +2028,7 @@ void game_draw_world(const GameState *gs) {
         draw_cam.target.y += gs->camera_kick.y;
 
         BeginMode2D(draw_cam);
-        tilemap_draw(&gs->tilemap, gs->camera, gs->stats.survival_time);
+        tilemap_draw(&gs->tilemap, draw_cam, gs->stats.survival_time);
         corpse_pool_draw(&gs->corpses);
 
         /* Exit portal */

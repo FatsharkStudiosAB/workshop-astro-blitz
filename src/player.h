@@ -30,7 +30,7 @@ typedef struct Tilemap Tilemap;
 #define MELEE_RANGE 40.0f        /* reach from player center */
 #define MELEE_COOLDOWN 0.5f      /* seconds between swings */
 #define MELEE_DURATION 0.15f     /* active swing time */
-#define MELEE_KNOCKBACK 300.0f   /* knockback speed applied to enemies */
+#define MELEE_KNOCKBACK 15.0f    /* pixels of position displacement from melee hit */
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 

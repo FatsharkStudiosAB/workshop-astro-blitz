@@ -47,11 +47,16 @@ void lightmap_clear(LightMap *lm);
 /* Add a light source for this frame. */
 void lightmap_add(LightMap *lm, Vector2 world_pos, Color color, float radius);
 
-/* Render the light map and composite it over the scene.
- * Call AFTER EndMode2D() but BEFORE EndDrawing() / postfx_end().
+/* Build the light map texture (draws lights to the off-screen target).
+ * Call this OUTSIDE any BeginTextureMode block to avoid nested targets.
  * The camera is needed to convert world positions to screen positions. */
-void lightmap_render(LightMap *lm, Camera2D camera);
+void lightmap_build(LightMap *lm, Camera2D camera);
 
-/* Same as lightmap_render but scales the effect intensity (0 = no lighting,
- * 1 = full lighting).  At 0 the lightmap is skipped entirely. */
-void lightmap_render_scaled(LightMap *lm, Camera2D camera, float intensity);
+/* Build the light map with scaled ambient (0 = no shadow, 1 = full).
+ * At intensity 0 the build is skipped entirely. */
+void lightmap_build_scaled(LightMap *lm, Camera2D camera, float intensity);
+
+/* Composite the already-built light map over the current render target
+ * using multiplicative blending. Safe to call inside a BeginTextureMode block
+ * because it only draws a textured quad (no nested texture mode). */
+void lightmap_composite(LightMap *lm);

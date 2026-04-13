@@ -16,9 +16,19 @@
  * The sprite faces "up" (negative Y) by default; `dir` rotates it. */
 static void draw_rotated_sprite(const unsigned char *data, int w, int h, const Color *palette,
                                 int palette_size, Vector2 pos, Vector2 dir) {
-    /* Rotation: dir is the facing direction; compute sin/cos for rotation */
-    /* Default sprite orientation: facing "up" = (0, -1). We rotate from (0,-1) to dir. */
-    float angle = atan2f(dir.y, dir.x) + 1.5707963f; /* +PI/2 to convert from "right" to "up" */
+    /* Normalize dir, falling back to "up" (0, -1) for zero vectors */
+    Vector2 facing = dir;
+    float len_sq = facing.x * facing.x + facing.y * facing.y;
+    if (len_sq <= 0.0f) {
+        facing = (Vector2){0.0f, -1.0f};
+    } else if (fabsf(len_sq - 1.0f) > 0.001f) {
+        float inv_len = 1.0f / sqrtf(len_sq);
+        facing.x *= inv_len;
+        facing.y *= inv_len;
+    }
+
+    /* Default sprite orientation: facing "up" = (0, -1). Rotate from (0,-1) to dir. */
+    float angle = atan2f(facing.y, facing.x) + 1.5707963f; /* +PI/2 */
     float ca = cosf(angle);
     float sa = sinf(angle);
 
@@ -214,6 +224,8 @@ static const Color bomber_charge_palette[] = {
     {255, 255, 150, 255}, /* 3: near-white yellow */
     {255, 60, 10, 255},   /* 4: hot core */
 };
+#define BOMBER_CHARGE_PALETTE_SIZE \
+    (sizeof(bomber_charge_palette) / sizeof(bomber_charge_palette[0]))
 
 /* Hit flash palette (all white) */
 static const Color flash_palette[] = {
@@ -264,7 +276,7 @@ void sprite_draw_bomber(Vector2 pos, Vector2 move_dir, float hit_flash, bool is_
         pal_size = (int)FLASH_PALETTE_SIZE;
     } else if (is_charging) {
         pal = bomber_charge_palette;
-        pal_size = (int)BOMBER_PALETTE_SIZE;
+        pal_size = (int)BOMBER_CHARGE_PALETTE_SIZE;
     } else {
         pal = bomber_palette;
         pal_size = (int)BOMBER_PALETTE_SIZE;

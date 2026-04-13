@@ -142,6 +142,12 @@ if(BUILD_TESTING)
     target_link_libraries(test_upgrade PRIVATE unity astro_blitz_lib)
     add_test(NAME test_upgrade COMMAND test_upgrade)
 
+    # ── Raylib stubs (shared by sprite tests and integration tests) ─────
+    add_library(raylib_stubs STATIC tests/raylib_stubs.c)
+    target_include_directories(raylib_stubs PUBLIC
+        ${raylib_SOURCE_DIR}/src   # raylib.h, raymath.h type definitions
+    )
+
     # Sprites module tests (uses stubs because sprites call DrawPixel)
     add_executable(test_sprites tests/test_sprites.c)
     target_include_directories(test_sprites PRIVATE
@@ -160,10 +166,6 @@ if(BUILD_TESTING)
     add_test(NAME test_sprites COMMAND test_sprites)
 
     # ── Integration tests (game objects + Raylib stubs, no real Raylib) ───
-    add_library(raylib_stubs STATIC tests/raylib_stubs.c)
-    target_include_directories(raylib_stubs PUBLIC
-        ${raylib_SOURCE_DIR}/src   # raylib.h, raymath.h type definitions
-    )
 
     add_executable(test_integration tests/test_integration.c)
     target_include_directories(test_integration PRIVATE

@@ -25,6 +25,7 @@
 static bool s_keys_down[MAX_KEYS];
 static bool s_keys_pressed[MAX_KEYS];
 static bool s_mouse_buttons[MAX_MOUSE_BUTTONS];
+static bool s_mouse_pressed[MAX_MOUSE_BUTTONS];
 static Vector2 s_mouse_position;
 static float s_frame_time;
 static int s_random_value;
@@ -37,6 +38,7 @@ void stub_reset(void) {
     memset(s_keys_down, 0, sizeof(s_keys_down));
     memset(s_keys_pressed, 0, sizeof(s_keys_pressed));
     memset(s_mouse_buttons, 0, sizeof(s_mouse_buttons));
+    memset(s_mouse_pressed, 0, sizeof(s_mouse_pressed));
     s_mouse_position = (Vector2){0.0f, 0.0f};
     s_frame_time = 1.0f / 60.0f; /* default 60 fps */
     s_random_value = 0;
@@ -59,6 +61,12 @@ void stub_set_key_pressed(int key, bool pressed) {
 void stub_set_mouse_button_down(int button, bool down) {
     if (button >= 0 && button < MAX_MOUSE_BUTTONS) {
         s_mouse_buttons[button] = down;
+    }
+}
+
+void stub_set_mouse_button_pressed(int button, bool pressed) {
+    if (button >= 0 && button < MAX_MOUSE_BUTTONS) {
+        s_mouse_pressed[button] = pressed;
     }
 }
 
@@ -105,9 +113,11 @@ bool IsMouseButtonDown(int button) {
 }
 
 bool IsMouseButtonPressed(int button) {
-    /* In test stubs, treat pressed same as down */
+    /* One-shot: returns true once per set, then auto-clears */
     if (button >= 0 && button < MAX_MOUSE_BUTTONS) {
-        return s_mouse_buttons[button];
+        bool was = s_mouse_pressed[button];
+        s_mouse_pressed[button] = false;
+        return was;
     }
     return false;
 }

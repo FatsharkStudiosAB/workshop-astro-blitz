@@ -27,6 +27,9 @@ void stub_set_key_pressed(int key, bool pressed);
 /* Set the mouse button state (IsMouseButtonDown). */
 void stub_set_mouse_button_down(int button, bool down);
 
+/* Set a mouse button as just pressed this frame (one-shot, like keys). */
+void stub_set_mouse_button_pressed(int button, bool pressed);
+
 /* Set the mouse position returned by GetMousePosition. */
 void stub_set_mouse_position(float x, float y);
 

@@ -121,11 +121,14 @@ typedef struct {
 /* Initialize all enemies to inactive. */
 void enemy_pool_init(EnemyPool *pool);
 
-/* Spawn a single enemy of the given type at the given position. */
-void enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position);
+/* Spawn a single enemy of the given type at the given position.
+ * Returns the pool index of the spawned enemy, or -1 if the pool is full. */
+int enemy_pool_spawn(EnemyPool *pool, EnemyType type, Vector2 position);
 
-/* Spawn with an elite modifier applied. */
-void enemy_pool_spawn_elite(EnemyPool *pool, EnemyType type, Vector2 position, EliteModifier elite);
+/* Spawn with an elite modifier applied.
+ * Returns the pool index of the spawned enemy, or -1 if the pool is full. */
+int enemy_pool_spawn_elite(EnemyPool *pool, EnemyType type, Vector2 position,
+                           EliteModifier elite);
 
 /*
  * Update all active enemies: move toward target, clamp to arena.

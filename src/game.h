@@ -118,7 +118,7 @@ typedef struct {
 #define SLOWMO_SCALE 0.25f            /* time scale during slow-motion */
 #define CAMERA_KICK_STRENGTH 4.0f     /* pixels of camera kick per shot */
 #define CAMERA_KICK_DECAY 12.0f       /* kick decay speed (per second) */
-#define KNOCKBACK_BULLET 120.0f       /* knockback force from bullet hits */
+#define KNOCKBACK_BULLET 5.0f         /* pixels of position displacement per bullet hit */
 
 /* ── Floor progression ─────────────────────────────────────────────────────── */
 

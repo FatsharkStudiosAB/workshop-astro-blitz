@@ -67,8 +67,8 @@ void lightmap_add(LightMap *lm, Vector2 world_pos, Color color, float radius) {
     l->active = true;
 }
 
-void lightmap_render(LightMap *lm, Camera2D camera) {
-    /* Draw light map to off-screen texture */
+void lightmap_build(LightMap *lm, Camera2D camera) {
+    /* Draw light map to off-screen texture (its own render target) */
     BeginTextureMode(lm->target);
     ClearBackground(lm->ambient);
 
@@ -95,30 +95,19 @@ void lightmap_render(LightMap *lm, Camera2D camera) {
 
     EndBlendMode();
     EndTextureMode();
-
-    /* Composite light map over scene with multiplicative blending */
-    BeginBlendMode(BLEND_MULTIPLIED);
-    /* Light map render texture is Y-flipped */
-    DrawTextureRec(
-        lm->target.texture,
-        (Rectangle){0, 0, (float)lm->target.texture.width, -(float)lm->target.texture.height},
-        (Vector2){0, 0}, WHITE);
-    EndBlendMode();
 }
 
-void lightmap_render_scaled(LightMap *lm, Camera2D camera, float intensity) {
+void lightmap_build_scaled(LightMap *lm, Camera2D camera, float intensity) {
     if (intensity <= 0.0f) {
         return; /* lighting disabled -- skip entirely */
     }
 
-    /* At full intensity, use standard render */
     if (intensity >= 1.0f) {
-        lightmap_render(lm, camera);
+        lightmap_build(lm, camera);
         return;
     }
 
-    /* Partial intensity: lighten the ambient to reduce the darkening effect.
-     * Interpolate ambient from the real ambient towards full white (no shadow). */
+    /* Partial intensity: lighten the ambient to reduce the darkening effect. */
     Color original_ambient = lm->ambient;
     unsigned char ar = (unsigned char)((float)original_ambient.r +
                                        (255.0f - (float)original_ambient.r) * (1.0f - intensity));
@@ -128,8 +117,19 @@ void lightmap_render_scaled(LightMap *lm, Camera2D camera, float intensity) {
                                        (255.0f - (float)original_ambient.b) * (1.0f - intensity));
     lm->ambient = (Color){ar, ag, ab, 255};
 
-    lightmap_render(lm, camera);
+    lightmap_build(lm, camera);
 
-    /* Restore original ambient */
     lm->ambient = original_ambient;
+}
+
+void lightmap_composite(LightMap *lm) {
+    /* Draw the light map texture over the current render target with
+     * multiplicative blending. This only issues a textured quad draw --
+     * no BeginTextureMode, so it is safe inside another texture mode. */
+    BeginBlendMode(BLEND_MULTIPLIED);
+    DrawTextureRec(
+        lm->target.texture,
+        (Rectangle){0, 0, (float)lm->target.texture.width, -(float)lm->target.texture.height},
+        (Vector2){0, 0}, WHITE);
+    EndBlendMode();
 }
