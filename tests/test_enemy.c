@@ -143,7 +143,7 @@ void test_update_swarmer_moves_toward_target(void) {
 
     Vector2 target = {500.0f, 300.0f};
     float dt = 0.1f;
-    enemy_pool_update(&pool, dt, target, TEST_ARENA, NULL);
+    enemy_pool_update(&pool, dt, target, TEST_ARENA, NULL, NULL);
 
     float expected_x = 100.0f + SWARMER_SPEED * dt;
     TEST_ASSERT_FLOAT_WITHIN(0.5f, expected_x, pool.enemies[0].position.x);
@@ -159,7 +159,7 @@ void test_update_swarmer_moves_toward_target_diagonal(void) {
 
     Vector2 target = {200.0f, 200.0f};
     float dt = 0.1f;
-    enemy_pool_update(&pool, dt, target, TEST_ARENA, NULL);
+    enemy_pool_update(&pool, dt, target, TEST_ARENA, NULL, NULL);
 
     /* Should have moved closer to target */
     float old_dist = 141.42f; /* sqrt(100^2 + 100^2) */
@@ -177,7 +177,7 @@ void test_update_skips_inactive_enemies(void) {
 
     /* All inactive -- update should not crash */
     Vector2 target = {400.0f, 300.0f};
-    enemy_pool_update(&pool, 0.016f, target, TEST_ARENA, NULL);
+    enemy_pool_update(&pool, 0.016f, target, TEST_ARENA, NULL, NULL);
 
     TEST_ASSERT_EQUAL_INT(0, enemy_pool_active_count(&pool));
 }
@@ -190,7 +190,7 @@ void test_update_clamps_enemy_to_arena(void) {
     enemy_pool_spawn(&pool, ENEMY_SWARMER, (Vector2){SWARMER_RADIUS + 1.0f, 300.0f});
 
     Vector2 target = {-1000.0f, 300.0f};
-    enemy_pool_update(&pool, 1.0f, target, TEST_ARENA, NULL);
+    enemy_pool_update(&pool, 1.0f, target, TEST_ARENA, NULL, NULL);
 
     /* Should be clamped at arena left edge + radius */
     TEST_ASSERT_TRUE(pool.enemies[0].position.x >= SWARMER_RADIUS);
@@ -204,7 +204,7 @@ void test_update_enemy_stops_at_target(void) {
     enemy_pool_spawn(&pool, ENEMY_SWARMER, (Vector2){400.0f, 300.0f});
 
     Vector2 target = {400.0f, 300.0f};
-    enemy_pool_update(&pool, 0.016f, target, TEST_ARENA, NULL);
+    enemy_pool_update(&pool, 0.016f, target, TEST_ARENA, NULL, NULL);
 
     /* Velocity should be zero when at target */
     TEST_ASSERT_FLOAT_WITHIN(0.1f, 400.0f, pool.enemies[0].position.x);
@@ -352,7 +352,7 @@ void test_update_enemy_uses_flow_field_around_wall(void) {
     TEST_ASSERT_TRUE_MESSAGE(tm.flow[10][12].x != 0.0f || tm.flow[10][12].y != 0.0f,
                              "Enemy tile should have a non-zero flow direction");
 
-    enemy_pool_update(&pool, 0.1f, target, TEST_ARENA, &tm);
+    enemy_pool_update(&pool, 0.1f, target, TEST_ARENA, &tm, NULL);
 
     /* The enemy should have moved along the flow field. The flow direction
      * at tile (12, 10) may be left (-1, 0) or up (0, -1) depending on BFS
@@ -372,7 +372,7 @@ void test_update_enemy_uses_flow_field_around_wall(void) {
      * boundaries and makes progress (BFS distance decreases). */
     for (int step = 0; step < 20; step++) {
         tilemap_compute_flow_field(&tm, tx, ty);
-        enemy_pool_update(&pool, 0.1f, target, TEST_ARENA, &tm);
+        enemy_pool_update(&pool, 0.1f, target, TEST_ARENA, &tm, NULL);
     }
 
     float final_x = pool.enemies[0].position.x;
@@ -403,7 +403,7 @@ void test_update_enemy_direct_seek_when_close(void) {
     Vector2 target = {tx, ty};
 
     tilemap_compute_flow_field(&tm, tx, ty);
-    enemy_pool_update(&pool, 0.1f, target, TEST_ARENA, &tm);
+    enemy_pool_update(&pool, 0.1f, target, TEST_ARENA, &tm, NULL);
 
     /* Should have moved right toward target (direct seek) */
     TEST_ASSERT_TRUE(pool.enemies[0].position.x > ex);
@@ -417,7 +417,7 @@ void test_update_enemy_direct_seek_when_no_tilemap(void) {
     enemy_pool_spawn(&pool, ENEMY_SWARMER, (Vector2){100.0f, 300.0f});
     Vector2 target = {500.0f, 300.0f};
 
-    enemy_pool_update(&pool, 0.1f, target, TEST_ARENA, NULL);
+    enemy_pool_update(&pool, 0.1f, target, TEST_ARENA, NULL, NULL);
 
     /* Should have moved right toward target */
     TEST_ASSERT_TRUE(pool.enemies[0].position.x > 100.0f);

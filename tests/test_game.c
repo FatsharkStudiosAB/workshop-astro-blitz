@@ -108,8 +108,8 @@ void test_game_init_camera_offset(void) {
     memset(&gs, 0, sizeof(gs));
     game_init(&gs);
 
-    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, SCREEN_WIDTH / 2.0f, gs.camera.offset.x);
-    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, SCREEN_HEIGHT / 2.0f, gs.camera.offset.y);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, RENDER_WIDTH / 2.0f, gs.camera.offset.x);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, RENDER_HEIGHT / 2.0f, gs.camera.offset.y);
 }
 
 void test_game_init_camera_zoom(void) {

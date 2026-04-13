@@ -26,6 +26,8 @@ typedef struct {
     Vector2 position;
     Vector2 velocity;
     float lifetime;
+    float damage; /* damage dealt on hit (from weapon) */
+    Color color;  /* visual color (from weapon) */
     int bounces;
     bool active;
 } Bullet;
@@ -53,5 +55,18 @@ void bullet_pool_draw(const BulletPool *pool);
 
 /* Spawn a bullet from `origin` in `direction` (must be normalized).
  * Returns true if a bullet was actually fired, false if rate-limited or
- * the pool is full. */
+ * the pool is full. Uses default pistol stats. */
 bool bullet_pool_fire(BulletPool *pool, Vector2 origin, Vector2 direction);
+
+/*
+ * bullet_pool_fire_weapon -- Fire bullets based on weapon parameters.
+ *
+ * Spawns `projectile_count` bullets in a cone of `spread_angle` degrees
+ * centered on `direction`. Each bullet uses the given speed, damage,
+ * lifetime, and color. Applies fire_rate cooldown.
+ *
+ * Returns the number of bullets actually spawned (0 if rate-limited).
+ */
+int bullet_pool_fire_weapon(BulletPool *pool, Vector2 origin, Vector2 direction, float fire_rate,
+                            float damage, float bullet_speed, float spread_angle,
+                            int projectile_count, float bullet_lifetime, Color bullet_color);

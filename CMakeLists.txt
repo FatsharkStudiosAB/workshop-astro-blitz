@@ -30,6 +30,11 @@ add_library(astro_blitz_objs OBJECT
     src/enemy.c
     src/audio.c
     src/settings.c
+    src/particle.c
+    src/screenshake.c
+    src/weapon.c
+    src/upgrade.c
+    src/sprites.c
 )
 target_include_directories(astro_blitz_objs PUBLIC src)
 # Objects need Raylib headers (types, raymath inlines) at compile time, but
@@ -54,7 +59,7 @@ if(NOT MSVC)
 endif()
 
 # ── Game executable ──────────────────────────────────────────────────────────
-add_executable(astro_blitz src/main.c)
+add_executable(astro_blitz src/main.c src/postfx.c src/lightmap.c)
 target_link_libraries(astro_blitz PRIVATE astro_blitz_lib)
 
 # Note: winmm is NOT explicitly linked because Raylib's PlaySound symbol
@@ -117,11 +122,50 @@ if(BUILD_TESTING)
     target_link_libraries(test_settings PRIVATE unity astro_blitz_lib)
     add_test(NAME test_settings COMMAND test_settings)
 
-    # ── Integration tests (game objects + Raylib stubs, no real Raylib) ───
+    # Particle module tests
+    add_executable(test_particle tests/test_particle.c)
+    target_link_libraries(test_particle PRIVATE unity astro_blitz_lib)
+    add_test(NAME test_particle COMMAND test_particle)
+
+    # Screen shake module tests
+    add_executable(test_screenshake tests/test_screenshake.c)
+    target_link_libraries(test_screenshake PRIVATE unity astro_blitz_lib)
+    add_test(NAME test_screenshake COMMAND test_screenshake)
+
+    # Weapon module tests
+    add_executable(test_weapon tests/test_weapon.c)
+    target_link_libraries(test_weapon PRIVATE unity astro_blitz_lib)
+    add_test(NAME test_weapon COMMAND test_weapon)
+
+    # Upgrade module tests
+    add_executable(test_upgrade tests/test_upgrade.c)
+    target_link_libraries(test_upgrade PRIVATE unity astro_blitz_lib)
+    add_test(NAME test_upgrade COMMAND test_upgrade)
+
+    # ── Raylib stubs (shared by sprite tests and integration tests) ─────
     add_library(raylib_stubs STATIC tests/raylib_stubs.c)
     target_include_directories(raylib_stubs PUBLIC
         ${raylib_SOURCE_DIR}/src   # raylib.h, raymath.h type definitions
     )
+
+    # Sprites module tests (uses stubs because sprites call DrawPixel)
+    add_executable(test_sprites tests/test_sprites.c)
+    target_include_directories(test_sprites PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests
+        ${raylib_SOURCE_DIR}/src
+    )
+    target_link_libraries(test_sprites PRIVATE
+        unity
+        $<TARGET_OBJECTS:astro_blitz_objs>
+        raylib_stubs
+    )
+    if(NOT MSVC)
+        target_link_libraries(test_sprites PRIVATE m)
+    endif()
+    add_test(NAME test_sprites COMMAND test_sprites)
+
+    # ── Integration tests (game objects + Raylib stubs, no real Raylib) ───
 
     add_executable(test_integration tests/test_integration.c)
     target_include_directories(test_integration PRIVATE

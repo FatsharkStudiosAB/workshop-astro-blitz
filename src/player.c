@@ -3,6 +3,8 @@
  */
 
 #include "player.h"
+#include "game.h"
+#include "sprites.h"
 #include "tilemap.h"
 #include <math.h>
 
@@ -128,17 +130,28 @@ void player_init(Player *p, Vector2 start_pos) {
     p->aim_direction = (Vector2){0.0f, -1.0f};
     p->hp = PLAYER_MAX_HP;
     p->max_hp = PLAYER_MAX_HP;
+    p->current_weapon = weapon_get_default();
 
     p->is_dashing = false;
     p->dash_direction = (Vector2){0};
     p->dash_timer = 0.0f;
     p->dash_cooldown = 0.0f;
+
+    p->melee_cooldown = 0.0f;
+    p->melee_timer = 0.0f;
+    p->melee_direction = (Vector2){0};
+
+    p->speed_bonus = 0.0f;
+    p->dash_cd_mult = 0.0f; /* 0 means "use 1.0" in player_update */
 }
 
 void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Camera2D camera,
                    MovementLayout movement_layout) {
     /* ── Aim toward mouse cursor (world space) ───────────────────────── */
+    /* Mouse position is in window coords; scale to render resolution for camera math */
     Vector2 screen_mouse = GetMousePosition();
+    screen_mouse.x /= (float)RENDER_SCALE;
+    screen_mouse.y /= (float)RENDER_SCALE;
     Vector2 world_mouse = GetScreenToWorld2D(screen_mouse, camera);
     Vector2 to_mouse = Vector2Subtract(world_mouse, p->position);
     float dist = Vector2Length(to_mouse);
@@ -186,13 +199,15 @@ void player_update(Player *p, float dt, Rectangle arena, const Tilemap *tm, Came
         p->is_dashing = true;
         p->dash_direction = move_dir;
         p->dash_timer = DASH_DURATION;
-        p->dash_cooldown = DASH_COOLDOWN;
+        float cd_mult = (p->dash_cd_mult > 0.0f) ? p->dash_cd_mult : 1.0f;
+        p->dash_cooldown = DASH_COOLDOWN * cd_mult;
         return;
     }
 
     /* ── Normal movement ──────────────────────────────────────────────── */
     Vector2 move_dir = get_movement_input(p->aim_direction, movement_layout);
-    p->position = Vector2Add(p->position, Vector2Scale(move_dir, PLAYER_SPEED * dt));
+    float eff_speed = PLAYER_SPEED + p->speed_bonus;
+    p->position = Vector2Add(p->position, Vector2Scale(move_dir, eff_speed * dt));
     clamp_to_arena(p, arena);
     resolve_tile_collision(p, tm);
 }
@@ -202,42 +217,19 @@ void player_draw(const Player *p) {
     Vector2 aim = p->aim_direction;
     float r = PLAYER_RADIUS;
 
-    /* Perpendicular to aim (for left/right offsets) */
-    Vector2 perp = {-aim.y, aim.x};
+    bool d = p->is_dashing;
+    Color glow_col = d ? (Color){80, 160, 255, 45} : (Color){0, 220, 200, 30};
+    Color aim_col = (Color){255, 50, 120, 180};
 
-    /* ── Color palette ────────────────────────────────────────────────── */
-    /* Normal: cyan/teal sci-fi.  Dashing: electric blue shift. */
-    Color body_fill = p->is_dashing ? (Color){20, 60, 160, 255} : (Color){10, 60, 80, 255};
-    Color body_outline = p->is_dashing ? (Color){80, 160, 255, 255} : (Color){0, 220, 200, 255};
-    Color glow = p->is_dashing ? (Color){80, 160, 255, 60} : (Color){0, 220, 200, 40};
-    Color core_color = p->is_dashing ? (Color){180, 220, 255, 255} : (Color){200, 255, 240, 255};
-    Color aim_color = (Color){255, 50, 120, 200};
+    /* Ambient glow behind sprite */
+    DrawCircleV(pos, r + 3.0f, glow_col);
 
-    /* ── Outer glow ───────────────────────────────────────────────────── */
-    DrawCircleV(pos, r + 4.0f, glow);
+    /* Pixel art sprite */
+    sprite_draw_player(pos, aim, d);
 
-    /* ── Body fill ────────────────────────────────────────────────────── */
-    DrawCircleV(pos, r, body_fill);
-
-    /* ── Directional nose (triangle pointing in aim direction) ─────── */
-    Vector2 nose_tip = Vector2Add(pos, Vector2Scale(aim, r + 3.0f));
-    Vector2 nose_l =
-        Vector2Add(pos, Vector2Add(Vector2Scale(aim, r * 0.3f), Vector2Scale(perp, r * 0.5f)));
-    Vector2 nose_r =
-        Vector2Add(pos, Vector2Add(Vector2Scale(aim, r * 0.3f), Vector2Scale(perp, -r * 0.5f)));
-    DrawTriangle(nose_tip, nose_l, nose_r, body_outline);
-
-    /* ── Body outline (neon ring) ─────────────────────────────────────── */
-    DrawCircleLinesV(pos, r, body_outline);
-
-    /* ── Reactor core (bright center dot) ─────────────────────────────── */
-    DrawCircleV(pos, 3.0f, core_color);
-
-    /* ── Aim line (hot magenta, extends past body) ────────────────────── */
+    /* Aim laser (thin magenta line with crosshair dot) */
     Vector2 aim_start = Vector2Add(pos, Vector2Scale(aim, r + 4.0f));
-    Vector2 aim_end = Vector2Add(pos, Vector2Scale(aim, r + 18.0f));
-    DrawLineEx(aim_start, aim_end, 2.0f, aim_color);
-
-    /* Small crosshair dot at the tip */
-    DrawCircleV(aim_end, 2.0f, aim_color);
+    Vector2 aim_end = Vector2Add(pos, Vector2Scale(aim, r + 14.0f));
+    DrawLineEx(aim_start, aim_end, 1.0f, aim_col);
+    DrawCircleV(aim_end, 1.5f, aim_col);
 }

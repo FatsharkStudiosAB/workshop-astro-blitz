@@ -25,6 +25,7 @@
 static bool s_keys_down[MAX_KEYS];
 static bool s_keys_pressed[MAX_KEYS];
 static bool s_mouse_buttons[MAX_MOUSE_BUTTONS];
+static bool s_mouse_pressed[MAX_MOUSE_BUTTONS];
 static Vector2 s_mouse_position;
 static float s_frame_time;
 static int s_random_value;
@@ -37,6 +38,7 @@ void stub_reset(void) {
     memset(s_keys_down, 0, sizeof(s_keys_down));
     memset(s_keys_pressed, 0, sizeof(s_keys_pressed));
     memset(s_mouse_buttons, 0, sizeof(s_mouse_buttons));
+    memset(s_mouse_pressed, 0, sizeof(s_mouse_pressed));
     s_mouse_position = (Vector2){0.0f, 0.0f};
     s_frame_time = 1.0f / 60.0f; /* default 60 fps */
     s_random_value = 0;
@@ -59,6 +61,12 @@ void stub_set_key_pressed(int key, bool pressed) {
 void stub_set_mouse_button_down(int button, bool down) {
     if (button >= 0 && button < MAX_MOUSE_BUTTONS) {
         s_mouse_buttons[button] = down;
+    }
+}
+
+void stub_set_mouse_button_pressed(int button, bool pressed) {
+    if (button >= 0 && button < MAX_MOUSE_BUTTONS) {
+        s_mouse_pressed[button] = pressed;
     }
 }
 
@@ -100,6 +108,16 @@ bool IsKeyPressed(int key) {
 bool IsMouseButtonDown(int button) {
     if (button >= 0 && button < MAX_MOUSE_BUTTONS) {
         return s_mouse_buttons[button];
+    }
+    return false;
+}
+
+bool IsMouseButtonPressed(int button) {
+    /* One-shot: returns true once per set, then auto-clears */
+    if (button >= 0 && button < MAX_MOUSE_BUTTONS) {
+        bool was = s_mouse_pressed[button];
+        s_mouse_pressed[button] = false;
+        return was;
     }
     return false;
 }
@@ -153,8 +171,7 @@ void InitWindow(int width, int height, const char *title) {
     (void)title;
 }
 
-void CloseWindow(void) {
-}
+void CloseWindow(void) {}
 
 void SetTargetFPS(int fps) {
     (void)fps;
@@ -166,11 +183,9 @@ bool WindowShouldClose(void) {
 
 /* ── Audio stubs (no-ops) ─────────────────────────────────────────────────── */
 
-void InitAudioDevice(void) {
-}
+void InitAudioDevice(void) {}
 
-void CloseAudioDevice(void) {
-}
+void CloseAudioDevice(void) {}
 
 Sound LoadSoundFromWave(Wave wave) {
     (void)wave;
@@ -205,11 +220,9 @@ bool IsSoundPlaying(Sound sound) {
 
 /* ── Rendering stubs (no-ops) ─────────────────────────────────────────────── */
 
-void BeginDrawing(void) {
-}
+void BeginDrawing(void) {}
 
-void EndDrawing(void) {
-}
+void EndDrawing(void) {}
 
 void ClearBackground(Color color) {
     (void)color;
@@ -219,8 +232,7 @@ void BeginMode2D(Camera2D camera) {
     (void)camera;
 }
 
-void EndMode2D(void) {
-}
+void EndMode2D(void) {}
 
 void DrawPixel(int posX, int posY, Color color) {
     (void)posX;

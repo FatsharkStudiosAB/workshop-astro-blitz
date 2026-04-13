@@ -196,6 +196,81 @@ void test_save_writes_readable_format(void) {
     TEST_ASSERT_NOT_NULL(strstr(buf, "movement_layout=8dir"));
 }
 
+/* ── Visual effect settings tests ───────────────────────────────────────────── */
+
+void test_init_sets_visual_defaults_to_one(void) {
+    Settings s;
+    memset(&s, 0, sizeof(s));
+    settings_init(&s);
+
+    /* All visual effect defaults should be 1.0 */
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 1.0f, s.screen_shake);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 1.0f, s.hitstop);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 1.0f, s.bloom);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 1.0f, s.scanlines);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 1.0f, s.chromatic_aberration);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 1.0f, s.vignette);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 1.0f, s.lighting);
+}
+
+void test_save_and_load_visual_effects(void) {
+    Settings s_save;
+    settings_init(&s_save);
+    s_save.screen_shake = 0.5f;
+    s_save.hitstop = 0.0f;
+    s_save.bloom = 0.8f;
+    s_save.scanlines = 0.3f;
+    s_save.chromatic_aberration = 0.1f;
+    s_save.vignette = 0.7f;
+    s_save.lighting = 0.6f;
+
+    TEST_ASSERT_TRUE(settings_save_to(&s_save, TEST_FILE));
+
+    Settings s_load;
+    settings_init(&s_load);
+    TEST_ASSERT_TRUE(settings_load_from(&s_load, TEST_FILE));
+
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.5f, s_load.screen_shake);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.0f, s_load.hitstop);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.8f, s_load.bloom);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.3f, s_load.scanlines);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.1f, s_load.chromatic_aberration);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.7f, s_load.vignette);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.6f, s_load.lighting);
+}
+
+void test_load_visual_effects_clamps_out_of_range(void) {
+    FILE *f = fopen(TEST_FILE, "w");
+    TEST_ASSERT_NOT_NULL(f);
+    fprintf(f, "bloom=2.5\nlighting=-0.5\nscreen_shake=1.0\n");
+    fclose(f);
+
+    Settings s;
+    settings_init(&s);
+    TEST_ASSERT_TRUE(settings_load_from(&s, TEST_FILE));
+
+    /* Out-of-range values should be clamped to [0, 1] */
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 1.0f, s.bloom);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.0f, s.lighting);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 1.0f, s.screen_shake);
+}
+
+void test_load_missing_visual_effects_preserves_defaults(void) {
+    /* File only has movement_layout -- visual effects keep defaults */
+    FILE *f = fopen(TEST_FILE, "w");
+    TEST_ASSERT_NOT_NULL(f);
+    fprintf(f, "movement_layout=8dir\n");
+    fclose(f);
+
+    Settings s;
+    settings_init(&s);
+    TEST_ASSERT_TRUE(settings_load_from(&s, TEST_FILE));
+
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 1.0f, s.bloom);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 1.0f, s.lighting);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 1.0f, s.hitstop);
+}
+
 /* ── Runner ────────────────────────────────────────────────────────────────── */
 
 int main(void) {
@@ -226,6 +301,12 @@ int main(void) {
     /* Save */
     RUN_TEST(test_save_returns_true_on_success);
     RUN_TEST(test_save_writes_readable_format);
+
+    /* Visual effect settings */
+    RUN_TEST(test_init_sets_visual_defaults_to_one);
+    RUN_TEST(test_save_and_load_visual_effects);
+    RUN_TEST(test_load_visual_effects_clamps_out_of_range);
+    RUN_TEST(test_load_missing_visual_effects_preserves_defaults);
 
     return UNITY_END();
 }

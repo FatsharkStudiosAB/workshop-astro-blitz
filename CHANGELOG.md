@@ -7,6 +7,80 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Pickup menu system**: Walking over a weapon or upgrade pauses the game and shows a comparison UI. Weapon pickups display two side-by-side cards (current vs new) with full stat breakdown and "Keep Current" / "Replace" buttons. Upgrade pickups show a single card with upgrade name, description, current stacks, and "Keep" / "Discard" buttons. Players decide whether to take each item instead of auto-collecting.
+- **Weapon and upgrade descriptions**: `weapon_get_description()` returns a flavor sentence per weapon type. `upgrade_get_description()` returns per-stack bonus text. Upgrade full names (Speed Boost, Damage Up, Rapid Fire, Vitality, Velocity, Swift Dash) displayed in pickup UI.
+- **Card-based first-run movement picker**: The first-launch movement selection now uses two side-by-side cards with detailed control descriptions and A/D navigation instead of a simple text list.
+- **Pixel art sprites** (`src/sprites.h/c`): New sprite module with hardcoded palette-indexed pixel art for all entity types. Player: 16x16 angular humanoid with visor, armor, and reactor core (normal + dash palettes). Swarmer: 10x10 insect blob. Grunt: 12x12 blocky soldier with barrel. Stalker: 10x10 sleek diamond. Bomber: 14x14 round with glowing core (normal + charging palettes). All sprites rotate to face movement/aim direction. Hit flash swaps to all-white palette.
+- **Pixel-perfect rendering pipeline**: World renders at 400x300 (half resolution) with postfx and lightmap, then upscaled 2x to 800x600 with nearest-neighbor filtering for crisp pixel art. UI renders at native 800x600 for readable text. New constants `RENDER_WIDTH`, `RENDER_HEIGHT`, `RENDER_SCALE` in `game.h`.
+- **Visual effects settings UI**: Full settings screen with 8 adjustable options: Movement layout (toggle), Screen Shake, Hitstop, Bloom, Scanlines, Chromatic Aberration, Vignette, and Lighting (all 0-100% sliders). Navigate with W/S, adjust with Left/Right. Settings persist to `settings.ini`.
+- **HUD readability fix**: `game_draw` split into `game_draw_world()` and `game_draw_ui()`. UI renders after lightmap composite so HUD text is not darkened. Menu-only phases (first run, main menu, settings from main menu) skip post-processing entirely for clean text rendering.
+- **Multiplicative light map** (`src/lightmap.h/c`): Children of Morta-style 2D point lighting with radial gradient additive lights and multiplicative scene composite. Player=warm white, bullets=weapon color, enemies=type color, exit=green, bomber charges=bright.
+- **Scaled lightmap rendering**: `lightmap_render_scaled()` interpolates ambient darkness based on lighting setting (0=no lighting, 1=full atmospheric lighting).
+- **Enemy corpse permanence**: Dead enemies leave fading colored ghosts at death position for 3 seconds. Pool of 32 corpses, oldest overwritten when full.
+- 4 new settings unit tests: visual defaults, round-trip save/load, out-of-range clamping, missing fields preserve defaults.
+- **Post-processing shader pipeline** (`src/postfx.h/c`): Combined bloom/glow, CRT scanlines, chromatic aberration, and vignette in a single GLSL 330 fragment shader. Renders scene to off-screen `RenderTexture2D`, then composites through shader. Toggle with F1 key.
+- **Hitstop/freeze frames**: Game freezes for 3 frames on enemy hit, 5 frames on kill, 4 frames on player damage. Vlambeer-style impact feel.
+- **Slow-motion on kills**: 120ms of 25% time scale after every enemy kill for cinematic weight.
+- **Camera kick**: Directional camera nudge opposite to fire direction on every shot. Decays smoothly.
+- **Enemy knockback**: Bullets push enemies in the projectile's direction on hit.
+- **Animated floor grid**: Floor tiles have pulsing teal grid lines that wave across the world. Wall tiles have directional highlights and shadow edges.
+- **Ambient floating particles**: 64 cosmetic dust motes drift near the camera with fade-in/out lifecycle.
+- **Enemy HP bars**: Thin bar above damaged enemies (only shown when HP < max and max > 1). Color shifts green-to-red.
+- **Enemy max_hp field**: Tracks spawn HP for HP bar ratio display, updated by elite modifiers and floor scaling.
+- **HLD-inspired player model**: Kite/shield-shaped hull with visor slit, shoulder pauldrons, weapon barrel, reactor core, and dash thruster flare. Replaces basic circle.
+- Floor difficulty scaling: enemy HP increases by +15% per floor level (applies `FLOOR_ENEMY_HP_SCALE` at spawn time)
+- Speed upgrade now applied: each stack adds +30 movement speed to the player
+- Dash cooldown upgrade now applied: each stack multiplies dash cooldown by 0.85x (shorter cooldown)
+- 4 new player unit tests for upgrade modifier fields (`speed_bonus`, `dash_cd_mult`)
+- 3 new integration tests: floor HP scaling, speed upgrade via game_update, dash CD upgrade via game_update
+- Weapon system (`src/weapon.h/c`): 4 weapon presets -- Pistol (default), SMG (fast/inaccurate), Shotgun (5 pellets/wide spread), Plasma (slow/high damage). Each weapon defines fire rate, damage, bullet speed, spread angle, projectile count, lifetime, and color. Bullets now carry per-weapon damage and color.
+- 3 new enemy types extending the `EnemyType` enum: Grunt (ranged AI that maintains distance and fires enemy bullets), Stalker (fast flanker that circles then dashes at player), Bomber (charges when close, AoE explosion on death damages nearby player)
+- Enemy bullet pool (`EnemyBulletPool`) for Grunt projectiles with collision detection against player
+- Progressive wave spawning: enemy types introduced gradually (Swarmers only -> Grunts at wave 3 -> Stalkers at wave 6 -> Bombers at wave 10)
+- Weapon pickup drops: non-swarmer enemies have 30% chance to drop a random weapon on death. Walk-over pickup swaps player weapon. Pulsing glow visual with weapon initial letter, 15s lifetime with fade-out.
+- Bullet trails: fading afterimage lines behind both player and enemy projectiles proportional to speed
+- Combo/killstreak system: consecutive kills within 2s build a combo counter. HUD displays escalating combo text (yellow->red, growing font). Screen shake intensity scales with combo. Best combo shown on game-over screen.
+- Elite enemy modifiers: Armored (2.5x HP, 0.7x speed), Swift (1.6x speed, 0.75x radius), Burning (+5 contact damage). 20% chance per enemy after wave 5. Colored ring visual indicator per modifier type.
+- Right-click melee attack: 120-degree arc slash in aim direction, 3 damage, knockback (300 speed), 0.5s cooldown. Hits all enemies in arc simultaneously. Visual arc slash effect with fade-out. Melee cooldown bar in bottom HUD.
+- Floor progression: exit portal spawns after 5 waves on current floor. Walking into portal regenerates map, keeps player stats/weapon/HP. Floor counter in top-right HUD and game-over screen. Pulsing green portal visual.
+- Kill counter and floor number in HUD (top-right)
+- 12 weapon unit tests (`tests/test_weapon.c`)
+- 5 new integration tests: shotgun multi-pellet firing, grunt enemy shooting, combo increments, elite stat modification, weapon pickup swap
+- `IsMouseButtonPressed` added to Raylib stubs for melee integration tests
+- Linting infrastructure fixes: LLVM/clang-format installed, Taskfile `fmt:c` fixed for Windows (PowerShell script), yamllint CRLF issues resolved, markdownlint MD060/MD036 rules suppressed
+
+### Changed
+
+- Camera offset now uses `RENDER_WIDTH/2 x RENDER_HEIGHT/2` (200x150) instead of window half-size. Mouse input scaled by `RENDER_SCALE` for correct aiming.
+- Weapon and upgrade pickups no longer auto-collect on contact -- they pause gameplay and show a comparison menu. `GamePhase` gains `PHASE_PICKUP_WEAPON` and `PHASE_PICKUP_UPGRADE`.
+- `GameState` gains `pending_weapon`, `pending_weapon_index`, `pending_upgrade`, `pending_upgrade_index` for pickup menu state.
+- Bomber charge now expires after `BOMBER_CHARGE_DURATION` (1s) to prevent infinite charging on miss.
+- First-run movement picker redesigned from text list to side-by-side card layout with A/D navigation.
+- PostFX restructured: `postfx_end()` no longer calls BeginDrawing/EndDrawing. Output stored in `postfx_get_texture()` for caller to upscale. PostFX and lightmap operate at render resolution.
+- Viewport calculations in `spawn_wave()` and `tilemap_draw()` now use `camera.offset * 2` instead of `GetScreenWidth()/GetScreenHeight()` for render-resolution correctness.
+- `game_draw()` replaced by `game_draw_world()` and `game_draw_ui()` for layered rendering (world -> lightmap -> UI)
+- PostFX shader now accepts per-frame intensity uniforms for bloom, scanlines, chromatic aberration, and vignette (driven by settings)
+- Screenshake and hitstop scaled by their respective settings (0 = disabled, 1 = full)
+- `Settings` struct expanded with 7 new float fields for visual effect intensities
+- `settings_save_to` / `settings_load_from` now persist all visual effect settings to INI file
+- `tilemap_draw()` gains `float time` parameter for animated floor grid lines
+- `Enemy` struct gains `max_hp` field for HP bar display
+- `GameState` gains `hitstop_timer`, `slowmo_timer`, `slowmo_scale`, `camera_kick`, and `ambient[]` particle array
+- Wall rendering improved: directional highlight/shadow edges, center rivet detail
+- Player visual completely replaced: kite-shaped hull with layered geometry instead of basic circle
+- `Player` struct gains `speed_bonus` and `dash_cd_mult` fields for upgrade-driven movement modifiers
+- `player_update` uses `speed_bonus` for effective movement speed and `dash_cd_mult` for effective dash cooldown
+- Dash cooldown HUD bar now reflects the effective cooldown (accounting for upgrades)
+- `Bullet` struct gains `damage` and `color` fields (from weapon system)
+- `Enemy` struct gains `shoot_cooldown`, `ai_timer`, `is_charging`, and `elite` fields for new enemy types and modifiers
+- `Player` struct gains `current_weapon` (Weapon), `melee_cooldown`, `melee_timer`, `melee_direction` fields
+- `GameState` gains `enemy_bullets`, `weapon_pickups`, `combo`, `floor`, `floor_waves`, `exit_position`, `exit_active` fields
+- `enemy_pool_update()` signature expanded to accept `EnemyBulletPool*` parameter
+- `bullet_pool_draw()` uses per-bullet color instead of hardcoded ORANGE
+- Collision resolution uses per-bullet damage instead of hardcoded 1.0f
+- Taskfile `fmt:c` now uses `scripts/clang-format-all.ps1` to avoid Go template escaping issues with `$_`
+- `.markdownlint-cli2.yaml` gains `---` document start, MD036 and MD060 rules disabled
+
 - Integration test infrastructure: headless `game_update()` testing via Raylib stubs (`tests/raylib_stubs.c/h`) with controllable input, time, and audio fakes
 - 11 integration tests (`tests/test_integration.c`): bullet kills enemy, enemy damages player, dash invincibility, game-over transition, restart from game-over, player movement via input, enemy wave spawning, survival time accumulation, multiple enemy damage, shooting via game_update, full combat loop
 - CMake object library (`astro_blitz_objs`) for scalable dual-linking: game sources compiled once, linked with real Raylib (exe + unit tests) or stubs (integration tests). Adding new source files requires updating only the object library.

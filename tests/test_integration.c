@@ -14,6 +14,8 @@
 #include "game.h"
 #include "player.h"
 #include "raylib_stubs.h"
+#include "upgrade.h"
+#include "weapon.h"
 
 #include <math.h>
 
@@ -39,8 +41,7 @@ void setUp(void) {
     game_init(&gs);
 }
 
-void tearDown(void) {
-}
+void tearDown(void) {}
 
 /* ── Test: bullet kills enemy ─────────────────────────────────────────────── */
 
@@ -258,8 +259,7 @@ void test_shooting_via_game_update(void) {
 void test_full_combat_loop(void) {
     /* Place enemy to the right */
     float enemy_x = gs.player.position.x + 40.0f;
-    enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER,
-                     (Vector2){enemy_x, gs.player.position.y});
+    enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER, (Vector2){enemy_x, gs.player.position.y});
 
     /* Aim right: set mouse position to the right of the player in screen
      * space.  Camera offset is (400, 300) and zoom is 1.0, so mouse at
@@ -270,8 +270,10 @@ void test_full_combat_loop(void) {
     stub_set_mouse_button_down(MOUSE_BUTTON_LEFT, true);
     stub_set_frame_time(1.0f / 60.0f);
 
-    /* Advance frames -- bullet should hit and kill the enemy */
-    for (int i = 0; i < 30; i++) {
+    /* Advance frames -- bullet should hit and kill the enemy.
+     * Extra frames needed because hitstop freezes gameplay for a few frames
+     * on each hit/kill. */
+    for (int i = 0; i < 60; i++) {
         game_update(&gs);
         /* Release fire after first frame to avoid cooldown issues */
         if (i == 0) {
@@ -281,6 +283,186 @@ void test_full_combat_loop(void) {
 
     TEST_ASSERT_EQUAL_INT(0, enemy_pool_active_count(&gs.enemies));
     TEST_ASSERT_GREATER_OR_EQUAL(1, gs.stats.kills);
+}
+
+/* ── Test: weapon system fires with weapon stats ──────────────────────────── */
+
+void test_weapon_system_fires_shotgun_pellets(void) {
+    gs.player.current_weapon = weapon_get_preset(WEAPON_SHOTGUN);
+
+    /* Aim right */
+    gs.player.aim_direction = (Vector2){1.0f, 0.0f};
+    stub_set_mouse_button_down(MOUSE_BUTTON_LEFT, true);
+
+    game_update(&gs);
+    stub_set_mouse_button_down(MOUSE_BUTTON_LEFT, false);
+
+    /* Shotgun fires 5 pellets per shot */
+    int active = 0;
+    for (int i = 0; i < MAX_BULLETS; i++) {
+        if (gs.bullets.bullets[i].active) {
+            active++;
+        }
+    }
+    TEST_ASSERT_EQUAL_INT(5, active);
+}
+
+/* ── Test: grunt enemy fires bullet at player ─────────────────────────────── */
+
+void test_grunt_enemy_fires_bullet(void) {
+    /* Place a grunt near the player */
+    float ex = gs.player.position.x + GRUNT_PREFERRED_RANGE;
+    float ey = gs.player.position.y;
+    enemy_pool_spawn(&gs.enemies, ENEMY_GRUNT, (Vector2){ex, ey});
+
+    /* Set its shoot cooldown to 0 so it fires immediately */
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (gs.enemies.enemies[i].active && gs.enemies.enemies[i].type == ENEMY_GRUNT) {
+            gs.enemies.enemies[i].shoot_cooldown = 0.0f;
+            break;
+        }
+    }
+
+    game_update(&gs);
+
+    /* Check that at least one enemy bullet exists */
+    int active = 0;
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
+        if (gs.enemy_bullets.bullets[i].active) {
+            active++;
+        }
+    }
+    TEST_ASSERT_GREATER_OR_EQUAL(1, active);
+}
+
+/* ── Test: combo increments on consecutive kills ──────────────────────────── */
+
+void test_combo_increments_on_kills(void) {
+    /* Disable hitstop so kills don't freeze the simulation and starve the
+     * second bullet of movement frames. */
+    gs.settings.hitstop = 0.0f;
+
+    /* Place two 1-HP swarmers right next to each other in front of player */
+    float x = gs.player.position.x + 30.0f;
+    enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER, (Vector2){x, gs.player.position.y});
+    enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER, (Vector2){x + 5.0f, gs.player.position.y});
+
+    /* Fire two bullets at them (reset cooldown between shots so both fire) */
+    gs.player.aim_direction = (Vector2){1.0f, 0.0f};
+    bullet_pool_fire(&gs.bullets, gs.player.position, (Vector2){1.0f, 0.0f});
+    gs.bullets.fire_cooldown = 0.0f;
+    bullet_pool_fire(&gs.bullets, gs.player.position, (Vector2){1.0f, 0.0f});
+
+    /* Advance frames until bullets reach enemies */
+    for (int i = 0; i < 30; i++) {
+        game_update(&gs);
+    }
+
+    /* Both should be dead, kills >= 2.
+     * Verify the combo system recorded at least 1 combo kill (best >= 1). */
+    TEST_ASSERT_EQUAL_INT(0, enemy_pool_active_count(&gs.enemies));
+    TEST_ASSERT_GREATER_OR_EQUAL(2, gs.stats.kills);
+    TEST_ASSERT_GREATER_OR_EQUAL(1, gs.combo.best);
+}
+
+/* ── Test: elite enemy has modified stats ─────────────────────────────────── */
+
+void test_elite_armored_has_more_hp(void) {
+    float x = gs.player.position.x + 100.0f;
+    float y = gs.player.position.y;
+
+    /* Spawn normal swarmer */
+    enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER, (Vector2){x, y});
+    float normal_hp = gs.enemies.enemies[0].hp;
+    gs.enemies.enemies[0].active = false;
+
+    /* Spawn armored swarmer */
+    enemy_pool_spawn_elite(&gs.enemies, ENEMY_SWARMER, (Vector2){x, y}, ELITE_ARMORED);
+    float armored_hp = gs.enemies.enemies[0].hp;
+
+    TEST_ASSERT_TRUE(armored_hp > normal_hp);
+    TEST_ASSERT_EQUAL(ELITE_ARMORED, gs.enemies.enemies[0].elite);
+}
+
+/* ── Test: weapon pickup changes player weapon ────────────────────────────── */
+
+void test_weapon_pickup_swaps_weapon(void) {
+    TEST_ASSERT_EQUAL(WEAPON_PISTOL, gs.player.current_weapon.type);
+
+    /* Manually create a shotgun pickup at the player's position */
+    gs.weapon_pickups.pickups[0].position = gs.player.position;
+    gs.weapon_pickups.pickups[0].weapon = weapon_get_preset(WEAPON_SHOTGUN);
+    gs.weapon_pickups.pickups[0].lifetime = 10.0f;
+    gs.weapon_pickups.pickups[0].active = true;
+
+    /* Advance one frame -- should enter PHASE_PICKUP_WEAPON (not auto-swap) */
+    game_update(&gs);
+    TEST_ASSERT_EQUAL(PHASE_PICKUP_WEAPON, gs.phase);
+    /* Weapon not swapped yet */
+    TEST_ASSERT_EQUAL(WEAPON_PISTOL, gs.player.current_weapon.type);
+
+    /* Simulate selecting "Replace" (menu_cursor = 1) and pressing Enter */
+    gs.menu_cursor = 1;
+    stub_set_key_pressed(KEY_ENTER, true);
+    game_update(&gs);
+
+    /* Now weapon should be swapped and pickup consumed */
+    TEST_ASSERT_EQUAL(WEAPON_SHOTGUN, gs.player.current_weapon.type);
+    TEST_ASSERT_FALSE(gs.weapon_pickups.pickups[0].active);
+    TEST_ASSERT_EQUAL(PHASE_PLAYING, gs.phase);
+}
+
+/* ── Test: floor scaling increases enemy HP ───────────────────────────────── */
+
+void test_floor_scaling_increases_enemy_hp(void) {
+    /* Spawn a swarmer on floor 0 -- should have base HP */
+    float x = gs.player.position.x + 200.0f;
+    float y = gs.player.position.y;
+    enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER, (Vector2){x, y});
+    float floor0_hp = gs.enemies.enemies[0].hp;
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_EPSILON, SWARMER_HP, floor0_hp);
+
+    /* Clear and set floor to 3 */
+    gs.enemies.enemies[0].active = false;
+    gs.floor = 3;
+
+    /* Manually simulate what game.c spawn does: spawn + scale */
+    enemy_pool_spawn(&gs.enemies, ENEMY_SWARMER, (Vector2){x, y});
+    float scale = 1.0f + FLOOR_ENEMY_HP_SCALE * (float)gs.floor;
+    gs.enemies.enemies[0].hp *= scale;
+    float floor3_hp = gs.enemies.enemies[0].hp;
+
+    /* Floor 3: HP should be 1.45x base */
+    TEST_ASSERT_TRUE(floor3_hp > floor0_hp);
+    float expected = SWARMER_HP * (1.0f + FLOOR_ENEMY_HP_SCALE * 3.0f);
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_EPSILON, expected, floor3_hp);
+}
+
+/* ── Test: speed upgrade affects player via game_update ───────────────────── */
+
+void test_speed_upgrade_applied_via_game_update(void) {
+    /* Add speed upgrade stacks */
+    upgrade_add(&gs.upgrades, UPGRADE_SPEED);
+    upgrade_add(&gs.upgrades, UPGRADE_SPEED);
+
+    /* Run one frame so game_update applies upgrade to player */
+    game_update(&gs);
+
+    float expected_bonus = UPGRADE_SPEED_BONUS * 2.0f;
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_EPSILON, expected_bonus, gs.player.speed_bonus);
+}
+
+/* ── Test: dash CD upgrade affects player via game_update ─────────────────── */
+
+void test_dash_cd_upgrade_applied_via_game_update(void) {
+    /* Add dash CD upgrade stacks */
+    upgrade_add(&gs.upgrades, UPGRADE_DASH_CD);
+
+    /* Run one frame so game_update applies upgrade to player */
+    game_update(&gs);
+
+    float expected_mult = UPGRADE_DASH_CD_BONUS; /* 0.85 for 1 stack */
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_EPSILON, expected_mult, gs.player.dash_cd_mult);
 }
 
 /* ── Main ─────────────────────────────────────────────────────────────────── */
@@ -298,5 +480,13 @@ int main(void) {
     RUN_TEST(test_multiple_enemies_damage_player);
     RUN_TEST(test_shooting_via_game_update);
     RUN_TEST(test_full_combat_loop);
+    RUN_TEST(test_weapon_system_fires_shotgun_pellets);
+    RUN_TEST(test_grunt_enemy_fires_bullet);
+    RUN_TEST(test_combo_increments_on_kills);
+    RUN_TEST(test_elite_armored_has_more_hp);
+    RUN_TEST(test_weapon_pickup_swaps_weapon);
+    RUN_TEST(test_floor_scaling_increases_enemy_hp);
+    RUN_TEST(test_speed_upgrade_applied_via_game_update);
+    RUN_TEST(test_dash_cd_upgrade_applied_via_game_update);
     return UNITY_END();
 }

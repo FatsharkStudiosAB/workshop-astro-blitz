@@ -4,6 +4,7 @@
 
 #include "bullet.h"
 #include "tilemap.h"
+#include <math.h>
 #include <string.h>
 
 /* ── Public ────────────────────────────────────────────────────────────────── */
@@ -95,7 +96,26 @@ void bullet_pool_draw(const BulletPool *pool) {
         if (!b->active) {
             continue;
         }
-        DrawCircleV(b->position, BULLET_RADIUS, ORANGE);
+
+        /* Trail: fading line behind the bullet along its velocity */
+        float speed = Vector2Length(b->velocity);
+        if (speed > 1.0f) {
+            Vector2 dir = Vector2Scale(b->velocity, 1.0f / speed);
+            /* Trail length proportional to speed, capped */
+            float trail_len = speed * 0.04f;
+            if (trail_len > 20.0f) {
+                trail_len = 20.0f;
+            }
+            Vector2 trail_end = Vector2Subtract(b->position, Vector2Scale(dir, trail_len));
+
+            /* Fading trail color */
+            Color trail_color = b->color;
+            trail_color.a = 80;
+            DrawLineEx(b->position, trail_end, BULLET_RADIUS * 1.5f, trail_color);
+        }
+
+        /* Bullet body */
+        DrawCircleV(b->position, BULLET_RADIUS, b->color);
     }
 }
 
@@ -111,6 +131,8 @@ bool bullet_pool_fire(BulletPool *pool, Vector2 origin, Vector2 direction) {
             b->position = origin;
             b->velocity = Vector2Scale(direction, BULLET_SPEED);
             b->lifetime = BULLET_LIFETIME;
+            b->damage = 1.0f;
+            b->color = ORANGE;
             b->bounces = 0;
             b->active = true;
             pool->fire_cooldown = PISTOL_FIRE_RATE;
@@ -119,4 +141,63 @@ bool bullet_pool_fire(BulletPool *pool, Vector2 origin, Vector2 direction) {
     }
     /* Pool full -- silently drop the shot */
     return false;
+}
+
+int bullet_pool_fire_weapon(BulletPool *pool, Vector2 origin, Vector2 direction, float fire_rate,
+                            float damage, float bullet_speed, float spread_angle,
+                            int projectile_count, float bullet_lifetime, Color bullet_color) {
+    if (pool->fire_cooldown > 0.0f) {
+        return 0; /* Rate limited */
+    }
+
+    int spawned = 0;
+    float half_spread = spread_angle * 0.5f * DEG2RAD;
+
+    for (int i = 0; i < projectile_count; i++) {
+        /* Calculate spread offset for this projectile */
+        float angle_offset = 0.0f;
+        if (projectile_count > 1) {
+            /* Evenly distribute across the spread cone */
+            float t = (float)i / (float)(projectile_count - 1); /* 0..1 */
+            angle_offset = -half_spread + t * 2.0f * half_spread;
+        } else if (spread_angle > 0.0f) {
+            /* Single projectile with spread = random offset within cone */
+            float rand_t = (float)GetRandomValue(-1000, 1000) / 1000.0f;
+            angle_offset = rand_t * half_spread;
+        }
+
+        /* Rotate direction by angle_offset */
+        float cos_a = cosf(angle_offset);
+        float sin_a = sinf(angle_offset);
+        Vector2 dir = {
+            direction.x * cos_a - direction.y * sin_a,
+            direction.x * sin_a + direction.y * cos_a,
+        };
+
+        /* Find an inactive slot */
+        bool placed = false;
+        for (int j = 0; j < MAX_BULLETS; j++) {
+            Bullet *b = &pool->bullets[j];
+            if (!b->active) {
+                b->position = origin;
+                b->velocity = Vector2Scale(dir, bullet_speed);
+                b->lifetime = bullet_lifetime;
+                b->damage = damage;
+                b->color = bullet_color;
+                b->bounces = 0;
+                b->active = true;
+                spawned++;
+                placed = true;
+                break;
+            }
+        }
+        if (!placed) {
+            break; /* Pool full */
+        }
+    }
+
+    if (spawned > 0) {
+        pool->fire_cooldown = fire_rate;
+    }
+    return spawned;
 }

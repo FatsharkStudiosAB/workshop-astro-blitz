@@ -253,6 +253,39 @@ void test_8dir_all_four_keys_cancel(void) {
     TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, dir.y);
 }
 
+/* ── Upgrade modifier fields ───────────────────────────────────────────────── */
+
+void test_player_init_speed_bonus_is_zero(void) {
+    Player p;
+    player_init(&p, (Vector2){0, 0});
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, p.speed_bonus);
+}
+
+void test_player_init_dash_cd_mult_is_zero(void) {
+    /* Default 0 means "use 1.0" in player_update */
+    Player p;
+    player_init(&p, (Vector2){0, 0});
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.0f, p.dash_cd_mult);
+}
+
+void test_player_speed_bonus_increases_effective_speed(void) {
+    /* With a bonus of 60, effective speed should be PLAYER_SPEED + 60 */
+    Player p;
+    player_init(&p, (Vector2){0, 0});
+    p.speed_bonus = 60.0f;
+    float eff_speed = PLAYER_SPEED + p.speed_bonus;
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 260.0f, eff_speed);
+}
+
+void test_player_dash_cd_mult_reduces_cooldown(void) {
+    /* With a mult of 0.7, effective dash CD should be DASH_COOLDOWN * 0.7 */
+    Player p;
+    player_init(&p, (Vector2){0, 0});
+    p.dash_cd_mult = 0.7f;
+    float eff_cd = DASH_COOLDOWN * p.dash_cd_mult;
+    TEST_ASSERT_FLOAT_WITHIN(FLOAT_TOLERANCE, 0.7f, eff_cd);
+}
+
 /* ── Runner ────────────────────────────────────────────────────────────────── */
 
 int main(void) {
@@ -294,6 +327,12 @@ int main(void) {
     RUN_TEST(test_8dir_no_input_returns_zero);
     RUN_TEST(test_8dir_opposing_inputs_cancel);
     RUN_TEST(test_8dir_all_four_keys_cancel);
+
+    /* Upgrade modifier fields */
+    RUN_TEST(test_player_init_speed_bonus_is_zero);
+    RUN_TEST(test_player_init_dash_cd_mult_is_zero);
+    RUN_TEST(test_player_speed_bonus_increases_effective_speed);
+    RUN_TEST(test_player_dash_cd_mult_reduces_cooldown);
 
     return UNITY_END();
 }

@@ -7,6 +7,7 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "settings.h"
+#include "weapon.h"
 #include <stdbool.h>
 
 /* Forward declaration to avoid circular include */
@@ -23,6 +24,14 @@ typedef struct Tilemap Tilemap;
 #define DASH_COOLDOWN 1.0f
 #define DASH_INVINCIBLE 1 /* 1 = invincible during dash */
 
+/* Melee attack */
+#define MELEE_DAMAGE 3.0f
+#define MELEE_ARC_DEGREES 120.0f /* total arc width in degrees */
+#define MELEE_RANGE 40.0f        /* reach from player center */
+#define MELEE_COOLDOWN 0.5f      /* seconds between swings */
+#define MELEE_DURATION 0.15f     /* active swing time */
+#define MELEE_KNOCKBACK 15.0f    /* pixels of position displacement from melee hit */
+
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
 typedef struct {
@@ -31,11 +40,23 @@ typedef struct {
     float hp;
     float max_hp;
 
+    /* Weapon */
+    Weapon current_weapon;
+
     /* Dash state */
     bool is_dashing;
     Vector2 dash_direction;
     float dash_timer;    /* time remaining in current dash */
     float dash_cooldown; /* time remaining before dash is available */
+
+    /* Melee state */
+    float melee_cooldown;    /* time remaining before next melee */
+    float melee_timer;       /* time remaining in current swing (0 = not swinging) */
+    Vector2 melee_direction; /* direction of current swing */
+
+    /* Upgrade-driven modifiers (set by game.c before player_update) */
+    float speed_bonus;  /* additive bonus to PLAYER_SPEED (default 0) */
+    float dash_cd_mult; /* multiplier for DASH_COOLDOWN (default 0 = use 1.0) */
 } Player;
 
 /* ── Public API ────────────────────────────────────────────────────────────── */
